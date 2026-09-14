@@ -75,6 +75,32 @@ export async function runSeed() {
     await supabase.from('menu_items').insert(sampleItems);
     log('productos de ejemplo creados.');
   }
+
+  const { count: ruleCount } = await supabase.from('reward_rules').select('id', { count: 'exact', head: true });
+  if (!ruleCount) {
+    const defaults = [
+      {
+        name: '25% OFF — 5 compras',
+        every_orders: 5,
+        type: 'descuento',
+        value: 25,
+        mode: 'ambos',
+        description: '25% de descuento en tu próxima compra',
+        active: true,
+      },
+      {
+        name: '50% OFF — 10 compras',
+        every_orders: 10,
+        type: 'descuento',
+        value: 50,
+        mode: 'ambos',
+        description: '50% de descuento en tu próxima compra',
+        active: true,
+      },
+    ];
+    await supabase.from('reward_rules').insert(defaults);
+    log('premios por defecto creados (25% OFF cada 5 y 50% OFF cada 10).');
+  }
 }
 
 const isMain =

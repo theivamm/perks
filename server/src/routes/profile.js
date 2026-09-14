@@ -33,6 +33,14 @@ router.get(
     if (couponsRes.error) throw couponsRes.error;
 
     const completed = await countCompletedOrders(user.id);
+    const totalSpent = (ordersRes.data || []).reduce((sum, o) => sum + (Number(o.total) || 0), 0);
+
+    const { data: rules, error: rulesErr } = await supabase
+      .from('reward_rules')
+      .select('id, name, every_orders, type, value, mode, description')
+      .eq('active', true)
+      .order('every_orders');
+    if (rulesErr) throw rulesErr;
 
     const suggestions = await buildSuggestions(ordersRes.data || []);
 
@@ -40,7 +48,8 @@ router.get(
       user,
       orders: ordersRes.data || [],
       coupons: couponsRes.data || [],
-      stats: { completedOrders: completed, totalOrders: (ordersRes.data || []).length },
+      stats: { completedOrders: completed, totalOrders: (ordersRes.data || []).length, totalSpent },
+      rewardProgress: { completed, rules: rules || [] },
       suggestions,
     });
   })
@@ -55,12 +64,9 @@ router.put(
     if (name !== undefined && String(name).trim()) patch.name = String(name).trim();
     if (phone !== undefined) patch.phone = String(phone).trim();
     if (preferences !== undefined) {
-      const allowed = ['vegetarian', 'glutenFree', 'vegan', 'notes'];
-      const next = {};
-      for (const k of Object.keys(preferences || {})) {
-        if (allowed.includes(k)) next[k] = preferences[k];
+      if (preferences && typeof preferences === 'object' && !Array.isArray(preferences)) {
+        patch.preferences = preferences;
       }
-      patch.preferences = next;
     }
 
     const { data, error } = await supabase

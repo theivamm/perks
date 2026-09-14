@@ -11,6 +11,7 @@ export default function RewardsManager() {
   const [rules, setRules] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(null);
+  const [creating, setCreating] = useState(false);
   const [form, setForm] = useState(EMPTY);
   const [saving, setSaving] = useState(false);
 
@@ -27,9 +28,17 @@ export default function RewardsManager() {
   const startNew = () => {
     setEditing(null);
     setForm(EMPTY);
+    setCreating(true);
+  };
+
+  const cancel = () => {
+    setEditing(null);
+    setCreating(false);
+    setForm(EMPTY);
   };
 
   const startEdit = (r) => {
+    setCreating(false);
     setEditing(r);
     setForm({ name: r.name, every_orders: r.every_orders, type: r.type, value: r.value, mode: r.mode, description: r.description, active: r.active });
   };
@@ -48,6 +57,7 @@ export default function RewardsManager() {
         toast('Premio creado');
       }
       setEditing(null);
+      setCreating(false);
       setForm(EMPTY);
       await load();
     } catch (err) {
@@ -96,55 +106,59 @@ export default function RewardsManager() {
 
       {loading ? (
         <Spinner label="Cargando premios..." />
-      ) : rules.length === 0 ? (
-        <EmptyState
-          icon={Gift}
-          title="Sin premios configurados"
-          subtitle='Crea el primero, por ejemplo: "Voucher $30.000 cada 10 pedidos".'
-        />
       ) : (
-        <div className="space-y-3">
-          {rules.map((r) => (
-            <div key={r.id} className={`rounded-2xl border p-4 ${r.active ? 'border-line bg-surface' : 'border-line bg-surface-alt opacity-70'}`}>
-              {editing?.id === r.id ? (
-                <RuleForm form={form} set={set} saving={saving} onSave={save} onCancel={() => { setEditing(null); setForm(EMPTY); }} editing />
-              ) : (
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="font-extrabold text-ink">{r.name}</p>
-                      <span className="badge">cada {r.every_orders} pedidos</span>
-                      <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${r.active ? 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400' : 'bg-surface-alt text-ink-muted'}`}>
-                        {r.active ? 'Activo' : 'Pausado'}
-                      </span>
-                    </div>
-                    <p className="mt-1 text-sm text-ink-muted">
-                      {TYPE_LABEL[r.type]}: <strong className="text-ink">{r.type === 'descuento' ? `${Number(r.value) || 0}%` : `$${Number(r.value) || 0}`}</strong>
-                      <span className="mx-1.5">·</span>
-                      Canje: {MODE_LABEL[r.mode] || r.mode}
-                      {r.description && <><span className="mx-1.5">·</span>{r.description}</>}
-                    </p>
-                  </div>
-                  <div className="flex shrink-0 gap-2">
-                    <button className="btn-icon" onClick={() => toggleActive(r)} aria-label="Activar/Pausar" title={r.active ? 'Pausar' : 'Activar'}>
-                      <Power size={16} />
-                    </button>
-                    <button className="btn-icon" onClick={() => startEdit(r)} aria-label="Editar" title="Editar">
-                      <Pencil size={16} />
-                    </button>
-                    <button className="btn-icon !text-red-500" onClick={() => remove(r)} aria-label="Eliminar" title="Eliminar">
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
+        <>
+          {rules.length === 0 && !creating && !editing && (
+            <EmptyState
+              icon={Gift}
+              title="Sin premios configurados"
+              subtitle="Creá el primero, por ejemplo: «5 compras = 25% OFF». Así tus clientes empiezan a acumular pedidos."
+            />
+          )}
 
-      {editing === null && rules.length > 0 && (
-        <RuleForm form={form} set={set} saving={saving} onSave={save} onCancel={startNew} />
+          {rules.length > 0 && (
+            <div className="space-y-3">
+              {rules.map((r) => (
+                <div key={r.id} className={`rounded-2xl border p-4 ${r.active ? 'border-line bg-surface' : 'border-line bg-surface-alt opacity-70'}`}>
+                  {editing?.id === r.id ? (
+                    <RuleForm form={form} set={set} saving={saving} onSave={save} onCancel={cancel} editing />
+                  ) : (
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="font-extrabold text-ink">{r.name}</p>
+                          <span className="badge">cada {r.every_orders} pedidos</span>
+                          <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${r.active ? 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400' : 'bg-surface-alt text-ink-muted'}`}>
+                            {r.active ? 'Activo' : 'Pausado'}
+                          </span>
+                        </div>
+                        <p className="mt-1 text-sm text-ink-muted">
+                          {TYPE_LABEL[r.type]}: <strong className="text-ink">{r.type === 'descuento' ? `${Number(r.value) || 0}%` : `$${Number(r.value) || 0}`}</strong>
+                          <span className="mx-1.5">·</span>
+                          Canje: {MODE_LABEL[r.mode] || r.mode}
+                          {r.description && <><span className="mx-1.5">·</span>{r.description}</>}
+                        </p>
+                      </div>
+                      <div className="flex shrink-0 gap-2">
+                        <button className="btn-icon" onClick={() => toggleActive(r)} aria-label="Activar/Pausar" title={r.active ? 'Pausar' : 'Activar'}>
+                          <Power size={16} />
+                        </button>
+                        <button className="btn-icon" onClick={() => startEdit(r)} aria-label="Editar" title="Editar">
+                          <Pencil size={16} />
+                        </button>
+                        <button className="btn-icon !text-red-500" onClick={() => remove(r)} aria-label="Eliminar" title="Eliminar">
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {creating && <RuleForm form={form} set={set} saving={saving} onSave={save} onCancel={cancel} />}
+        </>
       )}
     </section>
   );

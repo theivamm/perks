@@ -3,30 +3,22 @@ import { Link } from 'react-router-dom';
 import {
   ArrowLeft,
   BadgePercent,
-  Check,
   Coffee,
   Gift,
-  Leaf,
   Loader2,
   Pencil,
   ReceiptText,
   Save,
   ShoppingBag,
-  Sparkles,
-  Wheat,
   X,
 } from 'lucide-react';
 import { api, formatMoney } from '../api.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useTheme } from '../context/ThemeContext.jsx';
 import { EmptyState, Spinner, toast } from '../components/ui.jsx';
-
-const STATUS_LABEL = { activo: 'Activo', usado: 'Usado', vencido: 'Vencido' };
-const STATUS_STYLE = {
-  activo: 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400',
-  usado: 'bg-surface-alt text-ink-muted',
-  vencido: 'bg-surface-alt text-ink-muted',
-};
+import CouponCard from '../components/CouponCard.jsx';
+import RewardProgress from '../components/RewardProgress.jsx';
+import PreferencesEditor, { prefsSummary } from '../components/PreferencesEditor.jsx';
 
 export default function Profile() {
   const { user, updateUser } = useAuth();
@@ -57,9 +49,6 @@ export default function Profile() {
     });
     setEditing(true);
   };
-
-  const togglePref = (key) =>
-    setForm((f) => ({ ...f, preferences: { ...f.preferences, [key]: !f.preferences[key] } }));
 
   const save = async (e) => {
     e.preventDefault();
@@ -93,14 +82,8 @@ export default function Profile() {
   if (loading && !data) return <Spinner label="Cargando perfil..." />;
   if (!data) return <EmptyState icon={Coffee} title="No se pudo cargar el perfil" />;
 
-  const { user: me, orders, coupons, stats, suggestions } = data;
-
-  const couponLabel = (c) =>
-    c.type === 'descuento'
-      ? `${Number(c.value) || 0}% de descuento`
-      : c.type === 'regalo'
-        ? 'Regalo'
-        : `${formatMoney(c.value, settings.currency)} ${c.mode === 'web' ? 'de descuento web' : 'para tu próximo pedido'}`;
+  const { user: me, orders, coupons, stats, rewardProgress, suggestions } = data;
+  const summary = prefsSummary(me.preferences);
 
   return (
     <div className="min-h-screen bg-surface-page">
@@ -116,11 +99,10 @@ export default function Profile() {
       </header>
 
       <main className="mx-auto max-w-5xl space-y-6 px-4 py-8">
-        {/* Datos */}
         <section className="card p-6">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-4">
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-primary-strong text-xl font-extrabold text-primary-contrast">
+              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-primary-strong text-2xl font-extrabold text-primary-contrast shadow-glow">
                 {(me.name || '?').slice(0, 2).toUpperCase()}
               </div>
               <div>
@@ -136,61 +118,47 @@ export default function Profile() {
             )}
           </div>
 
-          {editing ? (
-            <form onSubmit={save} className="mt-6 space-y-4 border-t border-line pt-6">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div>
-                  <label className="label">Nombre</label>
-                  <input className="input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
-                </div>
-                <div>
-                  <label className="label">Teléfono</label>
-                  <input className="input" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="Ej: +54 9 11..." />
-                </div>
-              </div>
+          <RewardProgress completed={rewardProgress.completed} rules={rewardProgress.rules} />
+        </section>
 
+        {editing ? (
+          <form onSubmit={save} className="card space-y-6 p-6">
+            <div className="grid gap-4 sm:grid-cols-2">
               <div>
-                <label className="label">Preferencias alimentarias</label>
-                <div className="flex flex-wrap gap-2.5">
-                  {[
-                    { key: 'vegetarian', label: 'Vegetariano/a', icon: Leaf },
-                    { key: 'glutenFree', label: 'Celiaco/a (sin TACC)', icon: Wheat },
-                    { key: 'vegan', label: 'Vegano/a', icon: Sparkles },
-                  ].map(({ key, label, icon: Icon }) => (
-                    <label
-                      key={key}
-                      className={`flex cursor-pointer items-center gap-2 rounded-xl border px-3.5 py-2 text-sm font-semibold transition-all ${
-                        form.preferences[key]
-                          ? 'border-primary bg-primary-soft text-primary-strong'
-                          : 'border-line bg-surface text-ink-muted hover:bg-surface-alt'
-                      }`}
-                    >
-                      <Icon size={16} />
-                      {label}
-                      <input
-                        type="checkbox"
-                        className="hidden"
-                        checked={Boolean(form.preferences[key])}
-                        onChange={() => togglePref(key)}
-                      />
-                    </label>
-                  ))}
-                </div>
+                <label className="label">Nombre</label>
+                <input className="input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
               </div>
+              <div>
+                <label className="label">Teléfono</label>
+                <input className="input" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="Ej: +54 9 11..." />
+              </div>
+            </div>
 
-              <div className="flex justify-end gap-2">
-                <button type="button" className="btn-ghost" onClick={() => setEditing(false)}>
-                  <X size={15} />
-                  Cancelar
-                </button>
-                <button type="submit" className="btn-primary" disabled={saving}>
-                  {saving ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
-                  Guardar cambios
-                </button>
-              </div>
-            </form>
-          ) : (
-            <div className="mt-5 grid gap-3 text-sm sm:grid-cols-3">
+            <div>
+              <h3 className="mb-3 flex items-center gap-2 text-lg font-extrabold text-ink">
+                <Coffee size={20} className="text-primary-strong" />
+                Preferencias de Perfil
+              </h3>
+              <PreferencesEditor
+                value={form.preferences}
+                onChange={(preferences) => setForm((f) => ({ ...f, preferences }))}
+              />
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <button type="button" className="btn-ghost" onClick={() => setEditing(false)}>
+                <X size={15} />
+                Cancelar
+              </button>
+              <button type="submit" className="btn-primary" disabled={saving}>
+                {saving ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
+                Guardar cambios
+              </button>
+            </div>
+          </form>
+        ) : (
+          <>
+            <div className="grid gap-3 text-sm sm:grid-cols-4">
               <div className="rounded-xl bg-surface-alt p-4 text-center">
                 <p className="text-2xl font-extrabold text-ink">{stats.totalOrders}</p>
                 <p className="text-xs text-ink-muted">Pedidos realizados</p>
@@ -200,14 +168,35 @@ export default function Profile() {
                 <p className="text-xs text-ink-muted">Pedidos completados</p>
               </div>
               <div className="rounded-xl bg-surface-alt p-4 text-center">
+                <p className="text-2xl font-extrabold text-primary-strong">
+                  {formatMoney(stats.totalSpent, settings.currency)}
+                </p>
+                <p className="text-xs text-ink-muted">Total gastado</p>
+              </div>
+              <div className="rounded-xl bg-surface-alt p-4 text-center">
                 <p className="text-2xl font-extrabold text-primary-strong">{coupons.length}</p>
                 <p className="text-xs text-ink-muted">Cupones obtenidos</p>
               </div>
             </div>
-          )}
-        </section>
 
-        {/* Cupones */}
+            {summary.length > 0 && (
+              <div className="card p-5">
+                <h2 className="mb-3 flex items-center gap-2 text-sm font-extrabold text-ink">
+                  <BadgePercent size={16} className="text-primary-strong" />
+                  Tus preferencias y filtros
+                </h2>
+                <div className="flex flex-wrap gap-2">
+                  {summary.map((s, i) => (
+                    <span key={i} className="rounded-full bg-primary-soft px-3 py-1 text-xs font-bold text-primary-strong">
+                      {s.label}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
+        )}
+
         <section>
           <h2 className="mb-3 flex items-center gap-2 text-lg font-extrabold text-ink">
             <Gift size={20} className="text-primary-strong" />
@@ -217,59 +206,30 @@ export default function Profile() {
             <EmptyState
               icon={BadgePercent}
               title="Todavía no tenés cupones"
-              subtitle="Completá tus pedidos para ganar premios cada tantas compras."
+              subtitle="Completá pedidos y vas ganando descuentos en tu próxima compra."
             />
           ) : (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               {coupons.map((c) => (
-                <div key={c.id} className="card flex flex-col gap-3 p-5">
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-soft text-primary-strong">
-                      <BadgePercent size={20} />
-                    </div>
-                    <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${STATUS_STYLE[c.status]}`}>
-                      {STATUS_LABEL[c.status] || c.status}
-                    </span>
-                  </div>
-                  <div>
-                    <p className="text-lg font-extrabold text-ink">{couponLabel(c)}</p>
-                    <p className="mt-1 text-xs text-ink-muted">
-                      {c.description || 'Premio por tus pedidos'}
-                      {c.milestone ? ` · Pedido #${c.milestone}` : ''}
-                    </p>
-                  </div>
-                  {c.status === 'activo' && (
-                    <div className="mt-auto rounded-xl border border-dashed border-line bg-surface-alt px-3 py-2 text-center">
-                      <p className="text-[10px] uppercase tracking-wide text-ink-muted">Código</p>
-                      <p className="select-all font-mono text-base font-extrabold text-ink">{c.code}</p>
-                    </div>
-                  )}
-                  {c.status === 'activo' && c.mode !== 'web' && (
-                    <button
-                      className="btn-ghost w-full !py-1.5 !text-xs"
-                      onClick={() => markUsed(c)}
-                      disabled={redeeming === c.id}
-                    >
-                      {redeeming === c.id ? <Loader2 className="animate-spin" size={14} /> : <Check size={14} />}
-                      Lo usé en el local
-                    </button>
-                  )}
-                </div>
+                <CouponCard
+                  key={c.id}
+                  coupon={c}
+                  currency={settings.currency}
+                  onUse={markUsed}
+                  using={redeeming === c.id}
+                />
               ))}
             </div>
           )}
         </section>
 
-        {/* Sugerencias */}
         {suggestions.length > 0 && (
           <section>
             <h2 className="mb-3 flex items-center gap-2 text-lg font-extrabold text-ink">
               <ShoppingBag size={20} className="text-primary-strong" />
               Te podría gustar
             </h2>
-            <p className="mb-3 text-sm text-ink-muted">
-              Basado en lo que más pedís, no te pierdas:
-            </p>
+            <p className="mb-3 text-sm text-ink-muted">Basado en lo que más pedís, no te pierdas:</p>
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
               {suggestions.map((s) => (
                 <div key={`${s.menu_item_id || s.title}`} className="card overflow-hidden">
@@ -292,17 +252,16 @@ export default function Profile() {
           </section>
         )}
 
-        {/* Historial */}
         <section>
           <h2 className="mb-3 flex items-center gap-2 text-lg font-extrabold text-ink">
             <ReceiptText size={20} className="text-primary-strong" />
-            Historial de pedidos
+            Historial de compras
           </h2>
           {orders.length === 0 ? (
             <EmptyState
               icon={ReceiptText}
               title="Aún no hiciste pedidos"
-              subtitle="Cuando hagas tu primer pedido aparecerá acá."
+              subtitle="Cuando hagas tu primer pedido aparecerá acá, junto con tus compras y lo que llevás gastado."
             />
           ) : (
             <div className="space-y-3">
