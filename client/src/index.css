@@ -1,0 +1,79 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --primary: 221 83% 45%;
+    --primary-strong: 221 83% 34%;
+    --primary-soft: 221 90% 90%;
+    --primary-softer: 221 92% 96%;
+    --primary-contrast: 0 0% 100%;
+    --bg: 221 45% 97%;
+    --surface: 0 0% 100%;
+    --surface-alt: 221 55% 92%;
+    --ink: 221 30% 13%;
+    --ink-muted: 221 12% 42%;
+    --line: 221 25% 86%;
+  }
+  html.dark {
+    --primary: 221 85% 55%;
+    --primary-strong: 221 85% 66%;
+    --primary-soft: 221 60% 20%;
+    --primary-softer: 221 64% 14%;
+    --primary-contrast: 0 0% 100%;
+    --bg: 221 26% 9%;
+    --surface: 221 22% 13%;
+    --surface-alt: 221 24% 18%;
+    --ink: 0 0% 92%;
+    --ink-muted: 0 0% 66%;
+    --line: 221 16% 26%;
+  }
+
+  body {
+    @apply bg-surface-page font-sans text-ink antialiased;
+  }
+  ::selection {
+    @apply bg-primary/20 text-ink;
+  }
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply rounded-full bg-line;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-contrast shadow-sm transition-all hover:bg-primary-strong hover:shadow-glow disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-ghost {
+    @apply inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-line bg-surface px-4 py-2 text-sm font-semibold text-ink transition-all hover:bg-surface-alt disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-danger {
+    @apply inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-icon {
+    @apply inline-flex cursor-pointer items-center justify-center rounded-lg p-2 text-ink-muted transition-colors hover:bg-surface-alt hover:text-ink;
+  }
+  .input {
+    @apply w-full rounded-xl border border-line bg-surface px-3 py-2 text-sm text-ink outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/30;
+  }
+  .card {
+    @apply rounded-2xl border border-line bg-surface shadow-sm;
+  }
+  .label {
+    @apply mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-muted;
+  }
+  .badge {
+    @apply inline-flex items-center gap-1 rounded-full bg-primary-soft px-2.5 py-1 text-xs font-semibold text-primary-strong;
+  }
+  .badge-outline {
+    @apply inline-flex items-center gap-1 rounded-full border border-line bg-surface px-2.5 py-1 text-xs font-semibold text-ink-muted;
+  }
+}

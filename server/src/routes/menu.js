@@ -1,0 +1,244 @@
+import { Router } from 'express';
+import XLSX from 'xlsx';
+import path from 'path';
+import fs from 'fs';
+import crypto from 'crypto';
+import { supabase, uploadImage } from '../supabase.js';
+import { requireAdmin } from '../middleware/auth.js';
+import { asyncHandler } from '../asyncHandler.js';
+import { imageUpload, excelUpload, uploadsDir } from '../upload.js';
+
+const router = Router();
+
+router.get(
+  '/',
+  asyncHandler(async (_req, res) => {
+    const { data: items, error } = await supabase
+      .from('menu_items')
+      .select('*')
+      .order('category')
+      .order('title');
+    if (error) throw error;
+    const categories = [...new Set((items || []).map((i) => i.category).filter(Boolean))];
+    res.json({ items: items || [], categories });
+  })
+);
+
+router.post(
+  '/',
+  requireAdmin,
+  asyncHandler(async (req, res) => {
+    const { title, description = '', price = 0, category = 'General', image = '', available = 1 } = req.body;
+    if (!title || !String(title).trim()) {
+      return res.status(400).json({ error: 'Titulo requerido' });
+    }
+    const { data, error } = await supabase
+      .from('menu_items')
+      .insert({
+        title: String(title).trim(),
+        description,
+        price: Number(price) || 0,
+        category,
+        image,
+        available: available ? true : false,
+      })
+      .select()
+      .single();
+    if (error) throw error;
+    res.status(201).json(data);
+  })
+);
+
+router.put(
+  '/:id',
+  requireAdmin,
+  asyncHandler(async (req, res) => {
+    const { title, description, price, category, image, available } = req.body;
+    const { data: current, error: findErr } = await supabase
+      .from('menu_items')
+      .select('*')
+      .eq('id', req.params.id)
+      .maybeSingle();
+    if (findErr) throw findErr;
+    if (!current) return res.status(404).json({ error: 'No encontrado' });
+
+    const patch = {};
+    if (title !== undefined) patch.title = title;
+    if (description !== undefined) patch.description = description;
+    if (price !== undefined) patch.price = Number(price) || 0;
+    if (category !== undefined) patch.category = category;
+    if (image !== undefined) patch.image = image;
+    if (available !== undefined) patch.available = available ? true : false;
+
+    const { data, error } = await supabase
+      .from('menu_items')
+      .update(patch)
+      .eq('id', current.id)
+      .select()
+      .single();
+    if (error) throw error;
+    res.json(data);
+  })
+);
+
+router.delete(
+  '/:id',
+  requireAdmin,
+  asyncHandler(async (req, res) => {
+    const { error } = await supabase.from('menu_items').delete().eq('id', req.params.id);
+    if (error) throw error;
+    res.json({ ok: true });
+  })
+);
+
+router.post(
+  '/:id/generate-image',
+  requireAdmin,
+  asyncHandler(async (req, res) => {
+    const { data: item, error: findErr } = await supabase
+      .from('menu_items')
+      .select('*')
+      .eq('id', req.params.id)
+      .maybeSingle();
+    if (findErr) throw findErr;
+    if (!item) return res.status(404).json({ error: 'No encontrado' });
+
+    const title = String(item.title || 'plato del menú').trim();
+    const desc = String(item.description || '').trim().slice(0, 120);
+    const prompt = `high quality professional food photography of ${title}${
+      desc ? ', ' + desc : ''
+    }, appetizing presentation, studio lighting, top-down view, clean minimalist background, 4k`;
+
+    const genUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(
+      prompt
+    )}?width=1024&height=1024&nologo=true&seed=${Math.floor(Math.random() * 100000)}`;
+
+    let imageRes;
+    try {
+      imageRes = await fetch(genUrl, { signal: AbortSignal.timeout(90000) });
+    } catch {
+      return res
+        .status(502)
+        .json({ error: 'No se pudo generar la imagen. Probá de nuevo en unos segundos.' });
+    }
+    if (!imageRes.ok) {
+      return res
+        .status(502)
+        .json({ error: `El servicio de IA respondió ${imageRes.status}. Probá de nuevo.` });
+    }
+
+    const buffer = Buffer.from(await imageRes.arrayBuffer());
+    const contentType = imageRes.headers.get('content-type')?.split(';')[0] || 'image/jpeg';
+    const ext = contentType.includes('png') ? '.png' : '.jpg';
+    const name = `${String(item.id).slice(0, 8)}-${Date.now()}${ext}`;
+
+    let publicUrl;
+    try {
+      publicUrl = await uploadImage(name, buffer, contentType);
+    } catch (e) {
+      console.warn('[SUPABASE] Fallback a almacenamiento local:', e.message);
+      fs.mkdirSync(uploadsDir, { recursive: true });
+      fs.writeFileSync(path.join(uploadsDir, name), buffer);
+      publicUrl = `/uploads/${name}`;
+    }
+
+    const { data: updated, error: updErr } = await supabase
+      .from('menu_items')
+      .update({ image: publicUrl })
+      .eq('id', item.id)
+      .select()
+      .single();
+    if (updErr) throw updErr;
+
+    res.json(updated);
+  })
+);
+
+router.post(
+  '/upload-image',
+  requireAdmin,
+  imageUpload.single('image'),
+  asyncHandler(async (req, res) => {
+    if (!req.file) return res.status(400).json({ error: 'Imagen requerida' });
+    const ext = path.extname(req.file.originalname).toLowerCase() || '.png';
+    const name = `${Date.now()}-${crypto.randomBytes(6).toString('hex')}${ext}`;
+
+    try {
+      const url = await uploadImage(name, req.file.buffer, req.file.mimetype);
+      return res.json({ url });
+    } catch (err) {
+      console.warn('[SUPABASE] Fallback a almacenamiento local:', err.message);
+      fs.mkdirSync(uploadsDir, { recursive: true });
+      fs.writeFileSync(path.join(uploadsDir, name), req.file.buffer);
+      return res.json({ url: `/uploads/${name}` });
+    }
+  })
+);
+
+router.post(
+  '/import-excel',
+  requireAdmin,
+  excelUpload.single('file'),
+  asyncHandler(async (req, res) => {
+    if (!req.file) return res.status(400).json({ error: 'Archivo requerido' });
+    const wb = XLSX.read(req.file.buffer, { type: 'buffer' });
+    const sheet = wb.Sheets[wb.SheetNames[0]];
+    const raw = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: false, defval: '' });
+    const rows = (raw || []).filter((r) => r.some((c) => String(c ?? '').trim() !== ''));
+
+    const isHeaderRow = (r) => {
+      const c0 = String(r[0] ?? '').toLowerCase().trim();
+      const c1 = String(r[1] ?? '').toLowerCase().trim();
+      return (
+        /(titul|title|nombre|name|platillo|producto|precio|price)/.test(c0) ||
+        /(precio|price|costo|monto)/.test(c1)
+      );
+    };
+
+    const dataRows = rows.length > 0 && isHeaderRow(rows[0]) ? rows.slice(1) : rows;
+
+    const parsePrice = (value) => {
+      let s = String(value ?? '').replace(/[^0-9.,-]/g, '').trim();
+      if (!s) return 0;
+      let negative = false;
+      if (s.startsWith('-')) {
+        negative = true;
+        s = s.slice(1);
+      }
+      const hasComma = s.includes(',');
+      const hasDot = s.includes('.');
+      let num;
+      if (hasComma && hasDot) {
+        if (s.lastIndexOf(',') > s.lastIndexOf('.')) num = parseFloat(s.replace(/\./g, '').replace(',', '.'));
+        else num = parseFloat(s.replace(/,/g, ''));
+      } else if (hasComma) {
+        num = parseFloat(s.replace(',', '.'));
+      } else {
+        num = parseFloat(s);
+      }
+      if (Number.isNaN(num)) return 0;
+      return Math.round((negative ? -num : num) * 100) / 100;
+    };
+
+    const toInsert = [];
+    for (const row of dataRows) {
+      const title = String(row[0] ?? '').trim();
+      if (!title) continue;
+      toInsert.push({
+        title,
+        price: parsePrice(row[1]),
+        category: String(row[2] ?? '').trim() || 'General',
+        description: String(row[3] ?? '').trim(),
+        image: '',
+      });
+    }
+
+    if (toInsert.length > 0) {
+      const { error } = await supabase.from('menu_items').insert(toInsert);
+      if (error) throw error;
+    }
+    res.json({ ok: true, imported: toInsert.length, skipped: dataRows.length - toInsert.length });
+  })
+);
+
+export default router;

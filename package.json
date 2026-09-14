@@ -1,0 +1,16 @@
+{
+  "name": "fidelizacion-app",
+  "private": true,
+  "version": "1.0.0",
+  "description": "App de fidelización: menú digital editable + dashboard (clientes, pedidos, configuración de color)",
+  "scripts": {
+    "dev": "concurrently -n server,client -c green,cyan \"npm run dev --prefix server\" \"npm run dev --prefix client\"",
+    "dev:server": "npm run dev --prefix server",
+    "dev:client": "npm run dev --prefix client",
+    "install-all": "npm install && npm install --prefix server && npm install --prefix client",
+    "build": "npm run build --prefix client"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
