@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import {
+  BadgePercent,
   ChevronDown,
   ChevronLeft,
   ClipboardList,
@@ -23,6 +24,7 @@ const NAV = [
   { to: '/dashboard/menu', label: 'Menú', icon: UtensilsCrossed },
   { to: '/dashboard/clientes', label: 'Clientes', icon: Users },
   { to: '/dashboard/pedidos', label: 'Pedidos', icon: ClipboardList },
+  { to: '/dashboard/cupones', label: 'Cupones', icon: BadgePercent },
   { to: '/dashboard/configuracion', label: 'Configuración', icon: SettingsIcon },
 ];
 
