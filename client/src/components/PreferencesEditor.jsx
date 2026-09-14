@@ -292,9 +292,6 @@ export default function PreferencesEditor({ value, onChange }) {
 
   const set = (patch) => onChange({ ...prefs, ...patch });
 
-  const toggleMulti = (key, item) =>
-    set({ [key]: prefs[key].includes(item) ? prefs[key].filter((x) => x !== item) : [...prefs[key], item] });
-
   const setSingle = (key, item) => set({ [key]: prefs[key] === item ? '' : item });
 
   return (
@@ -330,20 +327,37 @@ export default function PreferencesEditor({ value, onChange }) {
             </div>
 
             <div className="mt-4 flex flex-wrap gap-2.5">
-              {cat.options.map((opt) => (
-                <OptionChip
-                  key={opt.value}
-                  option={opt}
-                  active={cat.single ? prefs[cat.key] === opt.value : prefs[cat.key].includes(opt.value)}
-                  onClick={() => (cat.single ? setSingle(cat.key, opt.value) : toggleMulti(cat.key, opt.value))}
-                />
-              ))}
+              {cat.options.map((opt) => {
+                const base = cat.single ? [] : prefs[cat.key].filter((x) => x !== cat.none.value);
+                const toggle = () => {
+                  if (cat.single) return setSingle(cat.key, opt.value);
+                  if (base.includes(opt.value)) {
+                    set({ [cat.key]: base.filter((x) => x !== opt.value) });
+                  } else {
+                    set({ [cat.key]: [...base, opt.value] });
+                  }
+                };
+                return (
+                  <OptionChip
+                    key={opt.value}
+                    option={opt}
+                    active={cat.single ? prefs[cat.key] === opt.value : prefs[cat.key].includes(opt.value)}
+                    onClick={toggle}
+                  />
+                );
+              })}
               <OptionChip
                 key="none"
                 none
                 option={{ value: cat.none.value, label: cat.none.label, icon: CircleOff }}
-                active={cat.single ? prefs[cat.key] === cat.none.value : prefs[cat.key].length === 0}
-                onClick={() => (cat.single ? setSingle(cat.key, cat.none.value) : set({ [cat.key]: [] }))}
+                active={
+                  cat.single
+                    ? prefs[cat.key] === cat.none.value
+                    : prefs[cat.key].length === 0 || prefs[cat.key].includes(cat.none.value)
+                }
+                onClick={() =>
+                  cat.single ? setSingle(cat.key, cat.none.value) : set({ [cat.key]: [cat.none.value] })
+                }
               />
             </div>
           </div>
@@ -386,15 +400,15 @@ export default function PreferencesEditor({ value, onChange }) {
 export function profileProgress({ name = '', phone = '', email = '', preferences = {} } = {}) {
   const prefs = {
     diet: [], allergies: [], religions: [], toppings: [], packaging: [], alerts: [],
-    milk: '', sweetener: '', coffee: '', pickup: '', payment: '', birthday: '', schedule: '',
+    milk: '', sweetener: '', coffee: '', pickup: '', payment: '',
     ...(preferences || {}),
   };
   const fields = [Boolean(name), Boolean(phone), Boolean(email)];
   for (const cat of CATS) {
     const v = prefs[cat.key];
-    fields.push(Boolean(cat.single ? v : v && v.length > 0));
+    if (cat.single) fields.push(Boolean(v));
+    else fields.push(Boolean(v && v.length > 0));
   }
-  for (const f of TEXT_FIELDS) fields.push(Boolean(prefs[f.key]));
   const done = fields.filter(Boolean).length;
   const total = fields.length;
   return { done, total, pct: Math.round((done / total) * 100) };
