@@ -27,6 +27,7 @@ import { useAuth } from '../context/AuthContext.jsx';
 import { useTheme } from '../context/ThemeContext.jsx';
 import { EmptyState, Modal, Spinner, toast } from '../components/ui.jsx';
 import CouponCard from '../components/CouponCard.jsx';
+import AdminSummary from '../components/AdminSummary.jsx';
 import { formatWhen, notificationMeta } from '../lib/notifications.js';
 
 export default function Profile() {
@@ -300,31 +301,35 @@ export default function Profile() {
         </section>
         )}
 
-        <section>
-          <h2 className="mb-3 flex items-center gap-2 text-lg font-extrabold text-ink">
-            <Gift size={20} className="text-primary-strong" />
-            Mis cupones activos
-          </h2>
-          {activeCoupons.length === 0 ? (
-            <EmptyState
-              icon={BadgePercent}
-              title="Todavía no tenés cupones"
-              subtitle="Sumá compras con tu QR y vas ganando descuentos."
-            />
-          ) : (
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              {activeCoupons.map((c) => (
-                <CouponCard
-                  key={c.id}
-                  coupon={c}
-                  currency={settings.currency}
-                  onUse={markUsed}
-                  using={redeeming === c.id}
-                />
-              ))}
-            </div>
-          )}
-        </section>
+        {isCliente ? (
+          <section>
+            <h2 className="mb-3 flex items-center gap-2 text-lg font-extrabold text-ink">
+              <Gift size={20} className="text-primary-strong" />
+              Mis cupones activos
+            </h2>
+            {activeCoupons.length === 0 ? (
+              <EmptyState
+                icon={BadgePercent}
+                title="Todavía no tenés cupones"
+                subtitle="Sumá compras con tu QR y vas ganando descuentos."
+              />
+            ) : (
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                {activeCoupons.map((c) => (
+                  <CouponCard
+                    key={c.id}
+                    coupon={c}
+                    currency={settings.currency}
+                    onUse={markUsed}
+                    using={redeeming === c.id}
+                  />
+                ))}
+              </div>
+            )}
+          </section>
+        ) : (
+          <AdminSummary />
+        )}
 
         <section>
           <div className="mb-3 flex items-center justify-between gap-2">

@@ -126,6 +126,65 @@ router.get(
   })
 );
 
+// Resumen para el perfil del admin: por cliente, cupones activos, puntos y últimas compras
+router.get(
+  '/summary',
+  requireAdmin,
+  asyncHandler(async (_req, res) => {
+    const [usersRes, couponsRes, ordersRes] = await Promise.all([
+      supabase
+        .from('users')
+        .select('id, name, email, phone, image, qr_code')
+        .eq('role', 'cliente')
+        .order('created_at', { ascending: false }),
+      supabase
+        .from('coupons')
+        .select('id, user_id, code, type, value, description, milestone, status')
+        .eq('status', 'activo'),
+      supabase
+        .from('orders')
+        .select('user_id, status, total, created_at')
+        .in('status', ['completado', 'entregado'])
+        .order('created_at', { ascending: false }),
+    ]);
+    if (usersRes.error) throw usersRes.error;
+    if (couponsRes.error) throw couponsRes.error;
+    if (ordersRes.error) throw ordersRes.error;
+
+    const couponsByUser = {};
+    for (const c of couponsRes.data || []) {
+      (couponsByUser[c.user_id] = couponsByUser[c.user_id] || []).push(c);
+    }
+
+    const ordersByUser = {};
+    for (const o of ordersRes.data || []) {
+      (ordersByUser[o.user_id] = ordersByUser[o.user_id] || []).push(o);
+    }
+
+    res.json(
+      (usersRes.data || []).map((u) => {
+        const orders = ordersByUser[u.id] || [];
+        return {
+          id: u.id,
+          name: u.name,
+          email: u.email,
+          phone: u.phone,
+          image: u.image,
+          qr_code: u.qr_code,
+          point: orders.length,
+          couponsActive: couponsByUser[u.id] || [],
+          recentOrders: orders.slice(0, 5).map((o) => ({
+            id: o.id,
+            total: o.total,
+            status: o.status,
+            created_at: o.created_at,
+          })),
+        };
+      })
+    );
+  })
+);
+
 // Busca un usuario por su código QR (para el lector del admin)
 router.post(
   '/scan',
