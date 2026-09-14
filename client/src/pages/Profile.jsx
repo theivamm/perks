@@ -21,7 +21,11 @@ import { useTheme } from '../context/ThemeContext.jsx';
 import { EmptyState, Spinner, toast } from '../components/ui.jsx';
 import CouponCard from '../components/CouponCard.jsx';
 import RewardProgress from '../components/RewardProgress.jsx';
-import PreferencesEditor, { prefsSummary, profileProgress } from '../components/PreferencesEditor.jsx';
+import PreferencesEditor, {
+  normalizeEmptyPreferences,
+  prefsSummary,
+  profileProgress,
+} from '../components/PreferencesEditor.jsx';
 
 export default function Profile() {
   const { user, updateUser } = useAuth();
@@ -75,7 +79,10 @@ export default function Profile() {
     e.preventDefault();
     setSaving(true);
     try {
-      const res = await api('/api/profile/me', { method: 'PUT', body: form });
+      const res = await api('/api/profile/me', {
+        method: 'PUT',
+        body: { ...form, preferences: normalizeEmptyPreferences(form.preferences) },
+      });
       updateUser(res.user);
       setData((d) => ({ ...d, user: res.user }));
       setEditing(false);

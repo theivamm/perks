@@ -397,6 +397,19 @@ export default function PreferencesEditor({ value, onChange }) {
   );
 }
 
+export function normalizeEmptyPreferences(preferences = {}) {
+  const prefs = { ...(preferences || {}) };
+  for (const cat of CATS) {
+    const v = prefs[cat.key];
+    if (cat.single) {
+      if (v === undefined || v === null || v === '') prefs[cat.key] = cat.none.value;
+    } else if (!Array.isArray(v) || v.length === 0) {
+      prefs[cat.key] = [cat.none.value];
+    }
+  }
+  return prefs;
+}
+
 export function profileProgress({ name = '', phone = '', email = '', preferences = {} } = {}) {
   const prefs = {
     diet: [], allergies: [], religions: [], toppings: [], packaging: [], alerts: [],
