@@ -1,28 +1,55 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   ChefHat,
+  ChevronDown,
   LogIn,
   LogOut,
   Moon,
   ScrollText,
+  Settings as SettingsIcon,
   ShoppingCart,
   Sun,
   User as UserIcon,
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
+
+function initials(name = '') {
+  return name
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((w) => w.charAt(0).toUpperCase())
+    .join('');
+}
 
 export default function Navbar({ cartCount, onCartOpen }) {
   const { settings, toggleTheme } = useTheme();
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const [scrolled, setScrolled] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef(null);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 10);
     window.addEventListener('scroll', onScroll);
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
+
+  useEffect(() => {
+    const onClickOutside = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpen(false);
+    };
+    document.addEventListener('mousedown', onClickOutside);
+    return () => document.removeEventListener('mousedown', onClickOutside);
+  }, []);
+
+  const go = (path) => () => {
+    setMenuOpen(false);
+    navigate(path);
+  };
 
   return (
     <header
@@ -33,14 +60,19 @@ export default function Navbar({ cartCount, onCartOpen }) {
       }`}
     >
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
-        <Link to="/" className="flex items-center gap-2.5 font-extrabold text-ink">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary-strong text-primary-contrast shadow-glow">
-            <ChefHat size={20} />
-          </div>
-          <span className="hidden sm:block">
-            Fidelización <span className="text-primary-strong">App</span>
-          </span>
-        </Link>
+        <div className="flex items-center gap-2.5">
+          <button className="btn-icon" onClick={toggleTheme} aria-label="Cambiar tema">
+            {settings.theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+          </button>
+          <Link to="/" className="flex items-center gap-2.5 font-extrabold text-ink">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary-strong text-primary-contrast shadow-glow">
+              <ChefHat size={20} />
+            </div>
+            <span className="hidden sm:block">
+              Fidelización <span className="text-primary-strong">App</span>
+            </span>
+          </Link>
+        </div>
 
         <nav className="flex items-center gap-1.5">
           <a
@@ -50,18 +82,69 @@ export default function Navbar({ cartCount, onCartOpen }) {
             <ScrollText size={16} />
             Menú
           </a>
-          <button className="btn-icon" onClick={toggleTheme} aria-label="Cambiar tema">
-            {settings.theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
-          </button>
+
           {user && (
-            <Link
-              to={user.role === 'admin' ? '/dashboard' : '/perfil'}
-              className="inline-flex max-w-40 items-center gap-1.5 rounded-full bg-primary-soft px-3 py-1.5 text-xs font-bold text-primary-strong transition-colors hover:bg-primary-soft/70"
-            >
-              <UserIcon size={14} />
-              <span className="truncate">{user.name}</span>
-            </Link>
+            <div className="relative" ref={menuRef}>
+              <button
+                className="flex items-center gap-2 rounded-full border border-line bg-surface px-2 py-1.5 transition-colors hover:bg-surface-alt"
+                onClick={() => setMenuOpen((o) => !o)}
+                aria-label="Menú de usuario"
+              >
+                {user.image ? (
+                  <img src={user.image} alt={user.name} className="h-8 w-8 rounded-full object-cover" />
+                ) : (
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary-strong text-xs font-extrabold text-primary-contrast">
+                    {initials(user.name)}
+                  </div>
+                )}
+                <span className="hidden max-w-32 truncate text-sm font-bold text-ink sm:block">
+                  {user.name}
+                </span>
+                <ChevronDown
+                  size={14}
+                  className={`hidden text-ink-muted transition-transform sm:block ${menuOpen ? 'rotate-180' : ''}`}
+                />
+              </button>
+
+              {menuOpen && (
+                <div className="absolute right-0 top-full z-50 mt-2 w-60 overflow-hidden rounded-2xl border border-line bg-surface shadow-xl">
+                  <div className="border-b border-line px-4 py-3">
+                    <p className="truncate text-sm font-extrabold text-ink">{user.name}</p>
+                    <p className="truncate text-xs text-ink-muted">{user.email}</p>
+                  </div>
+                  <div className="p-1.5">
+                    <button
+                      className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-ink transition-colors hover:bg-surface-alt"
+                      onClick={go('/perfil')}
+                    >
+                      <UserIcon size={15} />
+                      Mi perfil
+                    </button>
+                    {user.role === 'admin' && (
+                      <button
+                        className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-ink transition-colors hover:bg-surface-alt"
+                        onClick={go('/dashboard')}
+                      >
+                        <SettingsIcon size={15} />
+                        Configuración
+                      </button>
+                    )}
+                    <button
+                      className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-red-500 transition-colors hover:bg-red-500/10"
+                      onClick={() => {
+                        setMenuOpen(false);
+                        logout();
+                      }}
+                    >
+                      <LogOut size={15} />
+                      Salir
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           )}
+
           {!user && (
             <Link
               to="/login"
@@ -71,15 +154,7 @@ export default function Navbar({ cartCount, onCartOpen }) {
               <span className="hidden sm:inline">Iniciar sesión</span>
             </Link>
           )}
-          {user && (
-            <button
-              className="inline-flex items-center gap-1.5 rounded-xl border border-line px-3 py-1.5 text-sm font-semibold text-ink-muted transition-colors hover:bg-surface-alt hover:text-ink"
-              onClick={logout}
-            >
-              <LogOut size={15} />
-              <span className="hidden sm:inline">Salir</span>
-            </button>
-          )}
+
           <button
             className="btn-primary relative"
             onClick={onCartOpen}
