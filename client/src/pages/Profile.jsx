@@ -268,11 +268,21 @@ export default function Profile() {
           <p className="text-sm text-ink-muted">Mostrá este código al pagar para sumar tus compras y ganar premios.</p>
 
           <div className="mx-auto mt-5 w-fit rounded-3xl border border-line bg-white p-4 shadow-sm">
-            {qrImg ? (
-              <img src={qrImg} alt={`Código QR ${qrCode}`} className="h-52 w-52" />
+            {qrCode ? (
+              qrImg ? (
+                <img src={qrImg} alt={`Código QR ${qrCode}`} className="h-52 w-52" />
+              ) : (
+                <div className="flex h-52 w-52 items-center justify-center text-sm font-bold text-ink-muted">
+                  <Loader2 className="animate-spin" size={22} />
+                </div>
+              )
             ) : (
-              <div className="flex h-52 w-52 items-center justify-center text-sm font-bold text-ink-muted">
-                <Loader2 className="animate-spin" size={22} />
+              <div className="flex h-52 w-52 flex-col items-center justify-center gap-3 p-4 text-center">
+                <QrCode size={26} className="text-ink-muted" />
+                <p className="text-sm font-bold text-ink-muted">No se pudo generar tu código QR</p>
+                <button className="btn-ghost" onClick={load}>
+                  Reintentar
+                </button>
               </div>
             )}
           </div>

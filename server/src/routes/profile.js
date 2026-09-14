@@ -31,7 +31,12 @@ router.get(
   asyncHandler(async (req, res) => {
     const user = await selectUser(req.user.id);
     if (!user) return res.status(404).json({ error: 'Usuario no encontrado. Volvé a iniciar sesión.' });
-    if (!user.qr_code) user.qr_code = await ensureQrCode(user.id);
+    if (!user.qr_code) {
+      user.qr_code = await ensureQrCode(user.id);
+      if (!user.qr_code) {
+        console.warn('[QR] No se pudo generar el QR para el usuario', user.id);
+      }
+    }
 
     const [ordersRes, couponsRes] = await Promise.all([
       supabase
