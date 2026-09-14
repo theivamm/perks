@@ -403,15 +403,22 @@ export function profileProgress({ name = '', phone = '', email = '', preferences
     milk: '', sweetener: '', coffee: '', pickup: '', payment: '',
     ...(preferences || {}),
   };
-  const fields = [Boolean(name), Boolean(phone), Boolean(email)];
-  for (const cat of CATS) {
-    const v = prefs[cat.key];
-    if (cat.single) fields.push(Boolean(v));
-    else fields.push(Boolean(v && v.length > 0));
-  }
-  const done = fields.filter(Boolean).length;
-  const total = fields.length;
-  return { done, total, pct: Math.round((done / total) * 100) };
+  const entries = [
+    { label: 'Nombre', filled: Boolean(name) },
+    { label: 'Teléfono', filled: Boolean(phone) },
+    { label: 'Email', filled: Boolean(email) },
+    ...CATS.map((cat) => {
+      const v = prefs[cat.key];
+      return {
+        label: cat.title,
+        filled: cat.single ? Boolean(v) : Boolean(v && v.length > 0),
+      };
+    }),
+  ];
+  const done = entries.filter((e) => e.filled).length;
+  const total = entries.length;
+  const missing = entries.filter((e) => !e.filled).map((e) => e.label);
+  return { done, total, pct: Math.round((done / total) * 100), missing };
 }
 
 export function prefsSummary(preferences = {}) {

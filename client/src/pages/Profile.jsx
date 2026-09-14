@@ -172,11 +172,17 @@ export default function Profile() {
             )}
           </div>
           {progress.pct < 100 && (
-            <p className="mt-1.5 text-xs font-semibold text-ink-muted">
-              {progress.pct === 0
-                ? 'Empezá por tu nombre, teléfono y preferencias para desbloquear recomendaciones.'
-                : 'Completá la info para que todo llegue exactamente como te gusta.'}
-            </p>
+            <div className="mt-2 flex flex-wrap items-center gap-1.5">
+              <span className="text-xs font-semibold text-ink-muted">Falta:</span>
+              {progress.missing.map((m) => (
+                <span
+                  key={m}
+                  className="rounded-full border border-line bg-surface px-2 py-0.5 text-[11px] font-bold text-ink-muted"
+                >
+                  {m}
+                </span>
+              ))}
+            </div>
           )}
 
           <RewardProgress completed={rewardProgress.completed} rules={rewardProgress.rules} />
