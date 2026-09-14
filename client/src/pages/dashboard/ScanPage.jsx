@@ -47,7 +47,7 @@ export default function ScanPage() {
     try {
       const res = await api('/api/clients/scan', { method: 'POST', body: { qr_code: decodedText.trim() } });
       setLastError('');
-      navigate(`/dashboard/clientes?cliente=${res.client.id}`);
+      navigate(`/dashboard/cliente/${res.client.id}`);
     } catch (err) {
       setLastError(err.message);
       toast(err.message);

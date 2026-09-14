@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import {
   Eye,
   FileSpreadsheet,
-  Gift,
   HelpCircle,
   ImagePlus,
   Leaf,
@@ -11,8 +10,6 @@ import {
   Mail,
   Phone,
   PlusCircle,
-  QrCode,
-  ReceiptText,
   Sparkles,
   Trash2,
   UserPlus,
@@ -21,13 +18,10 @@ import {
   Search,
   ShieldCheck,
 } from 'lucide-react';
-import QRCode from 'qrcode';
-import { api, formatMoney } from '../../api.js';
+import { api } from '../../api.js';
 import { useTheme } from '../../context/ThemeContext.jsx';
 import { EmptyState, Modal, Spinner, toast } from '../../components/ui.jsx';
 import ImageCropper from '../../components/ImageCropper.jsx';
-import RewardProgress from '../../components/RewardProgress.jsx';
-import { formatWhen } from '../../lib/notifications.js';
 
 const EMPTY = { name: '', email: '', phone: '', image: '', preferences: {} };
 
@@ -38,8 +32,7 @@ const PREF_OPTIONS = [
 ];
 
 export default function Clients() {
-  const { settings } = useTheme();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [clients, setClients] = useState([]);
   const [registered, setRegistered] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -51,10 +44,6 @@ export default function Clients() {
   const [showExcelHelp, setShowExcelHelp] = useState(false);
   const [cropSrc, setCropSrc] = useState(null);
   const [form, setForm] = useState(EMPTY);
-  const [detail, setDetail] = useState(null);
-  const [detailLoading, setDetailLoading] = useState(false);
-  const [detailOpen, setDetailOpen] = useState(false);
-  const [qrImg, setQrImg] = useState('');
   const excelRef = ExcelRef(null);
   const imageRef = ExcelRef(null);
 
@@ -73,43 +62,14 @@ export default function Clients() {
       .finally(() => setLoading(false));
   }, []);
 
-  const viewClient = (c) => openDetailById(c.id);
-
-  const openDetailById = async (id) => {
-    setDetailOpen(true);
-    setDetailLoading(true);
-    setDetail(null);
-    setQrImg('');
-    try {
-      const res = await api(`/api/clients/registered/${id}`);
-      setDetail(res);
-      if (res.user?.qr_code) {
-        QRCode.toDataURL(res.user.qr_code, { margin: 1, width: 240, color: { dark: '#1f2937', light: '#ffffff' } })
-          .then(setQrImg)
-          .catch(() => {});
-      }
-      setSearchParams({}, { replace: true });
-    } catch (err) {
-      toast(err.message);
-      setDetailOpen(false);
-    } finally {
-      setDetailLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    const id = searchParams.get('cliente');
-    if (id) openDetailById(id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams]);
+  const viewClient = (c) => navigate(`/dashboard/cliente/${c.id}`);
 
   const recordCompra = async (c) => {
-    if (!confirm(`¿Registrar una compra para "${c.name}"?`)) return;
+    if (!confirm(`¿Sumar 1 compra a "${c.name}"?`)) return;
     try {
       await api(`/api/clients/registered/${c.id}/compras`, { method: 'POST', body: { total: 0 } });
-      toast('Compra registrada');
+      toast('Compra sumada. El cliente ya recibió su notificación.');
       await load();
-      if (detail?.user?.id === c.id) viewClient(detail.user);
     } catch (err) {
       toast(err.message);
     }
@@ -211,7 +171,9 @@ export default function Clients() {
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-extrabold text-ink">Clientes</h1>
-          <p className="text-sm text-ink-muted">Usuarios con cuenta en la app y clientes del local.</p>
+          <p className="text-sm text-ink-muted">
+            Escaneá el QR de un cliente para abrir su perfil y sumar compras.
+          </p>
         </div>
         <div className="flex flex-wrap gap-2">
           <div className="relative">
@@ -286,11 +248,11 @@ export default function Clients() {
         <>
           <h2 className="mb-3 flex items-center gap-2 text-lg font-extrabold text-ink">
             <ShieldCheck size={18} className="text-primary-strong" />
-            Usuarios registrados en la web
+            Usuarios de la app (con QR)
           </h2>
           {reFiltered.length === 0 ? (
             <p className="mb-8 text-sm text-ink-muted">
-              Todavía no hay usuarios registrados. Cuando un cliente se registre o entre con Google, aparece acá.
+              Todavía no hay usuarios registrados. Cuando un cliente se registre o entre con Google, aparece acá con su QR.
             </p>
           ) : (
             <div className="card mb-8 overflow-hidden">
@@ -298,7 +260,7 @@ export default function Clients() {
                 <div className="col-span-4">Cliente</div>
                 <div className="col-span-4">Contacto</div>
                 <div className="col-span-2">Compras</div>
-                <div className="col-span-2">Completadas / Acciones</div>
+                <div className="col-span-2">Acciones</div>
               </div>
               <ul className="divide-y divide-line">
                 {reFiltered.map((c) => (
@@ -319,14 +281,13 @@ export default function Clients() {
                       <span className="badge">{c.orders} compra{c.orders !== 1 && 's'}</span>
                     </div>
                     <div className="col-span-2 flex flex-wrap items-center gap-2 text-xs text-ink-muted">
-                      {c.completed} completada{c.completed !== 1 && 's'}
                       <button
                         className="btn-ghost !px-2 !py-1 !text-xs"
                         onClick={() => recordCompra(c)}
-                        title="Registrar una compra para este cliente"
+                        title="Sumar 1 compra y notificar al cliente"
                       >
                         <PlusCircle size={13} />
-                        Compra
+                        Sumar
                       </button>
                       <button
                         className="btn-ghost !px-2 !py-1 !text-xs"
@@ -492,150 +453,6 @@ export default function Clients() {
       </Modal>
 
       {cropSrc && <ImageCropper src={cropSrc} aspect={1} onSave={uploadImage} onCancel={closeCropper} />}
-
-      <Modal open={detailOpen} onClose={() => setDetailOpen(false)} title="Perfil del cliente" wide>
-        {detailLoading ? (
-          <Spinner label="Cargando perfil..." />
-        ) : detail ? (
-          <div className="space-y-5">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
-                {detail.user.image ? (
-                  <img src={detail.user.image} alt={detail.user.name} className="h-14 w-14 rounded-2xl object-cover shadow-sm" />
-                ) : (
-                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-primary-strong text-lg font-extrabold text-primary-contrast shadow-sm">
-                    {(detail.user.name || '?').charAt(0).toUpperCase()}
-                  </div>
-                )}
-                <div>
-                  <p className="font-extrabold text-ink">{detail.user.name}</p>
-                  <p className="truncate text-sm text-ink-muted">{detail.user.email}</p>
-                  {detail.user.phone && <p className="text-sm text-ink-muted">{detail.user.phone}</p>}
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                {[['vegetarian', 'Veg', Leaf], ['glutenFree', 'Sin TACC', Wheat], ['vegan', 'Vegano', Sparkles]].map(
-                  ([key, label, Icon]) =>
-                    detail.user.preferences?.[key] && (
-                      <span key={key} className="inline-flex items-center gap-1 rounded-full bg-primary-soft px-2 py-0.5 text-[10px] font-bold text-primary-strong">
-                        <Icon size={11} />
-                        {label}
-                      </span>
-                    )
-                )}
-              </div>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-4 rounded-xl border border-line bg-surface p-4">
-              <div className="flex items-center gap-3">
-                {qrImg ? (
-                  <img src={qrImg} alt={`QR ${detail.user.qr_code}`} className="h-20 w-20 rounded-lg bg-white p-1" />
-                ) : (
-                  <div className="flex h-20 w-20 items-center justify-center rounded-lg bg-surface-alt text-ink-muted">
-                    <QrCode size={22} />
-                  </div>
-                )}
-                <div>
-                  <p className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-wide text-ink-muted">
-                    <QrCode size={12} />
-                    Código QR
-                  </p>
-                  <p className="font-mono text-sm font-extrabold tracking-wider text-ink">
-                    {detail.user.qr_code || '—'}
-                  </p>
-                  <p className="mt-0.5 text-[11px] text-ink-muted">Escanealo en el local para registrar compras.</p>
-                </div>
-              </div>
-              <button className="btn-primary ml-auto" onClick={() => recordCompra(detail.user)}>
-                <PlusCircle size={16} />
-                Agregar compra
-              </button>
-            </div>
-
-            <div className="grid grid-cols-3 gap-3 text-sm">
-              <div className="rounded-xl bg-surface-alt p-3 text-center">
-                <p className="text-xl font-extrabold text-ink">{detail.stats.totalOrders}</p>
-                <p className="text-[11px] text-ink-muted">Compras</p>
-              </div>
-              <div className="rounded-xl bg-surface-alt p-3 text-center">
-                <p className="text-xl font-extrabold text-ink">{detail.stats.completedOrders}</p>
-                <p className="text-[11px] text-ink-muted">Completadas</p>
-              </div>
-              <div className="rounded-xl bg-surface-alt p-3 text-center">
-                <p className="text-xl font-extrabold text-primary-strong">
-                  {formatMoney(detail.stats.totalSpent, settings.currency)}
-                </p>
-                <p className="text-[11px] text-ink-muted">Total acumulado</p>
-              </div>
-            </div>
-
-            <RewardProgress completed={detail.rewardProgress.completed} rules={detail.rewardProgress.rules} />
-
-            <div>
-              <h4 className="mb-2 flex items-center gap-2 text-sm font-extrabold text-ink">
-                <Gift size={15} className="text-primary-strong" />
-                Cupones ({detail.coupons.length})
-              </h4>
-              {detail.coupons.length === 0 ? (
-                <p className="text-sm text-ink-muted">Todavía no ganó cupones.</p>
-              ) : (
-                <ul className="max-h-44 space-y-1.5 overflow-y-auto">
-                  {detail.coupons.map((c) => (
-                    <li key={c.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-line bg-surface px-3 py-2">
-                      <div className="min-w-0">
-                        <p className="truncate text-xs font-bold text-ink">
-                          {c.type === 'descuento' ? `${c.value}% OFF` : c.type === 'regalo' ? 'Regalo' : `${formatMoney(c.value, settings.currency)}`}
-                          {' · '}
-                          {c.description || 'premio'}
-                        </p>
-                        <p className="text-[11px] text-ink-muted">
-                          Pedido #{c.milestone} · {c.code}
-                        </p>
-                      </div>
-                      <span
-                        className={`rounded-full px-2 py-0.5 text-[10px] font-bold capitalize ${
-                          c.status === 'activo' ? 'bg-green-500/15 text-green-600' : 'bg-surface-alt text-ink-muted'
-                        }`}
-                      >
-                        {c.status}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-
-            <div>
-              <h4 className="mb-2 flex items-center gap-2 text-sm font-extrabold text-ink">
-                <ReceiptText size={15} className="text-primary-strong" />
-                Últimas compras
-              </h4>
-              {detail.orders.length === 0 ? (
-                <p className="text-sm text-ink-muted">Aún no registró compras.</p>
-              ) : (
-                <ul className="max-h-44 space-y-1.5 overflow-y-auto">
-                  {detail.orders.slice(0, 8).map((o) => (
-                    <li key={o.id} className="flex items-center justify-between gap-2 rounded-xl border border-line bg-surface px-3 py-2 text-sm">
-                      <div className="min-w-0">
-                        <p className="flex items-center gap-1.5 text-xs text-ink-muted">
-                          {formatWhen(o.created_at)}
-                          {o.clients?.name && <span className="truncate">· {o.clients.name}</span>}
-                        </p>
-                        {o.items?.map((it) => `${it.qty}× ${it.title}`).join(' · ')}
-                      </div>
-                      <span className="shrink-0 font-extrabold text-primary-strong">
-                        {formatMoney(o.total, settings.currency)}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          </div>
-        ) : (
-          <p className="text-sm text-ink-muted">No se pudo cargar el perfil.</p>
-        )}
-      </Modal>
     </div>
   );
 }

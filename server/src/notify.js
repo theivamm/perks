@@ -34,12 +34,23 @@ export async function notifyAdmins(payload) {
   return insertNotifications(rows);
 }
 
-// Premios al registrar una compra: cupones ganados y/o progreso hacia el próximo premio.
+// Notifica al cliente que se le sumó una compra y premios/progreso según las reglas.
 export async function notifyRewardsForCompra(userId, compra = {}) {
   if (!userId) return;
-  const generated = (await applyRewardRules(userId)) || [];
   const order = compra || {};
   const orderId = order.id || null;
+
+  const n = await countCompletedOrders(userId);
+  await notifyUser(userId, {
+    type: 'purchase_added',
+    title: '¡Compra registrada!',
+    body: `Se sumó 1 compra a tu cuenta (compra #${n}). Seguí acumulando para tus premios.`,
+    icon: 'shopping-bag',
+    link: '/perfil',
+    data: { order_id: orderId, completed: n },
+  });
+
+  const generated = (await applyRewardRules(userId)) || [];
 
   if (generated.length > 0) {
     for (const c of generated) {
@@ -65,7 +76,6 @@ export async function notifyRewardsForCompra(userId, compra = {}) {
       .from('reward_rules')
       .select('id, every_orders, name')
       .eq('active', true);
-    const n = await countCompletedOrders(userId);
     const next = await nextMilestone(rules || [], n);
     if (next) {
       const falta = next.next - n;

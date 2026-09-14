@@ -50,6 +50,7 @@ export default function Profile() {
   const [notifications, setNotifications] = useState([]);
 
   const me = data?.user;
+  const isCliente = me?.role === 'cliente';
 
   const qrCode = useMemo(() => String(me?.qr_code || '').trim(), [me]);
 
@@ -260,7 +261,8 @@ export default function Profile() {
       </header>
 
       <main className="mx-auto max-w-3xl space-y-6 px-4 py-8">
-        <section className="card p-6 text-center">
+        {isCliente && (
+          <section className="card p-6 text-center">
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-primary-strong text-primary-contrast shadow-glow">
             <QrCode size={26} />
           </div>
@@ -296,6 +298,7 @@ export default function Profile() {
             {copied ? <CheckCircleMini /> : <Copy size={14} />}
           </button>
         </section>
+        )}
 
         <section>
           <h2 className="mb-3 flex items-center gap-2 text-lg font-extrabold text-ink">
