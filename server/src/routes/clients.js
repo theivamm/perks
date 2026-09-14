@@ -134,7 +134,7 @@ router.get(
     const [usersRes, couponsRes, ordersRes] = await Promise.all([
       supabase
         .from('users')
-        .select('id, name, email, phone, image, qr_code')
+        .select('id, name, email, phone, qr_code')
         .eq('role', 'cliente')
         .order('created_at', { ascending: false }),
       supabase
@@ -169,7 +169,7 @@ router.get(
           name: u.name,
           email: u.email,
           phone: u.phone,
-          image: u.image,
+          image: u.image || '',
           qr_code: u.qr_code,
           point: orders.length,
           couponsActive: couponsByUser[u.id] || [],
@@ -196,7 +196,7 @@ router.post(
 
     let { data: user, error } = await supabase
       .from('users')
-      .select('id, name, last_name, email, phone, image, qr_code, created_at')
+      .select('id, name, email, phone, qr_code, created_at')
       .eq('qr_code', code)
       .eq('role', 'cliente')
       .maybeSingle();
@@ -206,7 +206,7 @@ router.post(
       // Compatibilidad: también acepta el id del usuario como texto
       const { data: byId } = await supabase
         .from('users')
-        .select('id, name, last_name, email, phone, image, qr_code, created_at')
+        .select('id, name, email, phone, qr_code, created_at')
         .eq('id', code)
         .eq('role', 'cliente')
         .maybeSingle();
