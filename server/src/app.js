@@ -11,6 +11,7 @@ import settingsRoutes from './routes/settings.js';
 import profileRoutes from './routes/profile.js';
 import couponsRoutes from './routes/coupons.js';
 import rewardsRoutes from './routes/rewards.js';
+import notificationsRoutes from './routes/notifications.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -27,6 +28,7 @@ app.use('/api/settings', settingsRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/coupons', couponsRoutes);
 app.use('/api/rewards', rewardsRoutes);
+app.use('/api/notifications', notificationsRoutes);
 
 app.get('/api/health', (_req, res) => {
   res.json({ ok: true });

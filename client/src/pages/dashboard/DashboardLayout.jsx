@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { useTheme } from '../../context/ThemeContext.jsx';
+import NotificationsBell from '../../components/NotificationsBell.jsx';
 
 const NAV = [
   { to: '/dashboard/menu', label: 'Menú', icon: UtensilsCrossed },
@@ -139,7 +140,9 @@ export default function DashboardLayout() {
             </span>
           </div>
 
-          <div className="relative" ref={menuRef}>
+          <div className="flex items-center gap-1.5">
+            <NotificationsBell />
+            <div className="relative" ref={menuRef}>
             <button
               className="flex items-center gap-2 rounded-full border border-line bg-surface px-2 py-1.5 transition-colors hover:bg-surface-alt"
               onClick={() => setMenuOpen((o) => !o)}
@@ -192,6 +195,7 @@ export default function DashboardLayout() {
                 </div>
               </div>
             )}
+            </div>
           </div>
         </header>
 

@@ -4,6 +4,7 @@ import Home from './pages/Home.jsx';
 import Login from './pages/Login.jsx';
 import SignUp from './pages/SignUp.jsx';
 import Profile from './pages/Profile.jsx';
+import NotificationsPage from './pages/NotificationsPage.jsx';
 import DashboardLayout from './pages/dashboard/DashboardLayout.jsx';
 import MenuManager from './pages/dashboard/MenuManager.jsx';
 import Clients from './pages/dashboard/Clients.jsx';
@@ -35,6 +36,14 @@ export default function App() {
         element={
           <RequireAuth>
             <Profile />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/notificaciones"
+        element={
+          <RequireAuth>
+            <NotificationsPage />
           </RequireAuth>
         }
       />

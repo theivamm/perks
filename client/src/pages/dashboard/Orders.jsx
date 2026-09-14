@@ -8,6 +8,7 @@ const STATUS = [
   { value: 'nuevo', label: 'Nuevo', color: 'bg-blue-500' },
   { value: 'en preparación', label: 'En preparación', color: 'bg-amber-500' },
   { value: 'listo', label: 'Listo', color: 'bg-green-500' },
+  { value: 'en camino', label: 'En camino', color: 'bg-sky-500' },
   { value: 'entregado', label: 'Entregado', color: 'bg-primary' },
   { value: 'cancelado', label: 'Cancelado', color: 'bg-red-500' },
 ];

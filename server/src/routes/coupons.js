@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { supabase } from '../supabase.js';
 import { requireAdmin, requireAuth } from '../middleware/auth.js';
 import { asyncHandler } from '../asyncHandler.js';
+import { notifyUser } from '../notify.js';
 
 const router = Router();
 
@@ -33,6 +34,20 @@ router.post(
       .select()
       .single();
     if (error) throw error;
+    if (data) {
+      try {
+        await notifyUser(req.user.id, {
+          type: 'coupon_used',
+          title: 'Cupón canjeado',
+          body: `Usaste tu cupón "${data.description || 'premio'}" (${data.code}). ¡Gracias por tu compra!`,
+          icon: 'badge-check',
+          link: '/perfil',
+          data: { coupon_id: data.id },
+        });
+      } catch (err) {
+        console.warn('[Notificaciones] No se pudo crear:', err.message);
+      }
+    }
     res.json(data);
   })
 );
@@ -64,6 +79,19 @@ router.post(
       .select()
       .single();
     if (upErr) throw upErr;
+
+    try {
+      await notifyUser(data.user_id, {
+        type: 'coupon_used',
+        title: 'Cupón canjeado',
+        body: `Tu cupón "${updated.description || 'premio'}" (${updated.code}) fue canjeado en el local.`,
+        icon: 'badge-check',
+        link: '/perfil',
+        data: { coupon_id: updated.id },
+      });
+    } catch (err) {
+      console.warn('[Notificaciones] No se pudo crear:', err.message);
+    }
 
     res.json(updated);
   })

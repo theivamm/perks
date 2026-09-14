@@ -7,6 +7,7 @@ import { supabase, uploadImage } from '../supabase.js';
 import { requireAdmin } from '../middleware/auth.js';
 import { asyncHandler } from '../asyncHandler.js';
 import { imageUpload, excelUpload, uploadsDir } from '../upload.js';
+import { countCompletedOrders } from '../rewards.js';
 
 const router = Router();
 
@@ -62,6 +63,65 @@ router.get(
         completed: done[u.id] || 0,
       }))
     );
+  })
+);
+
+// Detalle de un cliente registrado para el admin: perfil + pedidos + cupones + progreso
+router.get(
+  '/registered/:id',
+  requireAdmin,
+  asyncHandler(async (req, res) => {
+    const baseFields = 'id, name, last_name, email, phone, image, preferences, created_at';
+    let { data: user, error } = await supabase
+      .from('users')
+      .select(baseFields)
+      .eq('id', req.params.id)
+      .eq('role', 'cliente')
+      .maybeSingle();
+    if (error) {
+      const fallback = await supabase
+        .from('users')
+        .select('id, name, email, phone, preferences, created_at')
+        .eq('id', req.params.id)
+        .eq('role', 'cliente')
+        .maybeSingle();
+      if (fallback.error) throw fallback.error;
+      user = fallback.data;
+    }
+    if (!user) return res.status(404).json({ error: 'Cliente no encontrado' });
+
+    const [ordersRes, couponsRes, rulesRes] = await Promise.all([
+      supabase
+        .from('orders')
+        .select('*, clients(name, phone), order_items(*)')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false }),
+      supabase
+        .from('coupons')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false }),
+      supabase
+        .from('reward_rules')
+        .select('id, name, every_orders, type, value, mode, description')
+        .eq('active', true)
+        .order('every_orders'),
+    ]);
+    if (ordersRes.error) throw ordersRes.error;
+    if (couponsRes.error) throw couponsRes.error;
+    if (rulesRes.error) throw rulesRes.error;
+
+    const completed = await countCompletedOrders(user.id);
+    const orders = ordersRes.data || [];
+    const totalSpent = orders.reduce((sum, o) => sum + (Number(o.total) || 0), 0);
+
+    res.json({
+      user,
+      orders,
+      coupons: couponsRes.data || [],
+      stats: { totalOrders: orders.length, completedOrders: completed, totalSpent },
+      rewardProgress: { completed, rules: rulesRes.data || [] },
+    });
   })
 );
 

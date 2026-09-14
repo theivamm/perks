@@ -14,6 +14,7 @@ import {
 import { Link, useNavigate } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
+import NotificationsBell from './NotificationsBell.jsx';
 
 function initials(name = '') {
   return name
@@ -86,7 +87,9 @@ export default function Navbar({ cartCount, onCartOpen }) {
           </a>
 
           {user && (
-            <div className="relative" ref={menuRef}>
+            <>
+              <NotificationsBell />
+              <div className="relative" ref={menuRef}>
               <button
                 className="flex items-center gap-2 rounded-full border border-line bg-surface px-2 py-1.5 transition-colors hover:bg-surface-alt"
                 onClick={() => setMenuOpen((o) => !o)}
@@ -144,7 +147,8 @@ export default function Navbar({ cartCount, onCartOpen }) {
                   </div>
                 </div>
               )}
-            </div>
+              </div>
+            </>
           )}
 
           {!user && (

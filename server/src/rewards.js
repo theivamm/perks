@@ -57,8 +57,24 @@ export async function applyRewardRules(userId) {
   }
 
   if (toInsert.length > 0) {
-    const { error: e3 } = await supabase.from('coupons').insert(toInsert);
+    const { data: created, error: e3 } = await supabase.from('coupons').insert(toInsert).select();
     if (e3) throw e3;
+    return created || toInsert;
   }
-  return toInsert.length;
+  return toInsert;
+}
+
+// Próximo hito de una regla para el count actualizado (n). Devuelve null si no hay reglas activas.
+export async function nextMilestone(rules, n) {
+  let best = null;
+  for (const rule of rules || []) {
+    const every = Math.max(1, Number(rule.every_orders) || 1);
+    if (n < every) continue;
+    const div = Math.floor(n / every);
+    const next = every * (div + 1);
+    if (!best || next < best.next) {
+      best = { next, rule };
+    }
+  }
+  return best;
 }

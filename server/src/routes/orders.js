@@ -2,11 +2,20 @@ import { Router } from 'express';
 import { supabase } from '../supabase.js';
 import { requireAdmin, requireAuth, optionalAuth } from '../middleware/auth.js';
 import { asyncHandler } from '../asyncHandler.js';
-import { applyRewardRules } from '../rewards.js';
+import { applyRewardRules, countCompletedOrders, nextMilestone } from '../rewards.js';
+import { notifyAdmins, notifyUser } from '../notify.js';
 
 const router = Router();
 
 const DONE_STATUS = ['completado', 'entregado'];
+
+function formatMoney(n) {
+  return `$${Number(n || 0).toFixed(2)}`;
+}
+
+function shortId(id = '') {
+  return String(id).slice(0, 8);
+}
 
 function mapOrder(row) {
   if (!row) return null;
@@ -137,6 +146,37 @@ router.post(
         .eq('id', couponRow.id);
     }
 
+    try {
+      await notifyAdmins({
+        type: 'new_order',
+        title: 'Nuevo pedido recibido',
+        body: `${String(client.name).trim()} hizo un pedido por ${formatMoney(Math.max(0, total - discount))}.`,
+        icon: 'shopping-cart',
+        link: '/dashboard/pedidos',
+        data: { order_id: order.id },
+      });
+
+      if (userId) {
+        const { count } = await supabase
+          .from('coupons')
+          .select('id', { count: 'exact', head: true })
+          .eq('user_id', userId)
+          .eq('status', 'activo');
+        if ((count || 0) > 0) {
+          await notifyUser(userId, {
+            type: 'coupons_available',
+            title: '¡Tenés cupones válidos!',
+            body: `Tenés ${count} cupón(es) disponible(s) para tu próxima compra. ¡Usalos antes de que caduquen!`,
+            icon: 'badge-percent',
+            link: '/perfil',
+            data: { order_id: order.id },
+          });
+        }
+      }
+    } catch (err) {
+      console.warn('[Notificaciones] No se pudieron crear:', err.message);
+    }
+
     res.status(201).json({
       ...order,
       client: cli,
@@ -154,19 +194,27 @@ router.put(
   requireAdmin,
   asyncHandler(async (req, res) => {
     const { status } = req.body || {};
+    const id = req.params.id;
+
+    const { data: before } = await supabase
+      .from('orders')
+      .select('status, user_id')
+      .eq('id', id)
+      .maybeSingle();
+    if (!before) return res.status(404).json({ error: 'Pedido no encontrado' });
+
     const { data, error } = await supabase
       .from('orders')
       .update({ status })
-      .eq('id', req.params.id)
+      .eq('id', id)
       .select('*, clients(*), order_items(*)')
       .single();
     if (error) throw error;
 
-    if (data && DONE_STATUS.includes(status)) {
-      const generated = await applyRewardRules(data.user_id);
-      if (generated > 0) {
-        console.log(`[Premios] ${generated} cupón(es) generado(s) para el usuario ${data.user_id}.`);
-      }
+    try {
+      if (before.status !== status) await notifyOrderStatus(data, status);
+    } catch (err) {
+      console.warn('[Notificaciones] No se pudieron crear:', err.message);
     }
 
     res.json(mapOrder(data));
@@ -182,5 +230,104 @@ router.delete(
     res.json({ ok: true });
   })
 );
+
+// Notificaciones según la transición de estado del pedido
+async function notifyOrderStatus(order, status) {
+  const userId = order.user_id;
+  const clientName = (order.clients && (order.clients.name || '')) || '';
+
+  if (status === 'en camino') {
+    if (userId) {
+      await notifyUser(userId, {
+        type: 'order_shipped',
+        title: '¡Tu pedido está en camino!',
+        body: 'Tu pedido salió en camino. ¡Ya falta poco para que lo tengas!',
+        icon: 'truck',
+        link: '/perfil',
+        data: { order_id: order.id },
+      });
+    }
+    await notifyAdmins({
+      type: 'order_dispatched',
+      title: 'Pedido en camino',
+      body: `El pedido #${shortId(order.id)} de ${clientName || 'cliente'} salió en camino (${formatMoney(order.total)}).`,
+      icon: 'truck',
+      link: '/dashboard/pedidos',
+      data: { order_id: order.id },
+    });
+  }
+
+  if (DONE_STATUS.includes(status)) {
+    if (userId) {
+      await notifyUser(userId, {
+        type: 'order_completed',
+        title: '¡Tu compra se completó!',
+        body: `Tu pedido de ${formatMoney(order.total)} fue completado. ¡Gracias por tu compra!`,
+        icon: 'check-circle',
+        link: '/perfil',
+        data: { order_id: order.id },
+      });
+    }
+    await notifyRewards(userId, order);
+  }
+
+  if (status === 'cancelado') {
+    if (userId) {
+      await notifyUser(userId, {
+        type: 'order_cancelled',
+        title: 'Tu pedido fue cancelado',
+        body: 'El pedido fue cancelado. Si creés que es un error, contactanos.',
+        icon: 'x-circle',
+        link: '/perfil',
+        data: { order_id: order.id },
+      });
+    }
+  }
+}
+
+// Cupones ganados y progreso hacia el próximo premio
+async function notifyRewards(userId, order) {
+  if (!userId) return;
+  const generated = await applyRewardRules(userId) || [];
+
+  if (generated.length > 0) {
+    for (const c of generated) {
+      await notifyUser(userId, {
+        type: 'coupon_won',
+        title: '¡Ganaste un cupón!',
+        body: `Alcanzaste el pedido #${c.milestone}: ${c.description || 'un premio'} (código ${c.code}).`,
+        icon: 'gift',
+        link: '/perfil',
+        data: { coupon_id: c.id, order_id: order.id, milestone: c.milestone },
+      });
+    }
+    await notifyAdmins({
+      type: 'milestone_reached',
+      title: 'Un usuario llegó a un premio',
+      body: `Un cliente completó el pedido #${generated[0].milestone} y ganó ${generated.length > 1 ? `${generated.length} cupones` : 'un cupón'}.`,
+      icon: 'gift',
+      link: '/dashboard/clientes',
+      data: { user_id: userId, order_id: order.id, milestone: generated[0].milestone },
+    });
+  } else {
+    const { data: rules } = await supabase
+      .from('reward_rules')
+      .select('id, every_orders, name')
+      .eq('active', true);
+    const n = await countCompletedOrders(userId);
+    const next = await nextMilestone(rules || [], n);
+    if (next) {
+      const falta = next.next - n;
+      await notifyUser(userId, {
+        type: 'reward_progress',
+        title: '¡Seguís sumando!',
+        body: `Pedido #${n} completado. Te faltan ${falta} pedido(s) para "${next.rule.name}" (pedido #${next.next}).`,
+        icon: 'sparkles',
+        link: '/perfil',
+        data: { order_id: order.id, completed: n, next: next.next },
+      });
+    }
+  }
+}
 
 export default router;

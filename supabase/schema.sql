@@ -124,3 +124,20 @@ create index if not exists idx_coupons_user_status on public.coupons(user_id, st
 -- Clientes de pedido: foto + preferencias estructuradas
 alter table public.clients add column if not exists image text default '';
 alter table public.clients add column if not exists preferences jsonb default '{}'::jsonb;
+
+-- Notificaciones por usuario (cliente y admin). No se eliminan, solo se archivan.
+create table if not exists public.notifications (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.users(id) on delete cascade,
+  type text not null default 'info',      -- new_order | order_shipped | order_completed | order_cancelled | coupon_won | reward_progress | coupons_available | coupon_used | milestone_reached | info
+  title text not null,
+  body text not null default '',
+  icon text default 'bell',               -- nombre de ícono lucide (cliente lo mapea)
+  link text default '',
+  data jsonb default '{}'::jsonb,        -- ids de referencia: order_id, coupon_id, milestone...
+  read boolean not null default false,
+  archived boolean not null default false,
+  created_at timestamptz not null default now()
+);
+create index if not exists idx_notifications_user on public.notifications(user_id, created_at desc);
+create index if not exists idx_notifications_archive on public.notifications(user_id, archived);
