@@ -8,6 +8,7 @@
     "dev:server": "npm run dev --prefix server",
     "dev:client": "npm run dev --prefix client",
     "install-all": "npm install && npm install --prefix server && npm install --prefix client",
+    "postinstall": "npm install --prefix client",
     "build": "npm run build --prefix client"
   },
   "devDependencies": {
