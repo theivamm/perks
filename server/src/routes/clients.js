@@ -225,7 +225,7 @@ router.post(
   '/registered/:id/compras',
   requireAdmin,
   asyncHandler(async (req, res) => {
-    const { total = 0, note = '' } = req.body || {};
+    const { total = 0 } = req.body || {};
     const userId = req.params.id;
 
     const { data: user, error: userErr } = await supabase
@@ -244,7 +244,6 @@ router.post(
         client_id: null,
         status: 'completado',
         total: Math.max(0, Number(total) || 0),
-        note: String(note || '').trim() || null,
       })
       .select()
       .single();
