@@ -61,11 +61,6 @@ export default function Navbar({ cartCount, onCartOpen }) {
     >
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
         <div className="flex items-center gap-2.5">
-          <button className="btn-icon" onClick={toggleTheme} aria-label="Cambiar tema">
-            <span key={settings.theme} className="animate-pop inline-block">
-              {settings.theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
-            </span>
-          </button>
           <Link to="/" className="flex items-center gap-2.5 font-extrabold text-ink">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary-strong text-primary-contrast shadow-glow">
               <ChefHat size={20} />
@@ -77,6 +72,11 @@ export default function Navbar({ cartCount, onCartOpen }) {
         </div>
 
         <nav className="flex items-center gap-1.5">
+          <button className="btn-icon" onClick={toggleTheme} aria-label="Cambiar tema">
+            <span key={settings.theme} className="animate-pop inline-block">
+              {settings.theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+            </span>
+          </button>
           <a
             href="#menu"
             className="hidden items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-semibold text-ink-muted transition-colors hover:bg-surface-alt hover:text-ink sm:inline-flex"

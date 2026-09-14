@@ -1,24 +1,31 @@
-import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
   BadgePercent,
+  Camera,
   CheckCircle2,
+  ChevronDown,
   Coffee,
   Gift,
+  KeyRound,
   Loader2,
+  LogOut,
+  Moon,
   PartyPopper,
   Pencil,
   ReceiptText,
   Save,
   ShoppingBag,
+  Sun,
+  User as UserIcon,
   UserCheck,
   X,
 } from 'lucide-react';
 import { api, formatMoney } from '../api.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useTheme } from '../context/ThemeContext.jsx';
-import { EmptyState, Spinner, toast } from '../components/ui.jsx';
+import { EmptyState, Modal, Spinner, toast } from '../components/ui.jsx';
 import CouponCard from '../components/CouponCard.jsx';
 import RewardProgress from '../components/RewardProgress.jsx';
 import PreferencesEditor, {
@@ -28,15 +35,22 @@ import PreferencesEditor, {
 } from '../components/PreferencesEditor.jsx';
 
 export default function Profile() {
-  const { user, updateUser } = useAuth();
-  const { settings } = useTheme();
+  const { user, updateUser, logout } = useAuth();
+  const { settings, toggleTheme } = useTheme();
+  const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState({ name: '', phone: '', preferences: {} });
+  const [form, setForm] = useState({ name: '', last_name: '', phone: '', email: '', image: '', preferences: {} });
   const [saving, setSaving] = useState(false);
   const [redeeming, setRedeeming] = useState(null);
   const [shownPct, setShownPct] = useState(0);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef(null);
+  const fileRef = useRef(null);
+  const [pwdModal, setPwdModal] = useState(false);
+  const [pwd, setPwd] = useState({ password: '', confirm: '' });
+  const [changingPwd, setChangingPwd] = useState(false);
 
   const progress = data?.user ? profileProgress({ ...data.user }) : null;
 
@@ -55,6 +69,14 @@ export default function Profile() {
     return () => cancelAnimationFrame(raf);
   }, [progress?.pct]);
 
+  useEffect(() => {
+    const onClick = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpen(false);
+    };
+    document.addEventListener('mousedown', onClick);
+    return () => document.removeEventListener('mousedown', onClick);
+  }, []);
+
   const load = () =>
     api('/api/profile/me')
       .then(setData)
@@ -69,10 +91,15 @@ export default function Profile() {
   const startEdit = () => {
     setForm({
       name: user?.name || data?.user?.name || '',
+      last_name: data?.user?.last_name || '',
       phone: data?.user?.phone || '',
+      email: data?.user?.email || '',
+      image: data?.user?.image || '',
       preferences: data?.user?.preferences || {},
     });
+    setMenuOpen(false);
     setEditing(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const save = async (e) => {
@@ -92,6 +119,46 @@ export default function Profile() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const uploadPhoto = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setSaving(true);
+    const fd = new FormData();
+    fd.append('image', file);
+    try {
+      const res = await api('/api/profile/upload-image', { method: 'POST', body: fd });
+      setForm((f) => ({ ...f, image: res.url }));
+      toast('Foto subida. Guardá los cambios para aplicarla.');
+    } catch (err) {
+      toast(err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const changePassword = async (e) => {
+    e.preventDefault();
+    if (pwd.password.length < 6) return toast('La contraseña debe tener al menos 6 caracteres');
+    if (pwd.password !== pwd.confirm) return toast('Las contraseñas no coinciden');
+    setChangingPwd(true);
+    try {
+      await api('/api/profile/change-password', { method: 'POST', body: { password: pwd.password } });
+      toast('Contraseña actualizada');
+      setPwd({ password: '', confirm: '' });
+      setPwdModal(false);
+    } catch (err) {
+      toast(err.message);
+    } finally {
+      setChangingPwd(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    setMenuOpen(false);
+    await logout();
+    navigate('/');
   };
 
   const markUsed = async (coupon) => {
@@ -122,7 +189,66 @@ export default function Profile() {
             Volver al menú
           </Link>
           <span className="text-sm font-bold text-ink">Mi perfil</span>
-          <span className="w-20" />
+          <div className="flex items-center gap-1.5">
+            <button className="btn-icon" onClick={toggleTheme} aria-label="Cambiar tema">
+              <span key={settings.theme} className="animate-pop inline-block">
+                {settings.theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+              </span>
+            </button>
+            <div className="relative" ref={menuRef}>
+              <button
+                className="flex items-center gap-1.5 rounded-full border border-line bg-surface px-2 py-1.5 transition-colors hover:bg-surface-alt"
+                onClick={() => setMenuOpen((o) => !o)}
+                aria-label="Menú de usuario"
+              >
+                {me.image ? (
+                  <img src={me.image} alt={fullName(me)} className="h-8 w-8 rounded-full object-cover" />
+                ) : (
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary-strong text-xs font-extrabold text-primary-contrast">
+                    {initials(me)}
+                  </div>
+                )}
+                <ChevronDown
+                  size={14}
+                  className={`hidden text-ink-muted transition-transform sm:block ${menuOpen ? 'rotate-180' : ''}`}
+                />
+              </button>
+              {menuOpen && (
+                <div className="animate-fade-up absolute right-0 top-full z-50 mt-2 w-60 overflow-hidden rounded-2xl border border-line bg-surface shadow-xl">
+                  <div className="border-b border-line px-4 py-3">
+                    <p className="truncate text-sm font-extrabold text-ink">{fullName(me)}</p>
+                    <p className="truncate text-xs text-ink-muted">{me.email}</p>
+                  </div>
+                  <div className="p-1.5">
+                    <button
+                      className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-semibold text-ink transition-colors hover:bg-surface-alt"
+                      onClick={startEdit}
+                    >
+                      <UserIcon size={15} className="text-ink-muted" />
+                      Editar perfil
+                    </button>
+                    <button
+                      className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-semibold text-ink transition-colors hover:bg-surface-alt"
+                      onClick={() => {
+                        setMenuOpen(false);
+                        setPwdModal(true);
+                      }}
+                    >
+                      <KeyRound size={15} className="text-ink-muted" />
+                      Cambiar contraseña
+                    </button>
+                    <button
+                      className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-semibold text-red-500 transition-colors hover:bg-surface-alt"
+                      onClick={handleLogout}
+                    >
+                      <LogOut size={15} />
+                      Salir
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </header>
 
@@ -130,11 +256,15 @@ export default function Profile() {
         <section className="card p-6">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-4">
-              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-primary-strong text-2xl font-extrabold text-primary-contrast shadow-glow">
-                {(me.name || '?').slice(0, 2).toUpperCase()}
-              </div>
+              {me.image ? (
+                <img src={me.image} alt={fullName(me)} className="h-16 w-16 rounded-2xl object-cover shadow-glow" />
+              ) : (
+                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-primary-strong text-2xl font-extrabold text-primary-contrast shadow-glow">
+                  {initials(me)}
+                </div>
+              )}
               <div>
-                <h1 className="text-xl font-extrabold text-ink">{me.name}</h1>
+                <h1 className="text-xl font-extrabold text-ink">{fullName(me)}</h1>
                 <p className="text-sm text-ink-muted">{me.email}</p>
               </div>
             </div>
@@ -197,14 +327,67 @@ export default function Profile() {
 
         {editing ? (
           <form onSubmit={save} className="card space-y-6 p-6">
+            <div className="flex items-center gap-4">
+              <div className="relative">
+                {form.image ? (
+                  <img src={form.image} alt={form.name} className="h-20 w-20 rounded-2xl object-cover shadow-sm" />
+                ) : (
+                  <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-primary-strong text-2xl font-extrabold text-primary-contrast shadow-sm">
+                    {initials(form)}
+                  </div>
+                )}
+                <button
+                  type="button"
+                  onClick={() => fileRef.current?.click()}
+                  className="absolute -bottom-2 -right-2 flex h-8 w-8 items-center justify-center rounded-full border border-line bg-surface text-primary-strong shadow-md transition-transform hover:scale-110"
+                  aria-label="Cambiar foto de perfil"
+                >
+                  <Camera size={14} />
+                </button>
+              </div>
+              <div className="text-sm text-ink-muted">
+                <p className="font-bold text-ink">Foto de perfil</p>
+                <p>Subí una foto para que te reconozcan. Se guarda cuando actualizás tu perfil.</p>
+              </div>
+              <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={uploadPhoto} />
+            </div>
+
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
                 <label className="label">Nombre</label>
-                <input className="input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
+                <input
+                  className="input"
+                  value={form.name}
+                  onChange={(e) => setForm({ ...form, name: e.target.value })}
+                  required
+                />
+              </div>
+              <div>
+                <label className="label">Apellido</label>
+                <input
+                  className="input"
+                  value={form.last_name}
+                  onChange={(e) => setForm({ ...form, last_name: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="label">Email</label>
+                <input
+                  className="input"
+                  type="email"
+                  value={form.email}
+                  onChange={(e) => setForm({ ...form, email: e.target.value })}
+                  required
+                />
               </div>
               <div>
                 <label className="label">Teléfono</label>
-                <input className="input" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="Ej: +54 9 11..." />
+                <input
+                  className="input"
+                  value={form.phone}
+                  onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                  placeholder="Ej: +54 9 11..."
+                />
               </div>
             </div>
 
@@ -219,7 +402,11 @@ export default function Profile() {
               />
             </div>
 
-            <div className="flex justify-end gap-2">
+            <div className="flex flex-wrap justify-end gap-2">
+              <button type="button" className="btn-ghost" onClick={() => setPwdModal(true)}>
+                <KeyRound size={15} />
+                Cambiar contraseña
+              </button>
               <button type="button" className="btn-ghost" onClick={() => setEditing(false)}>
                 <X size={15} />
                 Cancelar
@@ -397,8 +584,55 @@ export default function Profile() {
           )}
         </section>
       </main>
+
+      <Modal open={pwdModal} onClose={() => setPwdModal(false)} title="Cambiar contraseña">
+        <form onSubmit={changePassword} className="space-y-4">
+          <div>
+            <label className="label">Nueva contraseña</label>
+            <input
+              className="input"
+              type="password"
+              value={pwd.password}
+              onChange={(e) => setPwd({ ...pwd, password: e.target.value })}
+              placeholder="Mínimo 6 caracteres"
+              required
+              autoFocus
+            />
+          </div>
+          <div>
+            <label className="label">Confirmar contraseña</label>
+            <input
+              className="input"
+              type="password"
+              value={pwd.confirm}
+              onChange={(e) => setPwd({ ...pwd, confirm: e.target.value })}
+              placeholder="Repetí la contraseña"
+              required
+            />
+          </div>
+          <div className="flex justify-end gap-2 pt-1">
+            <button type="button" className="btn-ghost" onClick={() => setPwdModal(false)}>
+              Cancelar
+            </button>
+            <button type="submit" className="btn-primary" disabled={changingPwd}>
+              {changingPwd ? <Loader2 className="animate-spin" size={16} /> : <KeyRound size={15} />}
+              Actualizar contraseña
+            </button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
+}
+
+function initials(u) {
+  const parts = [u?.name, u?.last_name].filter((x) => x && String(x).trim());
+  const s = parts.length > 0 ? parts.map((p) => String(p).trim()[0]).join('').slice(0, 2).toUpperCase() : '?';
+  return s;
+}
+
+function fullName(u) {
+  return [u?.name, u?.last_name].filter(Boolean).join(' ').trim() || 'Usuario';
 }
 
 function formatDate(value) {

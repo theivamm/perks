@@ -77,6 +77,8 @@ create table if not exists public.settings (
 -- Datos de perfil del usuario registrado (editables por el cliente)
 alter table public.users add column if not exists phone text default '';
 alter table public.users add column if not exists preferences jsonb default '{}'::jsonb;
+alter table public.users add column if not exists last_name text default '';
+alter table public.users add column if not exists image text default '';
 
 -- Pedido asociado a un usuario registrado (para historial y premios)
 alter table public.orders add column if not exists user_id uuid references public.users(id) on delete set null;
