@@ -383,6 +383,23 @@ export default function PreferencesEditor({ value, onChange }) {
   );
 }
 
+export function profileProgress({ name = '', phone = '', email = '', preferences = {} } = {}) {
+  const prefs = {
+    diet: [], allergies: [], religions: [], toppings: [], packaging: [], alerts: [],
+    milk: '', sweetener: '', coffee: '', pickup: '', payment: '', birthday: '', schedule: '',
+    ...(preferences || {}),
+  };
+  const fields = [Boolean(name), Boolean(phone), Boolean(email)];
+  for (const cat of CATS) {
+    const v = prefs[cat.key];
+    fields.push(Boolean(cat.single ? v : v && v.length > 0));
+  }
+  for (const f of TEXT_FIELDS) fields.push(Boolean(prefs[f.key]));
+  const done = fields.filter(Boolean).length;
+  const total = fields.length;
+  return { done, total, pct: Math.round((done / total) * 100) };
+}
+
 export function prefsSummary(preferences = {}) {
   const prefs = {
     diet: [], allergies: [], religions: [], toppings: [], packaging: [], alerts: [],

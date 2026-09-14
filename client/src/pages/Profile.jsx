@@ -3,13 +3,16 @@ import { Link } from 'react-router-dom';
 import {
   ArrowLeft,
   BadgePercent,
+  CheckCircle2,
   Coffee,
   Gift,
   Loader2,
+  PartyPopper,
   Pencil,
   ReceiptText,
   Save,
   ShoppingBag,
+  UserCheck,
   X,
 } from 'lucide-react';
 import { api, formatMoney } from '../api.js';
@@ -18,7 +21,7 @@ import { useTheme } from '../context/ThemeContext.jsx';
 import { EmptyState, Spinner, toast } from '../components/ui.jsx';
 import CouponCard from '../components/CouponCard.jsx';
 import RewardProgress from '../components/RewardProgress.jsx';
-import PreferencesEditor, { prefsSummary } from '../components/PreferencesEditor.jsx';
+import PreferencesEditor, { prefsSummary, profileProgress } from '../components/PreferencesEditor.jsx';
 
 export default function Profile() {
   const { user, updateUser } = useAuth();
@@ -29,6 +32,24 @@ export default function Profile() {
   const [form, setForm] = useState({ name: '', phone: '', preferences: {} });
   const [saving, setSaving] = useState(false);
   const [redeeming, setRedeeming] = useState(null);
+  const [shownPct, setShownPct] = useState(0);
+
+  const progress = data?.user ? profileProgress({ ...data.user }) : null;
+
+  useEffect(() => {
+    const target = progress?.pct || 0;
+    let raf;
+    const start = performance.now();
+    const duration = 900;
+    const tick = (now) => {
+      const p = Math.min((now - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - p, 3);
+      setShownPct(Math.round(target * eased));
+      if (p < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [progress?.pct]);
 
   const load = () =>
     api('/api/profile/me')
@@ -117,6 +138,46 @@ export default function Profile() {
               </button>
             )}
           </div>
+
+          <div className="animate-fade-up mt-4 flex items-center gap-3 rounded-2xl border border-line bg-surface-alt/50 p-3.5">
+            <div
+              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-primary-contrast shadow-glow ${
+                progress.pct === 100
+                  ? 'bg-gradient-to-br from-amber-400 to-orange-500'
+                  : 'bg-gradient-to-br from-primary to-primary-strong'
+              }`}
+            >
+              {progress.pct === 100 ? <PartyPopper size={18} /> : <UserCheck size={18} />}
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-baseline justify-between gap-2">
+                <p className="text-sm font-extrabold text-ink">
+                  Perfil {shownPct}% <span className="font-semibold text-ink-muted">completo</span>
+                </p>
+                <span className="text-xs font-bold text-ink-muted">
+                  {progress.done}/{progress.total}
+                </span>
+              </div>
+              <div className="mt-1.5 h-2.5 overflow-hidden rounded-full bg-surface">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-primary to-primary-strong transition-[width] duration-700 ease-out"
+                  style={{ width: `${shownPct}%` }}
+                />
+              </div>
+            </div>
+            {progress.pct === 100 && (
+              <span className="animate-pop hidden text-xs font-extrabold text-amber-500 sm:block">
+                ¡Completado!
+              </span>
+            )}
+          </div>
+          {progress.pct < 100 && (
+            <p className="mt-1.5 text-xs font-semibold text-ink-muted">
+              {progress.pct === 0
+                ? 'Empezá por tu nombre, teléfono y preferencias para desbloquear recomendaciones.'
+                : 'Completá la info para que todo llegue exactamente como te gusta.'}
+            </p>
+          )}
 
           <RewardProgress completed={rewardProgress.completed} rules={rewardProgress.rules} />
         </section>
