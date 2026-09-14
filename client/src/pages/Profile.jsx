@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
+  Archive,
   ArrowLeft,
   BadgePercent,
+  Bell,
   Camera,
   CheckCircle2,
   ChevronDown,
@@ -28,6 +30,7 @@ import { useTheme } from '../context/ThemeContext.jsx';
 import { EmptyState, Modal, Spinner, toast } from '../components/ui.jsx';
 import CouponCard from '../components/CouponCard.jsx';
 import RewardProgress from '../components/RewardProgress.jsx';
+import { formatWhen, notificationMeta } from '../lib/notifications.js';
 import PreferencesEditor, {
   normalizeEmptyPreferences,
   prefsSummary,
@@ -51,6 +54,7 @@ export default function Profile() {
   const [pwdModal, setPwdModal] = useState(false);
   const [pwd, setPwd] = useState({ password: '', confirm: '' });
   const [changingPwd, setChangingPwd] = useState(false);
+  const [notifications, setNotifications] = useState([]);
 
   const progress = data?.user ? profileProgress({ ...data.user }) : null;
 
@@ -85,8 +89,20 @@ export default function Profile() {
 
   useEffect(() => {
     load();
+    api('/api/notifications')
+      .then((res) => setNotifications(res.items || []))
+      .catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const archiveNotification = async (n) => {
+    try {
+      await api(`/api/notifications/${n.id}/archive`, { method: 'POST' });
+      setNotifications((list) => list.filter((x) => x.id !== n.id));
+    } catch (err) {
+      toast(err.message);
+    }
+  };
 
   const startEdit = () => {
     setForm({
@@ -512,6 +528,65 @@ export default function Profile() {
                 />
               ))}
             </div>
+          )}
+        </section>
+
+        <section>
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <h2 className="flex items-center gap-2 text-lg font-extrabold text-ink">
+              <Bell size={20} className="text-primary-strong" />
+              Notificaciones
+            </h2>
+            <Link
+              to="/notificaciones"
+              className="inline-flex items-center gap-1 text-sm font-bold text-primary-strong hover:underline"
+            >
+              Ver historial
+            </Link>
+          </div>
+          {notifications.length === 0 ? (
+            <EmptyState
+              icon={Bell}
+              title="No tenés notificaciones"
+              subtitle="Las novedades de tus pedidos y cupones aparecerán acá."
+            />
+          ) : (
+            <ul className="space-y-3">
+              {notifications.slice(0, 6).map((n) => {
+                const meta = notificationMeta(n.type);
+                const Icon = meta.icon;
+                return (
+                  <li key={n.id} className="card flex items-start gap-3 p-4">
+                    <span className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${meta.style}`}>
+                      <Icon size={18} />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5">
+                        <p className="text-sm font-extrabold text-ink">{n.title}</p>
+                        {!n.read && <span className="h-2 w-2 shrink-0 rounded-full bg-primary-strong" />}
+                      </div>
+                      <p className="mt-0.5 text-sm leading-relaxed text-ink-muted">{n.body}</p>
+                      <p className="mt-1 text-[11px] font-semibold text-ink-muted/70">{formatWhen(n.created_at)}</p>
+                    </div>
+                    <button
+                      className="btn-ghost !px-2.5 !py-1.5 text-xs"
+                      onClick={() => archiveNotification(n)}
+                      title="Archivar"
+                    >
+                      <Archive size={14} />
+                      Archivar
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+          {notifications.length > 6 && (
+            <p className="mt-3 text-center text-xs font-semibold text-ink-muted">
+              <Link to="/notificaciones" className="text-primary-strong hover:underline">
+                Ver todas las notificaciones
+              </Link>
+            </p>
           )}
         </section>
 
