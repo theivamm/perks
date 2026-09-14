@@ -62,7 +62,9 @@ export default function Navbar({ cartCount, onCartOpen }) {
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
         <div className="flex items-center gap-2.5">
           <button className="btn-icon" onClick={toggleTheme} aria-label="Cambiar tema">
-            {settings.theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+            <span key={settings.theme} className="animate-pop inline-block">
+              {settings.theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+            </span>
           </button>
           <Link to="/" className="flex items-center gap-2.5 font-extrabold text-ink">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary-strong text-primary-contrast shadow-glow">
@@ -107,7 +109,7 @@ export default function Navbar({ cartCount, onCartOpen }) {
               </button>
 
               {menuOpen && (
-                <div className="absolute right-0 top-full z-50 mt-2 w-60 overflow-hidden rounded-2xl border border-line bg-surface shadow-xl">
+                <div className="animate-fade-up absolute right-0 top-full z-50 mt-2 w-60 overflow-hidden rounded-2xl border border-line bg-surface shadow-xl">
                   <div className="border-b border-line px-4 py-3">
                     <p className="truncate text-sm font-extrabold text-ink">{user.name}</p>
                     <p className="truncate text-xs text-ink-muted">{user.email}</p>
@@ -163,7 +165,10 @@ export default function Navbar({ cartCount, onCartOpen }) {
             <ShoppingCart size={16} />
             <span className="hidden sm:inline">Pedido</span>
             {cartCount > 0 && (
-              <span className="absolute -right-2 -top-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-xs font-bold text-white">
+              <span
+                key={cartCount}
+                className="animate-pop absolute -right-2 -top-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-xs font-bold text-white"
+              >
                 {cartCount}
               </span>
             )}

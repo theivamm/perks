@@ -78,6 +78,15 @@
   }
 }
 
+.btn-primary:active,
+.btn-ghost:active,
+.btn-danger:active {
+  transform: scale(0.96);
+}
+.btn-icon:active {
+  transform: scale(0.85);
+}
+
 @layer utilities {
   .animate-fade-up {
     animation: fade-up 0.5s ease both;
@@ -90,6 +99,18 @@
   }
   .animate-float {
     animation: float 3.2s ease-in-out infinite;
+  }
+  .animate-bump {
+    animation: bump 0.45s ease;
+  }
+  .animate-slide-in-right {
+    animation: slide-in-right 0.38s cubic-bezier(0.22, 0.9, 0.24, 1) both;
+  }
+  .animate-fade-in {
+    animation: fade-in 0.3s ease both;
+  }
+  .animate-float-up {
+    animation: float-up 0.9s ease forwards;
   }
 }
 
@@ -131,5 +152,55 @@
   }
   50% {
     transform: translateY(-6px);
+  }
+}
+
+@keyframes bump {
+  0% {
+    transform: scale(1);
+  }
+  30% {
+    transform: scale(1.18);
+  }
+  55% {
+    transform: scale(0.94);
+  }
+  75% {
+    transform: scale(1.06);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes slide-in-right {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes float-up {
+  0% {
+    opacity: 0;
+    transform: translateY(0) scale(0.5);
+  }
+  25% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-36px) scale(1.25);
   }
 }

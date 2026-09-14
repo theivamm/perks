@@ -1,10 +1,22 @@
-import { Image as ImageIcon, Plus } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { Check, Image as ImageIcon, Plus } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext.jsx';
 import { formatMoney } from '../api.js';
 
 export default function MenuCard({ item, onAdd }) {
   const { settings } = useTheme();
   const disabled = !item.available;
+  const [added, setAdded] = useState(false);
+  const timer = useRef(null);
+
+  useEffect(() => () => clearTimeout(timer.current), []);
+
+  const handleAdd = () => {
+    onAdd(item);
+    setAdded(true);
+    clearTimeout(timer.current);
+    timer.current = setTimeout(() => setAdded(false), 1000);
+  };
 
   return (
     <div className="card group flex flex-col overflow-hidden transition-transform duration-300 hover:-translate-y-1 hover:shadow-soft">
@@ -53,13 +65,25 @@ export default function MenuCard({ item, onAdd }) {
             </span>
           )}
           <button
-            className="btn-primary !px-3 !py-2"
-            onClick={() => onAdd(item)}
+            className={`btn-primary relative !px-3 !py-2 ${added ? 'animate-bump' : ''}`}
+            onClick={handleAdd}
             disabled={disabled}
             aria-label={`Agregar ${item.title}`}
           >
-            <Plus size={16} />
-            <span>Agregar</span>
+            {added ? (
+              <>
+                <Check size={16} className="animate-pop" />
+                <span className="animate-pop">¡Listo!</span>
+                <span className="animate-float-up pointer-events-none absolute -top-2 left-1/2 -translate-x-1/2 text-lg font-black text-primary-contrast">
+                  +1
+                </span>
+              </>
+            ) : (
+              <>
+                <Plus size={16} />
+                <span>Agregar</span>
+              </>
+            )}
           </button>
         </div>
       </div>

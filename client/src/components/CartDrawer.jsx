@@ -91,13 +91,15 @@ export default function CartDrawer({ open, onClose, cart, setCart, items }) {
 
   return (
     <div className="fixed inset-0 z-50">
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      <aside className="absolute right-0 top-0 flex h-full w-full max-w-md flex-col bg-surface shadow-2xl">
+      <div className="animate-fade-in absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+      <aside className="animate-slide-in-right absolute right-0 top-0 flex h-full w-full max-w-md flex-col bg-surface shadow-2xl">
         <header className="flex items-center justify-between border-b border-line px-5 py-4">
           <div className="flex items-center gap-2 font-extrabold text-ink">
-            <ShoppingBag size={20} className="text-primary" />
+            <ShoppingBag size={20} className="animate-pop text-primary" key={count} />
             Tu pedido
-            <span className="badge">{count}</span>
+            <span className="badge" key={count}>
+              {count}
+            </span>
           </div>
           <button className="btn-icon" onClick={onClose} aria-label="Cerrar carrito">
             <X size={20} />
@@ -105,8 +107,8 @@ export default function CartDrawer({ open, onClose, cart, setCart, items }) {
         </header>
 
         {done ? (
-          <div className="flex flex-1 flex-col items-center justify-center gap-4 p-8 text-center">
-            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-primary-soft text-primary-strong">
+          <div className="animate-fade-up flex flex-1 flex-col items-center justify-center gap-4 p-8 text-center">
+            <div className="animate-pop flex h-20 w-20 items-center justify-center rounded-full bg-primary-soft text-primary-strong">
               <CheckCircle2 size={44} />
             </div>
             <h3 className="text-xl font-extrabold text-ink">¡Pedido enviado!</h3>
@@ -124,7 +126,7 @@ export default function CartDrawer({ open, onClose, cart, setCart, items }) {
           </div>
         ) : count === 0 ? (
           <div className="flex flex-1 flex-col items-center justify-center gap-3 p-8 text-center">
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary-soft text-primary-strong">
+            <div className="animate-float flex h-16 w-16 items-center justify-center rounded-2xl bg-primary-soft text-primary-strong">
               <ShoppingBag size={30} />
             </div>
             <p className="font-bold text-ink">Tu carrito está vacío</p>
@@ -134,8 +136,12 @@ export default function CartDrawer({ open, onClose, cart, setCart, items }) {
           <>
             <div className="flex-1 overflow-y-auto px-5 py-4">
               <ul className="space-y-4">
-                {lines.map((it) => (
-                  <li key={it.id} className="flex items-center gap-3">
+                {lines.map((it, idx) => (
+                  <li
+                    key={it.id}
+                    className="animate-fade-up flex items-center gap-3"
+                    style={{ animationDelay: `${idx * 50}ms` }}
+                  >
                     <div className="h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-gradient-to-br from-primary to-primary-strong">
                       {it.image ? (
                         <img src={it.image} alt={it.title} className="h-full w-full object-cover" />
@@ -155,7 +161,9 @@ export default function CartDrawer({ open, onClose, cart, setCart, items }) {
                       <button className="btn-icon !p-1" onClick={() => change(it.id, -1)}>
                         <Minus size={14} />
                       </button>
-                      <span className="w-6 text-center text-sm font-bold text-ink">{cart[it.id]}</span>
+                      <span key={cart[it.id]} className="animate-pop w-6 text-center text-sm font-bold text-ink">
+                        {cart[it.id]}
+                      </span>
                       <button className="btn-icon !p-1" onClick={() => change(it.id, 1)}>
                         <Plus size={14} />
                       </button>

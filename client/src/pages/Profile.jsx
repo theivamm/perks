@@ -180,19 +180,50 @@ export default function Profile() {
             </div>
 
             {summary.length > 0 && (
-              <div className="card p-5">
+              <section className="card p-5">
                 <h2 className="mb-3 flex items-center gap-2 text-sm font-extrabold text-ink">
                   <BadgePercent size={16} className="text-primary-strong" />
                   Tus preferencias y filtros
                 </h2>
-                <div className="flex flex-wrap gap-2">
-                  {summary.map((s, i) => (
-                    <span key={i} className="rounded-full bg-primary-soft px-3 py-1 text-xs font-bold text-primary-strong">
-                      {s.label}
-                    </span>
-                  ))}
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  {summary.map((g, i) => {
+                    const Icon = g.icon;
+                    return (
+                      <div
+                        key={g.key}
+                        className={`animate-fade-up rounded-2xl border bg-gradient-to-br p-4 shadow-sm ${g.gradient} ${g.border}`}
+                        style={{ animationDelay: `${i * 60}ms` }}
+                      >
+                        <div className="mb-2.5 flex items-center gap-2">
+                          <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl shadow-sm ${g.badge}`}>
+                            <Icon size={17} />
+                          </span>
+                          <p className="text-sm font-extrabold leading-tight text-ink">{g.title}</p>
+                        </div>
+                        <div className="flex flex-wrap gap-1.5">
+                          {(g.items || []).map((it) => {
+                            const ItemIcon = it.icon;
+                            return (
+                              <span
+                                key={it.value}
+                                className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold ${g.tint}`}
+                              >
+                                <ItemIcon size={13} />
+                                {it.label}
+                              </span>
+                            );
+                          })}
+                          {g.value && (
+                            <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold ${g.tint}`}>
+                              {g.value}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-              </div>
+              </section>
             )}
           </>
         )}
