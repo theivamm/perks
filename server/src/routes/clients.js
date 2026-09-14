@@ -8,6 +8,7 @@ import { requireAdmin } from '../middleware/auth.js';
 import { asyncHandler } from '../asyncHandler.js';
 import { imageUpload, excelUpload, uploadsDir } from '../upload.js';
 import { countCompletedOrders } from '../rewards.js';
+import { notifyRewardsForCompra, notifyUser } from '../notify.js';
 
 const router = Router();
 
@@ -38,7 +39,7 @@ router.get(
     const [usersRes, ordersRes] = await Promise.all([
       supabase
         .from('users')
-        .select('id, name, email, phone, preferences, created_at')
+        .select('id, name, email, phone, qr_code, created_at')
         .eq('role', 'cliente')
         .order('created_at', { ascending: false }),
       supabase.from('orders').select('user_id, status'),
@@ -71,7 +72,7 @@ router.get(
   '/registered/:id',
   requireAdmin,
   asyncHandler(async (req, res) => {
-    const baseFields = 'id, name, last_name, email, phone, image, preferences, created_at';
+    const baseFields = 'id, name, last_name, email, phone, image, preferences, qr_code, created_at';
     let { data: user, error } = await supabase
       .from('users')
       .select(baseFields)
@@ -81,7 +82,7 @@ router.get(
     if (error) {
       const fallback = await supabase
         .from('users')
-        .select('id, name, email, phone, preferences, created_at')
+        .select('id, name, email, phone, qr_code, created_at')
         .eq('id', req.params.id)
         .eq('role', 'cliente')
         .maybeSingle();
@@ -122,6 +123,82 @@ router.get(
       stats: { totalOrders: orders.length, completedOrders: completed, totalSpent },
       rewardProgress: { completed, rules: rulesRes.data || [] },
     });
+  })
+);
+
+// Busca un usuario por su código QR (para el lector del admin)
+router.post(
+  '/scan',
+  requireAdmin,
+  asyncHandler(async (req, res) => {
+    const { qr_code } = req.body || {};
+    const code = String(qr_code || '').trim().toUpperCase();
+    if (!code) return res.status(400).json({ error: 'Código QR requerido' });
+
+    let { data: user, error } = await supabase
+      .from('users')
+      .select('id, name, last_name, email, phone, image, qr_code, created_at')
+      .eq('qr_code', code)
+      .eq('role', 'cliente')
+      .maybeSingle();
+    if (error) throw error;
+
+    if (!user) {
+      // Compatibilidad: también acepta el id del usuario como texto
+      const { data: byId } = await supabase
+        .from('users')
+        .select('id, name, last_name, email, phone, image, qr_code, created_at')
+        .eq('id', code)
+        .eq('role', 'cliente')
+        .maybeSingle();
+      if (byId) user = byId;
+    }
+
+    if (!user) return res.status(404).json({ error: 'Cliente no encontrado' });
+
+    const completed = await countCompletedOrders(user.id);
+    res.json({ client: user, stats: { completedOrders: completed } });
+  })
+);
+
+// Registra una compra manual de un cliente registrado (dispara premios y notificaciones)
+router.post(
+  '/registered/:id/compras',
+  requireAdmin,
+  asyncHandler(async (req, res) => {
+    const { total = 0, note = '' } = req.body || {};
+    const userId = req.params.id;
+
+    const { data: user, error: userErr } = await supabase
+      .from('users')
+      .select('id, name, email')
+      .eq('id', userId)
+      .eq('role', 'cliente')
+      .maybeSingle();
+    if (userErr) throw userErr;
+    if (!user) return res.status(404).json({ error: 'Cliente no encontrado' });
+
+    const { data: order, error: orderErr } = await supabase
+      .from('orders')
+      .insert({
+        user_id: user.id,
+        client_id: null,
+        status: 'completado',
+        total: Math.max(0, Number(total) || 0),
+        note: String(note || '').trim() || null,
+      })
+      .select()
+      .single();
+    if (orderErr) throw orderErr;
+
+    try {
+      await notifyRewardsForCompra(user.id, order);
+    } catch (err) {
+      console.warn('[Notificaciones] No se pudieron crear:', err.message);
+    }
+
+    const completed = await countCompletedOrders(user.id);
+    res.status(201).json({ order, completed });
   })
 );
 

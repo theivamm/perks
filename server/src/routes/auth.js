@@ -2,6 +2,7 @@ import jwt from 'jsonwebtoken';
 import { Router } from 'express';
 import { supabase } from '../supabase.js';
 import { asyncHandler } from '../asyncHandler.js';
+import { newQrCode } from '../qr.js';
 
 const router = Router();
 const SECRET = () => process.env.JWT_SECRET || 'dev-secret';
@@ -80,6 +81,7 @@ router.post(
           email: cleanEmail,
           password_hash: '',
           role: 'cliente',
+          qr_code: newQrCode(),
         },
         { onConflict: 'email' }
       )
@@ -117,6 +119,7 @@ router.post(
             email: authUser.email,
             password_hash: '',
             role: 'cliente',
+            qr_code: newQrCode(),
           },
           { onConflict: 'email' }
         )

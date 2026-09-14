@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   Eye,
   FileSpreadsheet,
@@ -9,6 +10,8 @@ import {
   Loader2,
   Mail,
   Phone,
+  PlusCircle,
+  QrCode,
   ReceiptText,
   Sparkles,
   Trash2,
@@ -18,6 +21,7 @@ import {
   Search,
   ShieldCheck,
 } from 'lucide-react';
+import QRCode from 'qrcode';
 import { api, formatMoney } from '../../api.js';
 import { useTheme } from '../../context/ThemeContext.jsx';
 import { EmptyState, Modal, Spinner, toast } from '../../components/ui.jsx';
@@ -35,6 +39,7 @@ const PREF_OPTIONS = [
 
 export default function Clients() {
   const { settings } = useTheme();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [clients, setClients] = useState([]);
   const [registered, setRegistered] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -49,6 +54,7 @@ export default function Clients() {
   const [detail, setDetail] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
+  const [qrImg, setQrImg] = useState('');
   const excelRef = ExcelRef(null);
   const imageRef = ExcelRef(null);
 
@@ -67,18 +73,45 @@ export default function Clients() {
       .finally(() => setLoading(false));
   }, []);
 
-  const viewClient = async (c) => {
+  const viewClient = (c) => openDetailById(c.id);
+
+  const openDetailById = async (id) => {
     setDetailOpen(true);
     setDetailLoading(true);
     setDetail(null);
+    setQrImg('');
     try {
-      const res = await api(`/api/clients/registered/${c.id}`);
+      const res = await api(`/api/clients/registered/${id}`);
       setDetail(res);
+      if (res.user?.qr_code) {
+        QRCode.toDataURL(res.user.qr_code, { margin: 1, width: 240, color: { dark: '#1f2937', light: '#ffffff' } })
+          .then(setQrImg)
+          .catch(() => {});
+      }
+      setSearchParams({}, { replace: true });
     } catch (err) {
       toast(err.message);
       setDetailOpen(false);
     } finally {
       setDetailLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const id = searchParams.get('cliente');
+    if (id) openDetailById(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
+  const recordCompra = async (c) => {
+    if (!confirm(`¿Registrar una compra para "${c.name}"?`)) return;
+    try {
+      await api(`/api/clients/registered/${c.id}/compras`, { method: 'POST', body: { total: 0 } });
+      toast('Compra registrada');
+      await load();
+      if (detail?.user?.id === c.id) viewClient(detail.user);
+    } catch (err) {
+      toast(err.message);
     }
   };
 
@@ -178,7 +211,7 @@ export default function Clients() {
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-extrabold text-ink">Clientes</h1>
-          <p className="text-sm text-ink-muted">Personas que han hecho pedidos o que se hayan registrado.</p>
+          <p className="text-sm text-ink-muted">Usuarios con cuenta en la app y clientes del local.</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <div className="relative">
@@ -264,8 +297,8 @@ export default function Clients() {
               <div className="hidden grid-cols-12 gap-3 border-b border-line bg-surface-alt px-4 py-2.5 text-xs font-bold uppercase tracking-wide text-ink-muted sm:grid">
                 <div className="col-span-4">Cliente</div>
                 <div className="col-span-4">Contacto</div>
-                <div className="col-span-2">Pedidos</div>
-                <div className="col-span-2">Completados</div>
+                <div className="col-span-2">Compras</div>
+                <div className="col-span-2">Completadas / Acciones</div>
               </div>
               <ul className="divide-y divide-line">
                 {reFiltered.map((c) => (
@@ -283,10 +316,18 @@ export default function Clients() {
                       </p>
                     </div>
                     <div className="col-span-2 text-sm">
-                      <span className="badge">{c.orders} pedido{c.orders !== 1 && 's'}</span>
+                      <span className="badge">{c.orders} compra{c.orders !== 1 && 's'}</span>
                     </div>
-                    <div className="col-span-2 flex items-center gap-2 text-xs text-ink-muted">
-                      {c.completed} completado{c.completed !== 1 && 's'}
+                    <div className="col-span-2 flex flex-wrap items-center gap-2 text-xs text-ink-muted">
+                      {c.completed} completada{c.completed !== 1 && 's'}
+                      <button
+                        className="btn-ghost !px-2 !py-1 !text-xs"
+                        onClick={() => recordCompra(c)}
+                        title="Registrar una compra para este cliente"
+                      >
+                        <PlusCircle size={13} />
+                        Compra
+                      </button>
                       <button
                         className="btn-ghost !px-2 !py-1 !text-xs"
                         onClick={() => viewClient(c)}
@@ -304,7 +345,7 @@ export default function Clients() {
 
           <h2 className="mb-3 flex items-center gap-2 text-lg font-extrabold text-ink">
             <Users size={18} className="text-primary-strong" />
-            Clientes de pedidos
+            Clientes del local
           </h2>
         </>
       )}
@@ -312,8 +353,8 @@ export default function Clients() {
       {filtered.length === 0 ? (
         <EmptyState
           icon={Users}
-          title="Sin clientes de pedido"
-          subtitle="Se registran al hacer un pedido, o puedes agregarlos manualmente."
+          title="Sin clientes del local"
+          subtitle="Son clientes sin cuenta en la app. Podés agregarlos manualmente o importarlos por Excel."
         />
       ) : (
         <div className="card overflow-hidden">
@@ -485,20 +526,46 @@ export default function Clients() {
               </div>
             </div>
 
+            <div className="flex flex-wrap items-center gap-4 rounded-xl border border-line bg-surface p-4">
+              <div className="flex items-center gap-3">
+                {qrImg ? (
+                  <img src={qrImg} alt={`QR ${detail.user.qr_code}`} className="h-20 w-20 rounded-lg bg-white p-1" />
+                ) : (
+                  <div className="flex h-20 w-20 items-center justify-center rounded-lg bg-surface-alt text-ink-muted">
+                    <QrCode size={22} />
+                  </div>
+                )}
+                <div>
+                  <p className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-wide text-ink-muted">
+                    <QrCode size={12} />
+                    Código QR
+                  </p>
+                  <p className="font-mono text-sm font-extrabold tracking-wider text-ink">
+                    {detail.user.qr_code || '—'}
+                  </p>
+                  <p className="mt-0.5 text-[11px] text-ink-muted">Escanealo en el local para registrar compras.</p>
+                </div>
+              </div>
+              <button className="btn-primary ml-auto" onClick={() => recordCompra(detail.user)}>
+                <PlusCircle size={16} />
+                Agregar compra
+              </button>
+            </div>
+
             <div className="grid grid-cols-3 gap-3 text-sm">
               <div className="rounded-xl bg-surface-alt p-3 text-center">
                 <p className="text-xl font-extrabold text-ink">{detail.stats.totalOrders}</p>
-                <p className="text-[11px] text-ink-muted">Pedidos</p>
+                <p className="text-[11px] text-ink-muted">Compras</p>
               </div>
               <div className="rounded-xl bg-surface-alt p-3 text-center">
                 <p className="text-xl font-extrabold text-ink">{detail.stats.completedOrders}</p>
-                <p className="text-[11px] text-ink-muted">Completados</p>
+                <p className="text-[11px] text-ink-muted">Completadas</p>
               </div>
               <div className="rounded-xl bg-surface-alt p-3 text-center">
                 <p className="text-xl font-extrabold text-primary-strong">
                   {formatMoney(detail.stats.totalSpent, settings.currency)}
                 </p>
-                <p className="text-[11px] text-ink-muted">Total gastado</p>
+                <p className="text-[11px] text-ink-muted">Total acumulado</p>
               </div>
             </div>
 
@@ -541,10 +608,10 @@ export default function Clients() {
             <div>
               <h4 className="mb-2 flex items-center gap-2 text-sm font-extrabold text-ink">
                 <ReceiptText size={15} className="text-primary-strong" />
-                Últimos pedidos
+                Últimas compras
               </h4>
               {detail.orders.length === 0 ? (
-                <p className="text-sm text-ink-muted">Aún no hizo pedidos.</p>
+                <p className="text-sm text-ink-muted">Aún no registró compras.</p>
               ) : (
                 <ul className="max-h-44 space-y-1.5 overflow-y-auto">
                   {detail.orders.slice(0, 8).map((o) => (

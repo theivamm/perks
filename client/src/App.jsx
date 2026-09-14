@@ -8,7 +8,7 @@ import NotificationsPage from './pages/NotificationsPage.jsx';
 import DashboardLayout from './pages/dashboard/DashboardLayout.jsx';
 import MenuManager from './pages/dashboard/MenuManager.jsx';
 import Clients from './pages/dashboard/Clients.jsx';
-import Orders from './pages/dashboard/Orders.jsx';
+import ScanPage from './pages/dashboard/ScanPage.jsx';
 import Coupons from './pages/dashboard/Coupons.jsx';
 import SettingsPage from './pages/dashboard/SettingsPage.jsx';
 
@@ -58,7 +58,7 @@ export default function App() {
         <Route index element={<MenuManager />} />
         <Route path="menu" element={<MenuManager />} />
         <Route path="clientes" element={<Clients />} />
-        <Route path="pedidos" element={<Orders />} />
+        <Route path="escanear" element={<ScanPage />} />
         <Route path="cupones" element={<Coupons />} />
         <Route path="configuracion" element={<SettingsPage />} />
       </Route>

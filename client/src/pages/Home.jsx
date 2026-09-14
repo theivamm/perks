@@ -1,117 +1,86 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Sparkles, UtensilsCrossed } from 'lucide-react';
-import { api } from '../api.js';
+import { Coffee, QrCode, Sparkles } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext.jsx';
 import { useTheme } from '../context/ThemeContext.jsx';
 import Navbar from '../components/Navbar.jsx';
-import MenuCard from '../components/MenuCard.jsx';
-import CartDrawer from '../components/CartDrawer.jsx';
-import { Spinner, EmptyState } from '../components/ui.jsx';
 
 export default function Home() {
-  const [data, setData] = useState({ items: [], categories: [] });
-  const [loading, setLoading] = useState(true);
-  const [active, setActive] = useState('Todas');
-  const [cart, setCart] = useState({});
-  const [cartOpen, setCartOpen] = useState(false);
+  const { user, isAuthed } = useAuth();
   const { settings } = useTheme();
-
-  useEffect(() => {
-    api('/api/menu')
-      .then((d) => {
-        setData(d);
-        if (d.categories?.length && active === 'Todas') setActive('Todas');
-      })
-      .catch(() => setData({ items: [], categories: [] }))
-      .finally(() => setLoading(false));
-  }, []);
-
-  const cartCount = useMemo(() => Object.values(cart).reduce((a, b) => a + b, 0), [cart]);
-
-  const addToCart = (item) =>
-    setCart((prev) => ({ ...prev, [item.id]: (prev[item.id] || 0) + 1 }));
-
-  const categories = ['Todas', ...data.categories];
-  const items = useMemo(
-    () => (active === 'Todas' ? data.items : data.items.filter((i) => i.category === active)),
-    [data.items, active]
-  );
 
   return (
     <div className="min-h-screen bg-surface-page">
-      <Navbar cartCount={cartCount} onCartOpen={() => setCartOpen(true)} />
+      <Navbar />
 
-      <section className="mx-auto max-w-6xl px-4 pt-10 pb-4">
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary via-primary-strong to-primary-soft p-8 text-primary-contrast shadow-glow sm:p-12">
+      <main className="mx-auto max-w-6xl px-4 pt-12 pb-16">
+        <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary via-primary-strong to-primary-soft p-8 text-primary-contrast shadow-glow sm:p-12">
           <div className="absolute -right-10 -top-10 h-48 w-48 rounded-full bg-primary-contrast/10" />
           <div className="absolute -bottom-14 right-24 h-40 w-40 rounded-full bg-primary-contrast/10" />
           <div className="relative max-w-xl">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-contrast/15 px-3 py-1 text-xs font-bold tracking-wide uppercase">
               <Sparkles size={14} />
-              Menú digital
+              Programa de fidelización
             </span>
             <h1 className="mt-4 text-3xl font-extrabold sm:text-5xl">
-              Delicioso, a un clic
+              Sumá compras, ganá premios
             </h1>
             <p className="mt-3 text-sm text-primary-contrast/85 sm:text-base">
-              Explora nuestro menú, arma tu pedido y disfruta. Todo se ve renovado con
-              tu esencia de marca.
+              Mostrá tu código QR al pagar y cada compra te acerca a nuevos descuentos y regalos.
             </p>
           </div>
-        </div>
-      </section>
+        </section>
 
-      <section id="menu" className="mx-auto max-w-6xl px-4 py-8">
-        <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-          <h2 className="flex items-center gap-2 text-2xl font-extrabold text-ink">
-            <UtensilsCrossed className="text-primary-strong" size={24} />
-            Nuestro menú
-          </h2>
-          <div className="flex flex-wrap gap-2">
-            {categories.map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setActive(cat)}
-                className={`rounded-full px-4 py-2 text-sm font-semibold transition-all ${
-                  active === cat
-                    ? 'bg-primary text-primary-contrast shadow-md'
-                    : 'border border-line bg-surface text-ink-muted hover:bg-surface-alt hover:text-ink'
-                }`}
-              >
-                {cat}
-              </button>
-            ))}
+        <section className="mt-10 grid gap-5 sm:grid-cols-3">
+          <div className="card p-6 text-center">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-soft text-primary-strong">
+              <QrCode size={22} />
+            </div>
+            <h2 className="mt-3 font-extrabold text-ink">Tu código QR</h2>
+            <p className="mt-1 text-sm text-ink-muted">
+              Un código único que te identifica al pagar en el local.
+            </p>
           </div>
-        </div>
-
-        {loading ? (
-          <Spinner label="Cargando menú..." />
-        ) : items.length === 0 ? (
-          <EmptyState
-            icon={UtensilsCrossed}
-            title="Aún no hay productos"
-            subtitle="El administrador puede cargar el menú desde el panel de control."
-          />
-        ) : (
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {items.map((item) => (
-              <MenuCard key={item.id} item={item} onAdd={addToCart} />
-            ))}
+          <div className="card p-6 text-center">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-soft text-primary-strong">
+              <Coffee size={22} />
+            </div>
+            <h2 className="mt-3 font-extrabold text-ink">Cada compra suma</h2>
+            <p className="mt-1 text-sm text-ink-muted">
+              El local registra tus compras y vos acumulás progreso automáticamente.
+            </p>
           </div>
-        )}
-      </section>
+          <div className="card p-6 text-center">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-soft text-primary-strong">
+              <Sparkles size={22} />
+            </div>
+            <h2 className="mt-3 font-extrabold text-ink">Premios al alcanzar</h2>
+            <p className="mt-1 text-sm text-ink-muted">
+              Cada X compras ganás un cupón. Los premios los configura el local.
+            </p>
+          </div>
+        </section>
 
-      <footer className="mt-10 border-t border-line py-8 text-center text-sm text-ink-muted">
-        © {new Date().getFullYear()} Fidelización App · Menú ·{' '}
-        {settings.currency || '$'} moneda configurable desde el panel
+        <section className="mt-10 text-center">
+          {isAuthed ? (
+            <Link
+              to={user?.role === 'admin' ? '/dashboard' : '/perfil'}
+              className="btn-primary text-base"
+            >
+              {user?.role === 'admin' ? 'Ir al panel' : <QrCode size={18} className="inline-block" />}
+              {user?.role === 'admin' ? '' : ' Ver mi QR y cupones'}
+            </Link>
+          ) : (
+            <Link to="/registro" className="btn-primary text-base">
+              <QrCode size={18} />
+              Creá tu cuenta y empezá a sumar
+            </Link>
+          )}
+        </section>
+      </main>
+
+      <footer className="border-t border-line py-8 text-center text-sm text-ink-muted">
+        © {new Date().getFullYear()} Fidelización App · {settings.currency || '$'} moneda configurable desde el panel
       </footer>
-
-      <CartDrawer
-        open={cartOpen}
-        onClose={() => setCartOpen(false)}
-        cart={cart}
-        setCart={setCart}
-        items={data.items}
-      />
     </div>
   );
 }

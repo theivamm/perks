@@ -7,10 +7,11 @@ import { imageUpload, uploadsDir } from '../upload.js';
 import { requireAuth } from '../middleware/auth.js';
 import { asyncHandler } from '../asyncHandler.js';
 import { countCompletedOrders } from '../rewards.js';
+import { ensureQrCode } from '../qr.js';
 
 const router = Router();
 
-const USER_FIELDS = 'id, name, last_name, email, phone, image, preferences, role, created_at';
+const USER_FIELDS = 'id, name, last_name, email, phone, image, qr_code, preferences, role, created_at';
 const BASE_FIELDS = 'id, name, email, phone, preferences, role, created_at';
 
 // Útil mientras las columnas last_name/image no estén migradas en Supabase
@@ -30,6 +31,7 @@ router.get(
   asyncHandler(async (req, res) => {
     const user = await selectUser(req.user.id);
     if (!user) return res.status(404).json({ error: 'Usuario no encontrado. Volvé a iniciar sesión.' });
+    if (!user.qr_code) user.qr_code = await ensureQrCode(user.id);
 
     const [ordersRes, couponsRes] = await Promise.all([
       supabase

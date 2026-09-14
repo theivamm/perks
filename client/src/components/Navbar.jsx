@@ -5,9 +5,7 @@ import {
   LogIn,
   LogOut,
   Moon,
-  ScrollText,
   Settings as SettingsIcon,
-  ShoppingCart,
   Sun,
   User as UserIcon,
 } from 'lucide-react';
@@ -25,7 +23,7 @@ function initials(name = '') {
     .join('');
 }
 
-export default function Navbar({ cartCount, onCartOpen }) {
+export default function Navbar() {
   const { settings, toggleTheme } = useTheme();
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -78,13 +76,6 @@ export default function Navbar({ cartCount, onCartOpen }) {
               {settings.theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
             </span>
           </button>
-          <a
-            href="#menu"
-            className="hidden items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-semibold text-ink-muted transition-colors hover:bg-surface-alt hover:text-ink sm:inline-flex"
-          >
-            <ScrollText size={16} />
-            Menú
-          </a>
 
           {user && (
             <>
@@ -160,23 +151,6 @@ export default function Navbar({ cartCount, onCartOpen }) {
               <span className="hidden sm:inline">Iniciar sesión</span>
             </Link>
           )}
-
-          <button
-            className="btn-primary relative"
-            onClick={onCartOpen}
-            aria-label="Abrir carrito"
-          >
-            <ShoppingCart size={16} />
-            <span className="hidden sm:inline">Pedido</span>
-            {cartCount > 0 && (
-              <span
-                key={cartCount}
-                className="animate-pop absolute -right-2 -top-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-xs font-bold text-white"
-              >
-                {cartCount}
-              </span>
-            )}
-          </button>
         </nav>
       </div>
     </header>

@@ -80,6 +80,10 @@ alter table public.users add column if not exists preferences jsonb default '{}'
 alter table public.users add column if not exists last_name text default '';
 alter table public.users add column if not exists image text default '';
 
+-- QR único por usuario para el mostrador (pago en local)
+alter table public.users add column if not exists qr_code text;
+create unique index if not exists idx_users_qr_code on public.users(qr_code);
+
 -- Pedido asociado a un usuario registrado (para historial y premios)
 alter table public.orders add column if not exists user_id uuid references public.users(id) on delete set null;
 create index if not exists idx_orders_user on public.orders(user_id);

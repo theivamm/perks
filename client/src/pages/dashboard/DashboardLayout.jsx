@@ -4,12 +4,12 @@ import {
   BadgePercent,
   ChevronDown,
   ChevronLeft,
-  ClipboardList,
   ExternalLink,
   LayoutDashboard,
   LogOut,
   Menu as MenuIcon,
   Moon,
+  ScanLine,
   Settings as SettingsIcon,
   Sun,
   User as UserIcon,
@@ -24,7 +24,7 @@ import NotificationsBell from '../../components/NotificationsBell.jsx';
 const NAV = [
   { to: '/dashboard/menu', label: 'Menú', icon: UtensilsCrossed },
   { to: '/dashboard/clientes', label: 'Clientes', icon: Users },
-  { to: '/dashboard/pedidos', label: 'Pedidos', icon: ClipboardList },
+  { to: '/dashboard/escanear', label: 'Escanear QR', icon: ScanLine },
   { to: '/dashboard/cupones', label: 'Cupones', icon: BadgePercent },
   { to: '/dashboard/configuracion', label: 'Configuración', icon: SettingsIcon },
 ];
