@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
   ArrowLeft,
+  Check,
   Coffee,
   Copy,
   Gift,
@@ -13,10 +14,10 @@ import {
   ReceiptText,
 } from 'lucide-react';
 import QRCode from 'qrcode';
-import { api, formatMoney } from '../../api.js';
+import { api } from '../../api.js';
 import { useTheme } from '../../context/ThemeContext.jsx';
 import { EmptyState, Spinner, toast } from '../../components/ui.jsx';
-import RewardProgress from '../../components/RewardProgress.jsx';
+import RewardGoals from '../../components/RewardGoals.jsx';
 import { formatWhen } from '../../lib/notifications.js';
 
 export default function ClientDetail() {
@@ -153,23 +154,17 @@ export default function ClientDetail() {
           </div>
         </div>
 
-        <RewardProgress completed={rewardProgress.completed} rules={rewardProgress.rules} />
+        <RewardGoals completed={rewardProgress.completed} rules={rewardProgress.rules} coupons={coupons} currency={settings.currency} />
       </section>
 
-      <div className="grid grid-cols-3 gap-3 text-sm">
+      <div className="grid grid-cols-2 gap-3 text-sm">
         <div className="rounded-xl bg-surface-alt p-3 text-center">
           <p className="text-xl font-extrabold text-ink">{stats.totalOrders}</p>
           <p className="text-[11px] text-ink-muted">Compras</p>
         </div>
         <div className="rounded-xl bg-surface-alt p-3 text-center">
-          <p className="text-xl font-extrabold text-ink">{stats.completedOrders}</p>
+          <p className="text-xl font-extrabold text-primary-strong">{stats.completedOrders}</p>
           <p className="text-[11px] text-ink-muted">Completadas</p>
-        </div>
-        <div className="rounded-xl bg-surface-alt p-3 text-center">
-          <p className="text-xl font-extrabold text-primary-strong">
-            {formatMoney(stats.totalSpent, settings.currency)}
-          </p>
-          <p className="text-[11px] text-ink-muted">Total acumulado</p>
         </div>
       </div>
 
@@ -216,18 +211,15 @@ export default function ClientDetail() {
           <p className="text-sm text-ink-muted">Aún no registró compras.</p>
         ) : (
           <ul className="space-y-1.5">
-            {orders.slice(0, 10).map((o) => (
+            {orders.slice(0, 10).map((o, i) => (
               <li key={o.id} className="flex items-center justify-between gap-2 rounded-xl border border-line bg-surface px-3 py-2 text-sm">
-                <div className="min-w-0">
-                  <p className="flex items-center gap-1.5 text-xs text-ink-muted">
-                    {formatWhen(o.created_at)}
-                    {o.clients?.name && <span className="truncate">· {o.clients.name}</span>}
-                  </p>
-                  {o.items?.map((it) => `${it.qty}× ${it.title}`).join(' · ')}
-                </div>
-                <span className="shrink-0 font-extrabold text-primary-strong">
-                  {formatMoney(o.total, settings.currency)}
-                </span>
+                <p className="flex items-center gap-2 text-xs text-ink">
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-green-500/15 text-green-600">
+                    <Check size={12} />
+                  </span>
+                  Compra registrada
+                </p>
+                <span className="shrink-0 text-xs font-semibold text-ink-muted">{formatWhen(o.created_at)}</span>
               </li>
             ))}
           </ul>
