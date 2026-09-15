@@ -23,7 +23,3 @@ create table if not exists public.notifications (
   created_at timestamptz not null default now()
 );
 create index if not exists idx_notifications_user on public.notifications(user_id, created_at desc);
-
--- 3) Destacados / ofertas especiales en el menú
-alter table public.menu_items add column if not exists featured boolean not null default false;
-alter table public.menu_items add column if not exists featured_label text default '';
