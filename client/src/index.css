@@ -205,6 +205,10 @@
   }
 }
 
+.point-burst {
+  animation: pop 0.3s ease, float-up 1.5s ease 0.4s forwards;
+}
+
 .animate-confetti-fall {
   animation: confetti-fall 2.6s cubic-bezier(0.22, 0.6, 0.36, 1) forwards;
 }

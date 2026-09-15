@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Archive, Bell, CheckCheck, History, Loader2 } from 'lucide-react';
 import { api } from '../api.js';
 import { formatWhen, notificationMeta } from '../lib/notifications.js';
+import CouponPointOverlay from './CouponPointOverlay.jsx';
 
 const POLL_MS = 30000;
 
@@ -12,6 +13,7 @@ export default function NotificationsBell() {
   const [items, setItems] = useState([]);
   const [unread, setUnread] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [celebrate, setCelebrate] = useState(null);
   const ref = useRef(null);
 
   const load = async (silent = false) => {
@@ -67,11 +69,16 @@ export default function NotificationsBell() {
 
   const openItem = (n) => {
     setOpen(false);
+    if (['reward_progress', 'coupon_won'].includes(n.type) && n.data?.user_coupon_id) {
+      setCelebrate(n);
+      return;
+    }
     navigate(n.link || '/notificaciones');
   };
 
   return (
     <div className="relative" ref={ref}>
+      {celebrate && <CouponPointOverlay note={celebrate} onClose={() => setCelebrate(null)} />}
       <button
         className="btn-icon relative"
         onClick={toggleOpen}

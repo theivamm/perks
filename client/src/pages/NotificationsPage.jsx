@@ -5,6 +5,7 @@ import { api } from '../api.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { EmptyState, Spinner, toast } from '../components/ui.jsx';
 import { formatWhen, notificationMeta } from '../lib/notifications.js';
+import CouponPointOverlay from '../components/CouponPointOverlay.jsx';
 
 export default function NotificationsPage() {
   const { user } = useAuth();
@@ -12,6 +13,7 @@ export default function NotificationsPage() {
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState([]);
   const [tab, setTab] = useState('activas');
+  const [celebrate, setCelebrate] = useState(null);
 
   useEffect(() => {
     (async () => {
@@ -95,7 +97,19 @@ export default function NotificationsPage() {
               const meta = notificationMeta(n.type);
               const Icon = meta.icon;
               return (
-                <li key={n.id} className="card flex items-start gap-3 p-4">
+                <li
+                  key={n.id}
+                  className={`card flex items-start gap-3 p-4 ${
+                    ['reward_progress', 'coupon_won'].includes(n.type) && n.data?.user_coupon_id
+                      ? 'cursor-pointer transition-colors hover:bg-surface-alt'
+                      : ''
+                  }`}
+                  onClick={() => {
+                    if (['reward_progress', 'coupon_won'].includes(n.type) && n.data?.user_coupon_id) {
+                      setCelebrate(n);
+                    }
+                  }}
+                >
                   <span className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${meta.style}`}>
                     <Icon size={18} />
                   </span>
@@ -134,6 +148,8 @@ export default function NotificationsPage() {
           </p>
         )}
       </main>
+
+      {celebrate && <CouponPointOverlay note={celebrate} onClose={() => setCelebrate(null)} />}
     </div>
   );
 }
