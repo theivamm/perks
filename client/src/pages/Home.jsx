@@ -205,7 +205,7 @@ export default function Home() {
                   </div>
                 </div>
               ) : activeCoupon ? (
-                <div className="mx-auto max-w-lg">
+                <div className="w-full">
                   <ActiveCouponCard coupon={activeCoupon} currency={currency} />
                   {readyCount > 0 && (
                     <p className="mt-3 text-center text-sm font-semibold text-emerald-600 dark:text-emerald-400">
