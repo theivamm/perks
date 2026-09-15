@@ -27,6 +27,7 @@ import { useAuth } from '../context/AuthContext.jsx';
 import { useTheme } from '../context/ThemeContext.jsx';
 import { EmptyState, Modal, Spinner, toast } from '../components/ui.jsx';
 import CouponCard from '../components/CouponCard.jsx';
+import RewardGoals from '../components/RewardGoals.jsx';
 import AdminSummary from '../components/AdminSummary.jsx';
 import { formatWhen, notificationMeta } from '../lib/notifications.js';
 
@@ -187,6 +188,7 @@ export default function Profile() {
   if (!data) return <EmptyState icon={Coffee} title="No se pudo cargar el perfil" />;
 
   const { coupons } = data;
+  const rewardProgress = data.rewardProgress || { completed: 0, rules: [] };
   const activeCoupons = (coupons || []).filter((c) => c.status === 'activo');
 
   return (
@@ -302,8 +304,11 @@ export default function Profile() {
         )}
 
         {isCliente ? (
-          <section>
-            <h2 className="mb-3 flex items-center gap-2 text-lg font-extrabold text-ink">
+          <>
+            <RewardGoals completed={rewardProgress.completed} rules={rewardProgress.rules} coupons={activeCoupons} currency={settings.currency} />
+
+            <section>
+              <h2 className="mb-3 flex items-center gap-2 text-lg font-extrabold text-ink">
               <Gift size={20} className="text-primary-strong" />
               Mis cupones activos
             </h2>
@@ -326,7 +331,8 @@ export default function Profile() {
                 ))}
               </div>
             )}
-          </section>
+            </section>
+          </>
         ) : (
           <AdminSummary />
         )}
