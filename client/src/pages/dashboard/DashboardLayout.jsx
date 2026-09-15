@@ -229,51 +229,38 @@ export default function DashboardLayout() {
         <div className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm lg:hidden" onClick={() => setFabOpen(false)} />
       )}
 
-      <div className="fixed bottom-5 left-5 z-50 flex items-end lg:hidden">
-        <div className="relative flex items-end">
-          {FAB_ITEMS.map((item, i) => {
-            const angle = ((-90 + i * 30) * Math.PI) / 180;
-            const x = Math.round(110 * Math.cos(angle));
-            const y = Math.round(110 * Math.sin(angle));
-            return (
-              <button
-                key={item.to}
-                className={`absolute -ml-6 bottom-2 left-1/2 flex flex-col items-center gap-1 transition-all duration-500 ${
-                  fabOpen ? 'opacity-100' : 'pointer-events-none opacity-0'
-                }`}
-                style={{
-                  transform: `translate(${fabOpen ? x : 0}px, ${fabOpen ? y : 0}px) scale(${fabOpen ? 1 : 0.3})`,
-                  transitionTimingFunction: 'cubic-bezier(0.34, 1.56, 0.64, 1)',
-                  transitionDelay: fabOpen ? `${i * 40}ms` : '0ms',
-                }}
-                onClick={() => {
-                  setFabOpen(false);
-                  navigate(item.to);
-                }}
-                aria-label={item.label}
-              >
-                <span className="flex h-12 w-12 items-center justify-center rounded-full bg-surface text-primary-strong shadow-lg ring-1 ring-line">
-                  <item.icon size={20} />
-                </span>
-                <span className="rounded-full bg-ink px-2 py-0.5 text-[10px] font-bold text-surface shadow">
-                  {item.label}
-                </span>
-              </button>
-            );
-          })}
-
-          <button
-            className={`relative flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary-strong text-primary-contrast shadow-glow transition-transform hover:scale-105 active:scale-95 ${
-              fabOpen ? 'rotate-45' : ''
-            }`}
-            onClick={() => setFabOpen((v) => !v)}
-            aria-label={fabOpen ? 'Cerrar menú' : 'Abrir menú'}
-          >
-            <span key={fabOpen} className="animate-pop inline-flex">
-              {fabOpen ? <X size={26} /> : <MenuIcon size={26} />}
-            </span>
-          </button>
+      <div className="fixed bottom-5 left-5 z-50 flex flex-col items-end lg:hidden">
+        <div className="flex flex-col-reverse items-start gap-2.5">
+          {FAB_ITEMS.map((item, i) => (
+            <button
+              key={item.to}
+              className={`flex items-center gap-2.5 rounded-2xl border border-line bg-surface py-2 pl-2 pr-4 shadow-lg transition-all duration-300 ${
+                fabOpen ? 'translate-y-0 opacity-100' : 'pointer-events-none translate-y-3 opacity-0'
+              }`}
+              style={{ transitionDelay: fabOpen ? `${i * 45}ms` : '0ms' }}
+              onClick={() => {
+                setFabOpen(false);
+                navigate(item.to);
+              }}
+              aria-label={item.label}
+            >
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary-softer text-primary-strong">
+                <item.icon size={18} />
+              </span>
+              <span className="text-sm font-bold text-ink">{item.label}</span>
+            </button>
+          ))}
         </div>
+
+        <button
+          className="relative mt-2.5 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary-strong text-primary-contrast shadow-glow transition-transform hover:scale-105 active:scale-95"
+          onClick={() => setFabOpen((v) => !v)}
+          aria-label={fabOpen ? 'Cerrar menú' : 'Abrir menú'}
+        >
+          <span key={fabOpen} className="animate-pop inline-flex">
+            {fabOpen ? <X size={26} /> : <MenuIcon size={26} />}
+          </span>
+        </button>
       </div>
     </div>
   );
