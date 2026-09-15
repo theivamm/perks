@@ -356,19 +356,23 @@ export default function MenuManager() {
                           {item.title.slice(0, 2).toUpperCase()}
                         </div>
                       )}
-                      <div className="absolute right-2 top-2 rounded-full bg-surface/90 px-2.5 py-1 text-xs font-bold shadow">
+                      <div className="absolute right-2 top-2 flex flex-wrap items-center justify-end gap-1.5">
                         {Number(item.discount) > 0 ? (
-                          <span className="flex flex-col items-end gap-0.5">
-                            <span className="text-ink-muted line-through">{formatMoney(item.price, settings.currency)}</span>
-                            <span className="text-lg font-black text-green-600">
+                          <>
+                            <span className="rounded-full bg-surface/90 px-2.5 py-1 text-xs font-bold text-ink-muted line-through">
+                              {formatMoney(item.price, settings.currency)}
+                            </span>
+                            <span className="rounded-full bg-green-500 px-3 py-1 text-sm font-black text-white shadow">
                               {formatMoney((Number(item.price) * (100 - Number(item.discount))) / 100, settings.currency)}
                             </span>
-                            <span className="rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-black text-white">
+                            <span className="rounded-full bg-red-500 px-2 py-1 text-xs font-black text-white shadow">
                               -{Number(item.discount)}%
                             </span>
-                          </span>
+                          </>
                         ) : (
-                          <span className="text-primary-strong">{formatMoney(item.price, settings.currency)}</span>
+                          <span className="rounded-full bg-surface/90 px-2.5 py-1 text-xs font-bold text-primary-strong">
+                            {formatMoney(item.price, settings.currency)}
+                          </span>
                         )}
                       </div>
                       <div className="absolute left-2 top-2 flex flex-col items-start gap-1">
