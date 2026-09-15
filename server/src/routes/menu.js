@@ -28,7 +28,7 @@ router.post(
   '/',
   requireAdmin,
   asyncHandler(async (req, res) => {
-    const { title, description = '', price = 0, category = 'General', image = '', available = 1 } = req.body;
+    const { title, description = '', price = 0, category = 'General', image = '', available = 1, featured = 0, featured_label = '' } = req.body;
     if (!title || !String(title).trim()) {
       return res.status(400).json({ error: 'Titulo requerido' });
     }
@@ -41,6 +41,8 @@ router.post(
         category,
         image,
         available: available ? true : false,
+        featured: featured ? true : false,
+        featured_label: String(featured_label || '').trim(),
       })
       .select()
       .single();
@@ -53,7 +55,7 @@ router.put(
   '/:id',
   requireAdmin,
   asyncHandler(async (req, res) => {
-    const { title, description, price, category, image, available } = req.body;
+    const { title, description, price, category, image, available, featured, featured_label } = req.body;
     const { data: current, error: findErr } = await supabase
       .from('menu_items')
       .select('*')
@@ -69,6 +71,8 @@ router.put(
     if (category !== undefined) patch.category = category;
     if (image !== undefined) patch.image = image;
     if (available !== undefined) patch.available = available ? true : false;
+    if (featured !== undefined) patch.featured = featured ? true : false;
+    if (featured_label !== undefined) patch.featured_label = String(featured_label || '').trim();
 
     const { data, error } = await supabase
       .from('menu_items')

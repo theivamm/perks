@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useTheme } from '../context/ThemeContext.jsx';
 import Navbar from '../components/Navbar.jsx';
+import PublicMenu from '../components/PublicMenu.jsx';
 
 export default function Home() {
   const { user, isAuthed } = useAuth();
@@ -60,7 +61,9 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="mt-10 text-center">
+        <PublicMenu />
+
+        <section className="mt-12 text-center">
           {isAuthed ? (
             <Link
               to={user?.role === 'admin' ? '/dashboard' : '/perfil'}

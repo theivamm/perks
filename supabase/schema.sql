@@ -23,6 +23,8 @@ create table if not exists public.menu_items (
   price numeric not null default 0,
   image text default '',
   available boolean not null default true,
+  featured boolean not null default false,
+  featured_label text default '',
   created_at timestamptz not null default now()
 );
 

@@ -8,6 +8,7 @@ import {
   Plus,
   Search,
   Sparkles,
+  Star,
   Trash2,
   UtensilsCrossed,
 } from 'lucide-react';
@@ -16,7 +17,7 @@ import { useTheme } from '../../context/ThemeContext.jsx';
 import { EmptyState, Modal, Spinner, toast } from '../../components/ui.jsx';
 import ImageCropper from '../../components/ImageCropper.jsx';
 
-const EMPTY_FORM = { title: '', description: '', price: '', category: 'General', image: '', available: 1 };
+const EMPTY_FORM = { title: '', description: '', price: '', category: 'General', image: '', available: 1, featured: 0, featured_label: '' };
 
 export default function MenuManager() {
   const { settings } = useTheme();
@@ -167,6 +168,20 @@ export default function MenuManager() {
         body: { available: item.available ? 0 : 1 },
       });
       toast(item.available ? 'Oculto del menú público' : 'Visible en el menú');
+      await load();
+    } catch (err) {
+      toast(err.message);
+    }
+  };
+
+  const toggleFeatured = async (item, e) => {
+    e.stopPropagation();
+    try {
+      await api(`/api/menu/${item.id}`, {
+        method: 'PUT',
+        body: { featured: item.featured ? 0 : 1 },
+      });
+      toast(item.featured ? 'Quitado de ofertas especiales' : '¡Marcado como oferta especial!');
       await load();
     } catch (err) {
       toast(err.message);
@@ -344,17 +359,24 @@ export default function MenuManager() {
                       <div className="absolute right-2 top-2 rounded-full bg-surface/90 px-2.5 py-1 text-xs font-bold text-primary-strong">
                         {formatMoney(item.price, settings.currency)}
                       </div>
-                      <button
-                        onClick={(e) => toggleAvailable(item, e)}
-                        className={`absolute left-2 top-2 rounded-full px-2.5 py-1 text-xs font-bold shadow ${
-                          item.available
-                            ? 'bg-green-500 text-white'
-                            : 'bg-red-500 text-white'
-                        }`}
-                        title="Cambiar disponibilidad"
-                      >
-                        {item.available ? 'Visible' : 'Oculto'}
-                      </button>
+                      <div className="absolute left-2 top-2 flex flex-col items-start gap-1">
+                        <button
+                          onClick={(e) => toggleAvailable(item, e)}
+                          className={`rounded-full px-2.5 py-1 text-xs font-bold shadow ${
+                            item.available
+                              ? 'bg-green-500 text-white'
+                              : 'bg-red-500 text-white'
+                          }`}
+                          title="Cambiar disponibilidad"
+                        >
+                          {item.available ? 'Visible' : 'Oculto'}
+                        </button>
+                        {item.featured && (
+                          <span className="rounded-full bg-gradient-to-r from-amber-400 to-orange-500 px-2.5 py-1 text-xs font-black text-white shadow-glow">
+                            <Star size={12} className="inline-block" /> {item.featured_label || 'Oferta'}
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <div className="p-4">
                       <h3 className="font-bold text-ink">{item.title}</h3>
@@ -365,6 +387,13 @@ export default function MenuManager() {
                         <button className="btn-ghost flex-1 !py-1.5 !text-xs" onClick={() => openEdit(item)}>
                           <Pencil size={14} />
                           Editar
+                        </button>
+                        <button
+                          className={`btn-ghost !px-2.5 !py-1.5 !text-xs ${item.featured ? 'border-amber-400/60 text-amber-600' : ''}`}
+                          onClick={(e) => toggleFeatured(item, e)}
+                          title={item.featured ? 'Quitar de ofertas' : 'Marcar como oferta especial'}
+                        >
+                          <Star size={14} className={item.featured ? 'fill-amber-400 text-amber-500' : ''} />
                         </button>
                         <button className="btn-danger !py-1.5 !text-xs" onClick={() => remove(item)}>
                           <Trash2 size={14} />
@@ -487,6 +516,31 @@ export default function MenuManager() {
             />
             <span className="text-sm font-semibold text-ink">Disponible en el menú público</span>
           </label>
+
+          <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-amber-300/60 bg-amber-50 p-3 dark:border-amber-400/40 dark:bg-amber-400/10">
+            <input
+              type="checkbox"
+              className="h-4 w-4 accent-[hsl(var(--primary))]"
+              checked={Boolean(form.featured)}
+              onChange={(e) => setForm((f) => ({ ...f, featured: e.target.checked ? 1 : 0 }))}
+            />
+            <span className="text-sm font-semibold text-ink">
+              <Star size={13} className="inline-block text-amber-500" />
+              Oferta especial / Favorito (se muestra arriba del menú en el inicio)
+            </span>
+          </label>
+
+          {Boolean(form.featured) && (
+            <div className="animate-fade-up">
+              <label className="label">Texto de la oferta</label>
+              <input
+                className="input"
+                value={form.featured_label}
+                onChange={set('featured_label')}
+                placeholder="Ej: 30% OFF · 2x1 · Regalo con tu pedido"
+              />
+            </div>
+          )}
 
           <div className="flex justify-end gap-2 pt-2">
             <button type="button" className="btn-ghost" onClick={() => setModalOpen(false)}>
