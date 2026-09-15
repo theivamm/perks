@@ -3,7 +3,6 @@ import { Link, useParams, useSearchParams } from 'react-router-dom';
 import {
   ArrowLeft,
   BadgeCheck,
-  Check,
   Coffee,
   Copy,
   Gift,
@@ -12,11 +11,10 @@ import {
   Phone,
   PlusCircle,
   QrCode,
-  ReceiptText,
   Ticket,
 } from 'lucide-react';
 import QRCode from 'qrcode';
-import { api, formatMoney } from '../../api.js';
+import { api } from '../../api.js';
 import { useTheme } from '../../context/ThemeContext.jsx';
 import { EmptyState, Spinner, toast } from '../../components/ui.jsx';
 import { ActiveCouponCard, couponValue } from '../../components/CouponCards.jsx';
@@ -92,7 +90,7 @@ export default function ClientDetail() {
   if (loading && !detail) return <Spinner label="Cargando perfil del cliente..." />;
   if (!detail) return <EmptyState icon={Coffee} title="No se pudo cargar el cliente" />;
 
-  const { user, orders, coupons, activeCoupon, stats } = detail;
+  const { user, coupons, activeCoupon } = detail;
   const readyCoupons = (coupons || []).filter((c) => c.status === 'completado');
   const redeemedCoupons = (coupons || []).filter((c) => c.status === 'canjeado');
 
@@ -181,21 +179,6 @@ export default function ClientDetail() {
           )}
         </div>
       </section>
-
-      <div className="grid grid-cols-3 gap-3 text-sm">
-        <div className="rounded-xl bg-surface-alt p-3 text-center">
-          <p className="text-xl font-extrabold text-ink">{stats.totalOrders}</p>
-          <p className="text-[11px] text-ink-muted">Compras</p>
-        </div>
-        <div className="rounded-xl bg-surface-alt p-3 text-center">
-          <p className="text-xl font-extrabold text-primary-strong">{stats.completedOrders}</p>
-          <p className="text-[11px] text-ink-muted">Completadas</p>
-        </div>
-        <div className="rounded-xl bg-surface-alt p-3 text-center">
-          <p className="text-xl font-extrabold text-primary-strong">{readyCoupons.length}</p>
-          <p className="text-[11px] text-ink-muted">Listos para canjear</p>
-        </div>
-      </div>
 
       <section>
         <h2 className="mb-3 flex items-center gap-2 text-lg font-extrabold text-ink">
@@ -288,30 +271,6 @@ export default function ClientDetail() {
         )}
       </section>
 
-      <section>
-        <h2 className="mb-3 flex items-center gap-2 text-lg font-extrabold text-ink">
-          <ReceiptText size={20} className="text-primary-strong" />
-          Últimas compras
-        </h2>
-        {orders.length === 0 ? (
-          <p className="text-sm text-ink-muted">Aún no registró compras.</p>
-        ) : (
-          <ul className="space-y-1.5">
-            {orders.slice(0, 10).map((o) => (
-              <li key={o.id} className="flex items-center justify-between gap-2 rounded-xl border border-line bg-surface px-3 py-2 text-sm">
-                <p className="flex items-center gap-2 text-xs text-ink">
-                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-green-500/15 text-green-600">
-                    <Check size={12} />
-                  </span>
-                  Compra registrada
-                </p>
-                <span className="shrink-0 text-xs font-semibold text-ink-muted">{formatMoney(o.total, currency)}</span>
-                <span className="shrink-0 text-xs font-semibold text-ink-muted">{formatDateTime(o.created_at)}</span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-    </div>
+      </div>
   );
 }
