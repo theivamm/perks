@@ -7,6 +7,7 @@ import {
   Pencil,
   Plus,
   Search,
+  Sparkles,
   Star,
   Trash2,
   UtensilsCrossed,
@@ -32,6 +33,8 @@ export default function MenuManager() {
   const [importing, setImporting] = useState(false);
   const [cropSrc, setCropSrc] = useState(null);
   const [showExcelHelp, setShowExcelHelp] = useState(false);
+  const [generatingId, setGeneratingId] = useState(null);
+  const [progress, setProgress] = useState({});
   const excelInput = useRef(null);
   const imageInput = useRef(null);
 
@@ -103,6 +106,50 @@ export default function MenuManager() {
     } catch (err) {
       toast(err.message);
     }
+  };
+
+  const runGenerateImage = async (item) => {
+    setGeneratingId(item.id);
+    setProgress((p) => ({ ...p, [item.id]: 4 }));
+
+    const sim = setInterval(() => {
+      setProgress((p) => ({
+        ...p,
+        [item.id]: Math.min(94, (p[item.id] || 4) + Math.random() * 6 + 2),
+      }));
+    }, 400);
+
+    const close = (pct) => {
+      clearInterval(sim);
+      setProgress((p) => ({ ...p, [item.id]: pct }));
+    };
+
+    try {
+      const res = await api(`/api/menu/${item.id}/generate-image`, { method: 'POST' });
+      setData((d) => ({
+        ...d,
+        items: d.items.map((it) => (it.id === res.id ? res : it)),
+      }));
+      close(100);
+      return { ok: true };
+    } catch (err) {
+      close(90);
+      return { ok: false, error: err.message };
+    } finally {
+      setTimeout(() => {
+        setGeneratingId(null);
+        setProgress((p) => {
+          const n = { ...p };
+          delete n[item.id];
+          return n;
+        });
+      }, 600);
+    }
+  };
+
+  const generateImage = async (item) => {
+    const r = await runGenerateImage(item);
+    toast(r.ok ? 'Imagen generada' : r.error || 'No se pudo generar. Probá de nuevo.');
   };
 
   const toggleAvailable = async (item, e) => {
@@ -334,6 +381,29 @@ export default function MenuManager() {
                           </span>
                         )}
                       </div>
+                      {generatingId === item.id && (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2.5 overflow-hidden bg-ink/55 backdrop-blur-[2px]">
+                          <div className="animate-shimmer pointer-events-none absolute inset-0 bg-[linear-gradient(100deg,transparent,rgba(255,255,255,0.35)_42%,rgba(255,255,255,0.35)_50%,transparent_58%)] bg-[length:200%_100%]" />
+                          <div className="relative h-14 w-14">
+                            <div className="absolute inset-0 rounded-full border-2 border-white/25" />
+                            <div
+                              className="absolute inset-0 animate-spin rounded-full border-2 border-transparent border-t-primary-contrast"
+                              style={{ animationDuration: '1s' }}
+                            />
+                            <div className="absolute inset-2.5 rounded-full bg-white/25" />
+                            <Sparkles size={14} className="absolute inset-0 m-auto text-white" />
+                          </div>
+                          <span className="text-sm font-black text-white">
+                            {Math.round(progress[item.id] || 0)}%
+                          </span>
+                          <div className="h-1.5 w-28 overflow-hidden rounded-full bg-white/25">
+                            <div
+                              className="h-full rounded-full bg-gradient-to-r from-amber-300 to-orange-500 shadow-glow transition-[width] duration-300"
+                              style={{ width: `${Math.round(progress[item.id] || 0)}%` }}
+                            />
+                          </div>
+                        </div>
+                      )}
                     </div>
                     <div className="p-4">
                       <h3 className="font-bold text-ink">{item.title}</h3>
@@ -356,6 +426,18 @@ export default function MenuManager() {
                           <Trash2 size={14} />
                         </button>
                       </div>
+                      <button
+                        className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-primary/40 py-1.5 text-xs font-semibold text-primary-strong transition-colors hover:bg-primary-soft"
+                        onClick={() => generateImage(item)}
+                        disabled={generatingId === item.id}
+                      >
+                        {generatingId === item.id ? (
+                          <Loader2 className="animate-spin" size={14} />
+                        ) : (
+                          <Sparkles size={14} />
+                        )}
+                        {generatingId === item.id ? 'Generando...' : 'Generar imagen con IA'}
+                      </button>
                     </div>
                   </div>
                 ))}

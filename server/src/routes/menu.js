@@ -98,6 +98,77 @@ router.delete(
 );
 
 router.post(
+  '/:id/generate-image',
+  requireAdmin,
+  asyncHandler(async (req, res) => {
+    const { data: item, error: findErr } = await supabase
+      .from('menu_items')
+      .select('*')
+      .eq('id', req.params.id)
+      .maybeSingle();
+    if (findErr) throw findErr;
+    if (!item) return res.status(404).json({ error: 'No encontrado' });
+
+    const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
+    const apiToken = process.env.CLOUDFLARE_API_TOKEN;
+    if (!accountId || !apiToken) {
+      return res.status(503).json({ error: 'Cloudflare Workers AI no configurado' });
+    }
+
+    const title = String(item.title || 'plato del menú').trim();
+    const desc = String(item.description || '').trim().slice(0, 140);
+    const prompt = `high quality professional food photography of ${title}${
+      desc ? ', ' + desc : ''
+    }, appetizing presentation, studio lighting, top-down view, clean minimalist background, 4k`;
+
+    const form = new FormData();
+    form.append('prompt', prompt);
+    form.append('width', '1024');
+    form.append('height', '1024');
+
+    const aiRes = await fetch(
+      `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/@cf/black-forest-labs/flux-2-klein-4b`,
+      {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${apiToken}` },
+        body: form,
+        signal: AbortSignal.timeout(55000),
+      }
+    );
+
+    const aiData = await aiRes.json().catch(() => ({}));
+    if (!aiRes.ok || !aiData?.result?.image) {
+      const msg = aiData?.errors?.[0]?.message || `Cloudflare respondió ${aiRes.status}`;
+      return res.status(502).json({ error: `No se pudo generar la imagen: ${msg}` });
+    }
+
+    const buffer = Buffer.from(aiData.result.image, 'base64');
+    const isPng = buffer.length > 8 && buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4e && buffer[3] === 0x47;
+    const ext = isPng ? '.png' : '.jpg';
+    const contentType = isPng ? 'image/png' : 'image/jpeg';
+    const name = `${String(item.id).slice(0, 8)}-${Date.now()}${ext}`;
+    let publicUrl;
+    try {
+      publicUrl = await uploadImage(name, buffer, contentType);
+    } catch (e) {
+      console.warn('[SUPABASE] Fallback a almacenamiento local:', e.message);
+      fs.mkdirSync(uploadsDir, { recursive: true });
+      fs.writeFileSync(path.join(uploadsDir, name), buffer);
+      publicUrl = `/uploads/${name}`;
+    }
+
+    const { data: updated, error } = await supabase
+      .from('menu_items')
+      .update({ image: publicUrl })
+      .eq('id', item.id)
+      .select()
+      .single();
+    if (error) throw error;
+    res.json(updated);
+  })
+);
+
+router.post(
   '/upload-image',
   requireAdmin,
   imageUpload.single('image'),
