@@ -14,6 +14,33 @@ const HORDE = 'https://aihorde.net/api/v2';
 const HORDE_HEADERS = { 'Content-Type': 'application/json', apikey: '0000000000', 'X-AI-Apikey': '0000000000' };
 const imageJobs = new Map(); // itemId -> { jobId, model, lock }
 
+const generateWithGemini = async (prompt, apiKey) => {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=${apiKey}`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      generationConfig: { responseModalities: ['IMAGE', 'TEXT'] },
+    }),
+    signal: AbortSignal.timeout(60000),
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    const err = new Error(data?.error?.message || `Gemini respondió ${res.status}`);
+    err.status = res.status;
+    throw err;
+  }
+  const parts = data?.candidates?.[0]?.content?.parts || [];
+  const img = parts.find((p) => p.inlineData?.data);
+  if (!img?.inlineData?.data) throw new Error('Gemini no devolvió una imagen');
+  return {
+    buffer: Buffer.from(img.inlineData.data, 'base64'),
+    contentType: img.inlineData.mimeType || 'image/png',
+    usedPolicy: Boolean(data?.usageMetadata),
+  };
+};
+
 router.get(
   '/',
   asyncHandler(async (_req, res) => {
@@ -118,6 +145,42 @@ router.post(
     const prompt = `high quality professional food photography of ${title}${
       desc ? ', ' + desc : ''
     }, appetizing presentation, studio lighting, top-down view, clean minimalist background, 4k`;
+
+    const attachToItem = async (buffer, contentType) => {
+      const ext = contentType.includes('png') ? '.png' : '.jpg';
+      const name = `${String(item.id).slice(0, 8)}-${Date.now()}${ext}`;
+      let publicUrl;
+      try {
+        publicUrl = await uploadImage(name, buffer, contentType);
+      } catch (e) {
+        console.warn('[SUPABASE] Fallback a almacenamiento local:', e.message);
+        fs.mkdirSync(uploadsDir, { recursive: true });
+        fs.writeFileSync(path.join(uploadsDir, name), buffer);
+        publicUrl = `/uploads/${name}`;
+      }
+      return supabase
+        .from('menu_items')
+        .update({ image: publicUrl })
+        .eq('id', item.id)
+        .select()
+        .single();
+    };
+
+    const geminiKey = process.env.GEMINI_API_KEY;
+    if (geminiKey) {
+      try {
+        const gen = await generateWithGemini(prompt, geminiKey);
+        const { data: updated, error: gemErr } = await attachToItem(gen.buffer, gen.contentType);
+        if (gemErr) throw gemErr;
+        return res.json(updated);
+      } catch (e) {
+        if (e.message && /no devolvi|falló|(4|5)\d\d|API key|api key|unauthorized/i.test(e.message)) {
+          console.warn('[GEMINI] No disponible, uso AI Horde:', e.message);
+        } else {
+          throw new Error(`Gemini: ${e.message}`);
+        }
+      }
+    }
 
     const submitJob = async (models) => {
       const res2 = await fetch(`${HORDE}/generate/async`, {

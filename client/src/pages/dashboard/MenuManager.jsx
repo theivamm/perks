@@ -111,24 +111,33 @@ export default function MenuManager() {
   const runGenerateImage = async (item) => {
     setGeneratingId(item.id);
     try {
-      await api(`/api/menu/${item.id}/generate-image`, { method: 'POST' });
+      const res = await api(`/api/menu/${item.id}/generate-image`, { method: 'POST' });
+      if (res?.id) {
+        // Respuesta directa (Gemini): imagen ya lista
+        setData((d) => ({
+          ...d,
+          items: d.items.map((it) => (it.id === res.id ? res : it)),
+        }));
+        return { ok: true };
+      }
+      // Generación en cola (AI Horde): consultamos hasta que esté lista
       const started = Date.now();
       while (Date.now() - started < 5 * 60 * 1000) {
         await new Promise((r) => setTimeout(r, 4000));
-        let res;
+        let poll;
         try {
-          res = await api(`/api/menu/${item.id}/generate-image/status`);
+          poll = await api(`/api/menu/${item.id}/generate-image/status`);
         } catch {
           continue; // error transitorio: seguimos consultando
         }
-        if (res.status === 'done') {
+        if (poll.status === 'done') {
           setData((d) => ({
             ...d,
-            items: d.items.map((it) => (it.id === res.item.id ? res.item : it)),
+            items: d.items.map((it) => (it.id === poll.item.id ? poll.item : it)),
           }));
           return { ok: true };
         }
-        if (res.status === 'error') return { ok: false, error: res.error };
+        if (poll.status === 'error') return { ok: false, error: poll.error };
       }
       return { ok: false, error: 'Tardó demasiado. Volvé a intentar en unos minutos.' };
     } catch (err) {
