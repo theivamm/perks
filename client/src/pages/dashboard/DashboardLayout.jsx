@@ -3,6 +3,7 @@ import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
 import {
   BadgePercent,
   ChefHat,
+  ChevronDown,
   ExternalLink,
   LayoutDashboard,
   LogOut,
