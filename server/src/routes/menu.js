@@ -166,7 +166,20 @@ router.post(
         .single();
     };
 
-    // 1) Pollinations con modelo flux: gratis, rápido y fotorrealista
+    // 1) Gemini: mejor calidad, sin marca de agua (requiere billing en AI Studio)
+    const geminiKey = process.env.GEMINI_API_KEY;
+    if (geminiKey) {
+      try {
+        const gen = await generateWithGemini(prompt, geminiKey);
+        const { data: updated, error: gemErr } = await attachToItem(gen.buffer, gen.contentType);
+        if (gemErr) throw gemErr;
+        return res.json(updated);
+      } catch (e) {
+        console.warn('[GEMINI] no disponible, uso Pollinations:', e.message);
+      }
+    }
+
+    // 2) Pollinations con modelo flux: gratis y rápido (puede incluir marca de agua)
     try {
       const genUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(
         prompt
@@ -181,20 +194,7 @@ router.post(
       }
       console.warn('[POLLINATIONS] respondió', imageRes.status);
     } catch (e) {
-      console.warn('[POLLINATIONS] fallo, sigo con Gemini:', e.message);
-    }
-
-    // 2) Gemini (gratis solo con billing; si la clave falla seguimos)
-    const geminiKey = process.env.GEMINI_API_KEY;
-    if (geminiKey) {
-      try {
-        const gen = await generateWithGemini(prompt, geminiKey);
-        const { data: updated, error: gemErr } = await attachToItem(gen.buffer, gen.contentType);
-        if (gemErr) throw gemErr;
-        return res.json(updated);
-      } catch (e) {
-        console.warn('[GEMINI] no disponible, uso AI Horde:', e.message);
-      }
+      console.warn('[POLLINATIONS] fallo, sigo con AI Horde:', e.message);
     }
 
     // 3) AI Horde: cola asíncrona (el cliente consulta el estado)
