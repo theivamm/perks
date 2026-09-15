@@ -7,7 +7,6 @@ import {
   Heart,
   Loader2,
   Lock,
-  ShieldCheck,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useTheme } from '../context/ThemeContext.jsx';
@@ -193,14 +192,6 @@ export default function Login() {
               <Link to="/registro" className="font-semibold text-primary-strong hover:underline">
                 Creala acá
               </Link>
-            </div>
-
-            <div className="mt-5 flex items-center gap-2 rounded-xl bg-surface-alt px-4 py-3 text-xs text-ink-muted">
-              <ShieldCheck size={14} className="shrink-0" />
-              <span>
-                Acceso por defecto: <strong>admin@fidelizacion.com</strong> /{' '}
-                <strong>admin123</strong>
-              </span>
             </div>
           </div>
         </div>
