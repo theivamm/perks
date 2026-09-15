@@ -2,24 +2,29 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Archive, Bell, CheckCheck, History, Loader2 } from 'lucide-react';
 import { api } from '../api.js';
+import { useAuth } from '../context/AuthContext.jsx';
+import { supabase } from '../lib/supabase.js';
 import { formatWhen, notificationMeta } from '../lib/notifications.js';
 import CouponPointOverlay from './CouponPointOverlay.jsx';
 
-const POLL_MS = 30000;
+const POLL_MS = 10000;
 
 export default function NotificationsBell() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState([]);
   const [unread, setUnread] = useState(0);
   const [loading, setLoading] = useState(true);
   const [celebrate, setCelebrate] = useState(null);
   const ref = useRef(null);
+  const itemsRef = useRef([]);
 
   const load = async (silent = false) => {
     if (!silent) setLoading(true);
     try {
       const res = await api('/api/notifications');
+      itemsRef.current = res.items || [];
       setItems(res.items || []);
       setUnread(res.unread || 0);
     } catch {
@@ -29,12 +34,42 @@ export default function NotificationsBell() {
     }
   };
 
+  const onRealtime = (payload) => {
+    const row = payload?.new;
+    if (!row || !row.user_id || row.user_id !== user?.id) return;
+    const exists = itemsRef.current.some((n) => n.id === row.id);
+    if (exists) return;
+    itemsRef.current = [row, ...itemsRef.current];
+    setItems((list) => {
+      if (list.some((n) => n.id === row.id)) return list;
+      return [row, ...list];
+    });
+    if (!row.read) setUnread((u) => u + 1);
+    if (['reward_progress', 'coupon_won'].includes(row.type) && row.data?.user_coupon_id) {
+      setCelebrate(row);
+    }
+  };
+
   useEffect(() => {
     load();
     const t = setInterval(() => load(true), POLL_MS);
-    return () => clearInterval(t);
+    if (!user?.id) return () => clearInterval(t);
+
+    const channel = supabase
+      .channel('notifications-bell')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${user.id}` },
+        onRealtime
+      )
+      .subscribe();
+
+    return () => {
+      clearInterval(t);
+      supabase.removeChannel(channel);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [user?.id]);
 
   useEffect(() => {
     const onClick = (e) => {
