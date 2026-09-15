@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
-import { CircleCheck, QrCode, Sparkles, Ticket, Zap } from 'lucide-react';
+import { Check, Copy, CircleCheck, QrCode, Sparkles, Ticket, Zap } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import QRCode from 'qrcode';
 import { api } from '../api.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useTheme } from '../context/ThemeContext.jsx';
@@ -52,6 +53,30 @@ export default function Home() {
 
   const activeCoupon = useMemo(() => mine.find((c) => c.status === 'activado') || null, [mine]);
   const readyCount = useMemo(() => mine.filter((c) => c.status === 'completado').length, [mine]);
+
+  const activeQr = useMemo(() => String(activeCoupon?.qr_code || '').trim(), [activeCoupon]);
+  const [activeQrImg, setActiveQrImg] = useState('');
+  const [qrCopied, setQrCopied] = useState(false);
+
+  useEffect(() => {
+    if (!activeQr) {
+      setActiveQrImg('');
+      return;
+    }
+    QRCode.toDataURL(activeQr, { margin: 1, width: 520, color: { dark: '#111827', light: '#ffffff' } })
+      .then(setActiveQrImg)
+      .catch(() => setActiveQrImg(''));
+  }, [activeQr]);
+
+  const copyActiveQr = async () => {
+    try {
+      await navigator.clipboard.writeText(activeQr);
+      setQrCopied(true);
+      setTimeout(() => setQrCopied(false), 1500);
+    } catch {
+      /* noop */
+    }
+  };
 
   const activate = async (coupon) => {
     setActivating(coupon.id);
@@ -207,6 +232,40 @@ export default function Home() {
               ) : activeCoupon ? (
                 <div className="w-full">
                   <ActiveCouponCard coupon={activeCoupon} currency={currency} />
+
+                  <div className="mt-4 rounded-3xl border border-line bg-white shadow-sm">
+                    <div className="flex items-center justify-between gap-2 border-b border-line px-5 py-4">
+                      <p className="text-sm font-black text-ink">
+                        <QrCode size={16} className="mr-1.5 inline-block" />
+                        QR de tu cupón activo
+                      </p>
+                      <button
+                        className="btn-ghost cursor-pointer px-3 py-1 text-xs"
+                        onClick={copyActiveQr}
+                        title="Copiar código QR"
+                      >
+                        {qrCopied ? <Check size={13} className="inline-block" /> : <Copy size={13} className="inline-block" />}
+                        <span className="ml-1 font-mono text-xs font-bold">{activeQr || '—'}</span>
+                      </button>
+                    </div>
+                    <div className="flex flex-col items-center px-5 py-6 text-center">
+                      {activeQrImg ? (
+                        <img
+                          src={activeQrImg}
+                          alt={`Código QR ${activeQr}`}
+                          className="h-64 w-64 sm:h-72 sm:w-72"
+                        />
+                      ) : (
+                        <div className="flex h-64 w-64 items-center justify-center text-sm font-bold text-ink-muted">
+                          <Sparkles className="animate-pulse" size={22} />
+                        </div>
+                      )}
+                      <p className="mt-4 max-w-xs text-sm font-semibold text-ink-muted">
+                        Mostrá este código al pagar para que el local te sume puntos a este cupón.
+                      </p>
+                    </div>
+                  </div>
+
                   {readyCount > 0 && (
                     <p className="mt-3 text-center text-sm font-semibold text-emerald-600 dark:text-emerald-400">
                       Tenés {readyCount} cupón{readyCount > 1 ? 'es' : ''} listo{readyCount > 1 ? 's' : ''} para canjear

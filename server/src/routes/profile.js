@@ -7,7 +7,7 @@ import { imageUpload, uploadsDir } from '../upload.js';
 import { requireAuth } from '../middleware/auth.js';
 import { asyncHandler } from '../asyncHandler.js';
 import { countCompletedOrders } from '../rewards.js';
-import { ensureQrCode } from '../qr.js';
+import { ensureCouponQrCode, ensureQrCode } from '../qr.js';
 
 const router = Router();
 
@@ -61,6 +61,9 @@ router.get(
 
     const coupons = couponsRes.data || [];
     const activeCoupon = coupons.find((c) => c.status === 'activado') || null;
+    if (activeCoupon?.qr_code == null) {
+      activeCoupon.qr_code = await ensureCouponQrCode(activeCoupon.id);
+    }
     const readyCoupons = coupons.filter((c) => c.status === 'completado');
 
     res.json({

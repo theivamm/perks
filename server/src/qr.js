@@ -32,3 +32,31 @@ export async function ensureQrCode(userId) {
   }
   return updated?.qr_code || code;
 }
+
+// Devuelve el QR del cupón de un usuario; lo genera y guarda si aún no lo tiene
+// (cupones activados antes de la migración de QR por cupón).
+export async function ensureCouponQrCode(userCouponId) {
+  if (!userCouponId) return null;
+  const { data, error: selErr } = await supabase
+    .from('user_coupons')
+    .select('qr_code')
+    .eq('id', userCouponId)
+    .maybeSingle();
+  if (data?.qr_code) return data.qr_code;
+  if (selErr) console.warn('[QR] No se pudo leer qr_code del cupón:', selErr.message);
+
+  const code = newQrCode();
+  const { data: updated, error } = await supabase
+    .from('user_coupons')
+    .update({ qr_code: code })
+    .eq('id', userCouponId)
+    .select('qr_code')
+    .single();
+  if (error) {
+    console.warn('[QR] No se pudo guardar qr_code del cupón:', error.message);
+    const bare = await supabase.from('user_coupons').update({ qr_code: code }).eq('id', userCouponId);
+    if (bare.error) return null;
+    return code;
+  }
+  return updated?.qr_code || code;
+}
