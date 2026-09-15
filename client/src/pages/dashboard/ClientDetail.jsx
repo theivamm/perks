@@ -173,7 +173,7 @@ export default function ClientDetail() {
 
         <div className="mt-5">
           {activeCoupon ? (
-            <ActiveCouponCard coupon={activeCoupon} currency={currency} compact />
+            <ActiveCouponCard coupon={activeCoupon} currency={currency} />
           ) : (
             <p className="text-sm text-ink-muted">
               El cliente no tiene un cupón activo en este momento.
