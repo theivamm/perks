@@ -28,6 +28,7 @@ import { useTheme } from '../context/ThemeContext.jsx';
 import { EmptyState, Modal, Spinner, toast } from '../components/ui.jsx';
 import CouponCard from '../components/CouponCard.jsx';
 import RewardGoals from '../components/RewardGoals.jsx';
+import NotificationsBell from '../components/NotificationsBell.jsx';
 import AdminSummary from '../components/AdminSummary.jsx';
 import { formatWhen, notificationMeta } from '../lib/notifications.js';
 
@@ -201,6 +202,7 @@ export default function Profile() {
           </Link>
           <span className="text-sm font-bold text-ink">Mi perfil</span>
           <div className="flex items-center gap-1.5">
+            <NotificationsBell />
             <button className="btn-icon" onClick={toggleTheme} aria-label="Cambiar tema">
               <span key={settings.theme} className="animate-pop inline-block">
                 {settings.theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
