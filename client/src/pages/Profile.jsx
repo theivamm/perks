@@ -26,8 +26,7 @@ import { api } from '../api.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useTheme } from '../context/ThemeContext.jsx';
 import { EmptyState, Modal, Spinner, toast } from '../components/ui.jsx';
-import CouponCard from '../components/CouponCard.jsx';
-import RewardGoals from '../components/RewardGoals.jsx';
+import { ActiveCouponCard, ReadyCouponCard } from '../components/CouponCards.jsx';
 import NotificationsBell from '../components/NotificationsBell.jsx';
 import AdminSummary from '../components/AdminSummary.jsx';
 import { formatWhen, notificationMeta } from '../lib/notifications.js';
@@ -40,7 +39,6 @@ export default function Profile() {
   const [loading, setLoading] = useState(true);
   const [qrImg, setQrImg] = useState('');
   const [copied, setCopied] = useState(false);
-  const [redeeming, setRedeeming] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
   const fileRef = useRef(null);
@@ -172,25 +170,11 @@ export default function Profile() {
     navigate('/');
   };
 
-  const markUsed = async (coupon) => {
-    setRedeeming(coupon.id);
-    try {
-      await api(`/api/coupons/${coupon.id}/mark-used`, { method: 'POST' });
-      toast('Cupón marcado como usado');
-      await load();
-    } catch (err) {
-      toast(err.message);
-    } finally {
-      setRedeeming(null);
-    }
-  };
-
   if (loading && !data) return <Spinner label="Cargando perfil..." />;
   if (!data) return <EmptyState icon={Coffee} title="No se pudo cargar el perfil" />;
 
-  const { coupons } = data;
-  const rewardProgress = data.rewardProgress || { completed: 0, rules: [] };
-  const activeCoupons = (coupons || []).filter((c) => c.status === 'activo');
+  const activeCoupon = data.activeCoupon || null;
+  const readyCoupons = data.readyCoupons || [];
 
   return (
     <div className="min-h-screen bg-surface-page">
@@ -307,32 +291,45 @@ export default function Profile() {
 
         {isCliente ? (
           <>
-            <RewardGoals completed={rewardProgress.completed} rules={rewardProgress.rules} coupons={activeCoupons} currency={settings.currency} />
+            <section>
+              <h2 className="mb-3 flex items-center gap-2 text-lg font-extrabold text-ink">
+                <QrCode size={20} className="text-primary-strong" />
+                Cupones activos
+              </h2>
+              {activeCoupon ? (
+                <ActiveCouponCard coupon={activeCoupon} currency={settings.currency} />
+              ) : (
+                <>
+                  <EmptyState
+                    icon={BadgePercent}
+                    title="No tenés cupones activos"
+                    subtitle="Elegí un premio y empezá a sumar puntos con tu QR."
+                  />
+                  <div className="-mt-8 mb-6 text-center">
+                    <Link to="/" className="btn-primary text-sm">Ver cupones y activar</Link>
+                  </div>
+                </>
+              )}
+            </section>
 
             <section>
               <h2 className="mb-3 flex items-center gap-2 text-lg font-extrabold text-ink">
-              <Gift size={20} className="text-primary-strong" />
-              Mis cupones activos
-            </h2>
-            {activeCoupons.length === 0 ? (
-              <EmptyState
-                icon={BadgePercent}
-                title="Todavía no tenés cupones"
-                subtitle="Sumá compras con tu QR y vas ganando descuentos."
-              />
-            ) : (
-              <div className="grid grid-cols-1 gap-4">
-                {activeCoupons.map((c) => (
-                  <CouponCard
-                    key={c.id}
-                    coupon={c}
-                    currency={settings.currency}
-                    onUse={markUsed}
-                    using={redeeming === c.id}
-                  />
-                ))}
-              </div>
-            )}
+                <Gift size={20} className="text-primary-strong" />
+                Cupones listos para canjear
+              </h2>
+              {readyCoupons.length === 0 ? (
+                <EmptyState
+                  icon={BadgePercent}
+                  title="Todavía no tenés cupones listos"
+                  subtitle="Cuando completes un cupón vas a recibir tu código de canje acá."
+                />
+              ) : (
+                <div className="grid grid-cols-1 gap-4">
+                  {readyCoupons.map((c) => (
+                    <ReadyCouponCard key={c.id} coupon={c} currency={settings.currency} />
+                  ))}
+                </div>
+              )}
             </section>
           </>
         ) : (

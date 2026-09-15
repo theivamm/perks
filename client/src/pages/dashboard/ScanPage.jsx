@@ -66,7 +66,7 @@ export default function ScanPage() {
       <div className="mb-6">
         <h1 className="text-2xl font-extrabold text-ink">Escanear QR</h1>
         <p className="text-sm text-ink-muted">
-          Apuntá la cámara al código QR del cliente para abrir su perfil y registrar sus compras.
+          Apuntá la cámara al código QR del cliente para abrir su perfil y sumar puntos a su cupón.
         </p>
       </div>
 

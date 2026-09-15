@@ -64,11 +64,11 @@ export default function Clients() {
 
   const viewClient = (c) => navigate(`/dashboard/cliente/${c.id}`);
 
-  const recordCompra = async (c) => {
-    if (!confirm(`¿Sumar 1 compra a "${c.name}"?`)) return;
+  const addPoint = async (c) => {
+    if (!confirm(`¿Sumar 1 punto al cupón activo de "${c.name}"?`)) return;
     try {
-      await api(`/api/clients/registered/${c.id}/compras`, { method: 'POST', body: { total: 0 } });
-      toast('Compra sumada. El cliente ya recibió su notificación.');
+      await api(`/api/clients/registered/${c.id}/puntos`, { method: 'POST' });
+      toast('Punto sumado. El cliente recibió su notificación.');
       await load();
     } catch (err) {
       toast(err.message);
@@ -283,11 +283,11 @@ export default function Clients() {
                     <div className="col-span-2 flex flex-wrap items-center gap-2 text-xs text-ink-muted">
                       <button
                         className="btn-ghost !px-2 !py-1 !text-xs"
-                        onClick={() => recordCompra(c)}
-                        title="Sumar 1 compra y notificar al cliente"
+                        onClick={() => addPoint(c)}
+                        title="Sumar 1 punto al cupón activo y notificar"
                       >
                         <PlusCircle size={13} />
-                        Sumar
+                        Sumar punto
                       </button>
                       <button
                         className="btn-ghost !px-2 !py-1 !text-xs"

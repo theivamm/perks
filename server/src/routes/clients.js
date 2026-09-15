@@ -7,8 +7,8 @@ import { supabase, uploadImage } from '../supabase.js';
 import { requireAdmin } from '../middleware/auth.js';
 import { asyncHandler } from '../asyncHandler.js';
 import { imageUpload, excelUpload, uploadsDir } from '../upload.js';
-import { countCompletedOrders } from '../rewards.js';
-import { notifyRewardsForCompra, notifyUser } from '../notify.js';
+import { addActiveCouponPoint, countCompletedOrders } from '../rewards.js';
+import { notifyPointAdded } from '../notify.js';
 
 const router = Router();
 
@@ -91,42 +91,38 @@ router.get(
     }
     if (!user) return res.status(404).json({ error: 'Cliente no encontrado' });
 
-    const [ordersRes, couponsRes, rulesRes] = await Promise.all([
+    const [ordersRes, couponsRes] = await Promise.all([
       supabase
         .from('orders')
         .select('*, clients(name, phone), order_items(*)')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false }),
       supabase
-        .from('coupons')
+        .from('user_coupons')
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false }),
-      supabase
-        .from('reward_rules')
-        .select('id, name, every_orders, type, value, mode, description')
-        .eq('active', true)
-        .order('every_orders'),
     ]);
     if (ordersRes.error) throw ordersRes.error;
     if (couponsRes.error) throw couponsRes.error;
-    if (rulesRes.error) throw rulesRes.error;
 
     const completed = await countCompletedOrders(user.id);
     const orders = ordersRes.data || [];
     const totalSpent = orders.reduce((sum, o) => sum + (Number(o.total) || 0), 0);
+    const coupons = couponsRes.data || [];
+    const activeCoupon = coupons.find((c) => c.status === 'activado') || null;
 
     res.json({
       user,
       orders,
-      coupons: couponsRes.data || [],
+      coupons,
+      activeCoupon,
       stats: { totalOrders: orders.length, completedOrders: completed, totalSpent },
-      rewardProgress: { completed, rules: rulesRes.data || [] },
     });
   })
 );
 
-// Resumen para el perfil del admin: cupones disponibles y canjeados por cliente
+// Resumen para el perfil del admin: cupones listos para canjear por cliente
 router.get(
   '/summary',
   requireAdmin,
@@ -138,10 +134,10 @@ router.get(
         .eq('role', 'cliente')
         .order('created_at', { ascending: false }),
       supabase
-        .from('coupons')
-        .select('id, user_id, code, type, value, description, milestone, status, used_at')
-        .in('status', ['activo', 'usado'])
-        .order('created_at', { ascending: false }),
+        .from('user_coupons')
+        .select('id, user_id, title, description, type, value, points, target_points, code, completed_at')
+        .eq('status', 'completado')
+        .order('completed_at', { ascending: false }),
     ]);
     if (usersRes.error) throw usersRes.error;
     if (couponsRes.error) throw couponsRes.error;
@@ -152,20 +148,14 @@ router.get(
     }
 
     res.json(
-      (usersRes.data || []).map((u) => {
-        const all = couponsByUser[u.id] || [];
-        return {
-          id: u.id,
-          name: u.name,
-          email: u.email,
-          phone: u.phone,
-          qr_code: u.qr_code,
-          couponsActive: all.filter((c) => c.status === 'activo'),
-          couponsUsed: all
-            .filter((c) => c.status === 'usado')
-            .map((c) => ({ id: c.id, code: c.code, type: c.type, value: c.value, description: c.description, milestone: c.milestone, used_at: c.used_at })),
-        };
-      })
+      (usersRes.data || []).map((u) => ({
+        id: u.id,
+        name: u.name,
+        email: u.email,
+        phone: u.phone,
+        qr_code: u.qr_code,
+        couponsReady: couponsByUser[u.id] || [],
+      }))
     );
   })
 );
@@ -205,12 +195,11 @@ router.post(
   })
 );
 
-// Registra una compra manual de un cliente registrado (dispara premios y notificaciones)
+// Suma 1 punto al cupón activo del cliente (el admin verifica en el local y toca el botón)
 router.post(
-  '/registered/:id/compras',
+  '/registered/:id/puntos',
   requireAdmin,
   asyncHandler(async (req, res) => {
-    const { total = 0 } = req.body || {};
     const userId = req.params.id;
 
     const { data: user, error: userErr } = await supabase
@@ -222,26 +211,28 @@ router.post(
     if (userErr) throw userErr;
     if (!user) return res.status(404).json({ error: 'Cliente no encontrado' });
 
-    const { data: order, error: orderErr } = await supabase
-      .from('orders')
-      .insert({
-        user_id: user.id,
-        client_id: null,
-        status: 'completado',
-        total: Math.max(0, Number(total) || 0),
-      })
-      .select()
-      .single();
-    if (orderErr) throw orderErr;
+    const { data: active, error: aErr } = await supabase
+      .from('user_coupons')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('status', 'activado')
+      .maybeSingle();
+    if (aErr) throw aErr;
+    if (!active) {
+      return res
+        .status(400)
+        .json({ error: 'El cliente no tiene un cupón activo para sumar puntos.' });
+    }
+
+    const result = await addActiveCouponPoint(user.id);
 
     try {
-      await notifyRewardsForCompra(user.id, order);
+      await notifyPointAdded(user.id, result);
     } catch (err) {
       console.warn('[Notificaciones] No se pudieron crear:', err.message);
     }
 
-    const completed = await countCompletedOrders(user.id);
-    res.status(201).json({ order, completed });
+    res.status(201).json({ result, activeCoupon: result.coupon || null });
   })
 );
 

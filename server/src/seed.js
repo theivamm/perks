@@ -76,30 +76,38 @@ export async function runSeed() {
     log('productos de ejemplo creados.');
   }
 
-  const { count: ruleCount } = await supabase.from('reward_rules').select('id', { count: 'exact', head: true });
-  if (!ruleCount) {
+  const { count: catalogCount } = await supabase
+    .from('loyalty_coupons')
+    .select('id', { count: 'exact', head: true });
+  if (!catalogCount) {
     const defaults = [
       {
-        name: '25% OFF — 5 compras',
-        every_orders: 5,
+        title: '25% OFF en tu compra',
+        description: '25% de descuento en tu próxima compra',
         type: 'descuento',
         value: 25,
-        mode: 'ambos',
-        description: '25% de descuento en tu próxima compra',
+        target_points: 5,
         active: true,
       },
       {
-        name: '50% OFF — 10 compras',
-        every_orders: 10,
-        type: 'descuento',
-        value: 50,
-        mode: 'ambos',
-        description: '50% de descuento en tu próxima compra',
+        title: 'Café de regalo',
+        description: 'Un café de especialidad para vos',
+        type: 'regalo',
+        value: 0,
+        target_points: 10,
+        active: true,
+      },
+      {
+        title: 'Crédito de compra',
+        description: 'Crédito para gastar en el local',
+        type: 'monto',
+        value: 10,
+        target_points: 20,
         active: true,
       },
     ];
-    await supabase.from('reward_rules').insert(defaults);
-    log('premios por defecto creados (25% OFF cada 5 y 50% OFF cada 10).');
+    await supabase.from('loyalty_coupons').insert(defaults);
+    log('catálogo de cupones por defecto creado.');
   }
 }
 

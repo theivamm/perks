@@ -3,7 +3,6 @@ import { Check, Loader2, Moon, Palette, Save, Sun } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext.jsx';
 import { PRESET_COLORS, hexToHsl } from '../../color.js';
 import { toast } from '../../components/ui.jsx';
-import RewardsManager from './RewardsManager.jsx';
 
 const CURRENCIES = ['$', '€', 'Bs', 'S/', 'Q', 'L', 'C$'];
 
@@ -174,8 +173,6 @@ export default function SettingsPage() {
             Se usa para mostrar los precios en el menú público y en el dashboard.
           </p>
         </section>
-
-        <RewardsManager />
 
         <div className="flex justify-end">
           <button

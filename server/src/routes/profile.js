@@ -45,7 +45,11 @@ router.get(
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
         .limit(100),
-      supabase.from('coupons').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
+      supabase
+        .from('user_coupons')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false }),
     ]);
     if (ordersRes.error) throw ordersRes.error;
     if (couponsRes.error) throw couponsRes.error;
@@ -53,21 +57,19 @@ router.get(
     const completed = await countCompletedOrders(user.id);
     const totalSpent = (ordersRes.data || []).reduce((sum, o) => sum + (Number(o.total) || 0), 0);
 
-    const { data: rules, error: rulesErr } = await supabase
-      .from('reward_rules')
-      .select('id, name, every_orders, type, value, mode, description')
-      .eq('active', true)
-      .order('every_orders');
-    if (rulesErr) throw rulesErr;
-
     const suggestions = await buildSuggestions(ordersRes.data || []);
+
+    const coupons = couponsRes.data || [];
+    const activeCoupon = coupons.find((c) => c.status === 'activado') || null;
+    const readyCoupons = coupons.filter((c) => c.status === 'completado');
 
     res.json({
       user,
       orders: ordersRes.data || [],
-      coupons: couponsRes.data || [],
+      coupons,
+      activeCoupon,
+      readyCoupons,
       stats: { completedOrders: completed, totalOrders: (ordersRes.data || []).length, totalSpent },
-      rewardProgress: { completed, rules: rules || [] },
       suggestions,
     });
   })

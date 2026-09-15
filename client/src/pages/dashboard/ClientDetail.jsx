@@ -13,17 +13,19 @@ import {
   PlusCircle,
   QrCode,
   ReceiptText,
+  Ticket,
 } from 'lucide-react';
 import QRCode from 'qrcode';
 import { api, formatMoney } from '../../api.js';
 import { useTheme } from '../../context/ThemeContext.jsx';
 import { EmptyState, Spinner, toast } from '../../components/ui.jsx';
-import RewardGoals from '../../components/RewardGoals.jsx';
+import { ActiveCouponCard, couponValue } from '../../components/CouponCards.jsx';
 import { formatDateTime } from '../../lib/notifications.js';
 
 export default function ClientDetail() {
   const { id } = useParams();
   const { settings } = useTheme();
+  const currency = settings.currency || '$';
   const [detail, setDetail] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -52,11 +54,15 @@ export default function ClientDetail() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
-  const addCompra = async () => {
+  const addPoint = async () => {
     setSaving(true);
     try {
-      await api(`/api/clients/registered/${id}/compras`, { method: 'POST', body: { total: 0 } });
-      toast('Compra sumada. El cliente ya recibió su notificación.');
+      const res = await api(`/api/clients/registered/${id}/puntos`, { method: 'POST' });
+      if (res.result?.status === 'completed') {
+        toast('¡Cupón completado! Se generó el código de canje y el cliente fue notificado.');
+      } else {
+        toast('Punto sumado. El cliente recibió su notificación.');
+      }
       await load();
     } catch (err) {
       toast(err.message);
@@ -78,9 +84,9 @@ export default function ClientDetail() {
   if (loading && !detail) return <Spinner label="Cargando perfil del cliente..." />;
   if (!detail) return <EmptyState icon={Coffee} title="No se pudo cargar el cliente" />;
 
-  const { user, orders, coupons, stats, rewardProgress } = detail;
-  const availableCoupons = (coupons || []).filter((c) => c.status === 'activo');
-  const usedCoupons = (coupons || []).filter((c) => c.status === 'usado');
+  const { user, orders, coupons, activeCoupon, stats } = detail;
+  const readyCoupons = (coupons || []).filter((c) => c.status === 'completado');
+  const redeemedCoupons = (coupons || []).filter((c) => c.status === 'canjeado');
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
@@ -94,9 +100,9 @@ export default function ClientDetail() {
             <p className="text-sm text-ink-muted">Perfil del cliente</p>
           </div>
         </div>
-        <button className="btn-primary" onClick={addCompra} disabled={saving}>
+        <button className="btn-primary" onClick={addPoint} disabled={saving}>
           {saving ? <Loader2 className="animate-spin" size={16} /> : <PlusCircle size={16} />}
-          Sumar 1 compra
+          Sumar 1 punto
         </button>
       </div>
 
@@ -146,7 +152,7 @@ export default function ClientDetail() {
               </div>
             )}
             <p className="max-w-52 text-xs leading-relaxed text-ink-muted">
-              Escaneá este QR con la cámara del panel para abrir este perfil y sumar compras.
+              Verificá el QR con la cámara del panel para abrir este perfil y sumar puntos.
             </p>
           </div>
           <div className="ml-auto flex flex-col items-center gap-1">
@@ -157,10 +163,18 @@ export default function ClientDetail() {
           </div>
         </div>
 
-        <RewardGoals completed={rewardProgress.completed} rules={rewardProgress.rules} coupons={coupons} currency={settings.currency} />
+        <div className="mt-5">
+          {activeCoupon ? (
+            <ActiveCouponCard coupon={activeCoupon} currency={currency} compact />
+          ) : (
+            <p className="text-sm text-ink-muted">
+              El cliente no tiene un cupón activo en este momento.
+            </p>
+          )}
+        </div>
       </section>
 
-      <div className="grid grid-cols-2 gap-3 text-sm">
+      <div className="grid grid-cols-3 gap-3 text-sm">
         <div className="rounded-xl bg-surface-alt p-3 text-center">
           <p className="text-xl font-extrabold text-ink">{stats.totalOrders}</p>
           <p className="text-[11px] text-ink-muted">Compras</p>
@@ -169,31 +183,33 @@ export default function ClientDetail() {
           <p className="text-xl font-extrabold text-primary-strong">{stats.completedOrders}</p>
           <p className="text-[11px] text-ink-muted">Completadas</p>
         </div>
+        <div className="rounded-xl bg-surface-alt p-3 text-center">
+          <p className="text-xl font-extrabold text-primary-strong">{readyCoupons.length}</p>
+          <p className="text-[11px] text-ink-muted">Listos para canjear</p>
+        </div>
       </div>
 
       <section>
         <h2 className="mb-3 flex items-center gap-2 text-lg font-extrabold text-ink">
           <Gift size={20} className="text-primary-strong" />
-          Cupones disponibles ({availableCoupons.length})
+          Cupones listos para canjear ({readyCoupons.length})
         </h2>
-        {availableCoupons.length === 0 ? (
-          <p className="text-sm text-ink-muted">Todavía no tiene cupones disponibles.</p>
+        {readyCoupons.length === 0 ? (
+          <p className="text-sm text-ink-muted">Aún no tiene cupones listos para canjear.</p>
         ) : (
           <ul className="space-y-1.5">
-            {availableCoupons.map((c) => (
-              <li key={c.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-line bg-surface px-3 py-2">
+            {readyCoupons.map((c) => (
+              <li key={c.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-emerald-400/50 bg-surface px-3 py-2">
                 <div className="min-w-0">
                   <p className="truncate text-xs font-bold text-ink">
-                    {c.type === 'descuento' ? `${c.value}% OFF` : c.type === 'regalo' ? 'Regalo' : `${formatMoney(c.value, settings.currency)}`}
-                    {' · '}
-                    {c.description || 'premio'}
+                    {couponValue(c, currency)} · {c.title}
                   </p>
                   <p className="text-[11px] text-ink-muted">
-                    Compra #{c.milestone} · código <span className="font-mono font-bold">{c.code}</span>
+                    código <span className="font-mono font-bold">{c.code}</span>
                   </p>
                 </div>
                 <span className="rounded-full bg-green-500/15 px-2 py-0.5 text-[10px] font-bold text-green-600">
-                  disponible
+                  listo para canjear
                 </span>
               </li>
             ))}
@@ -204,30 +220,60 @@ export default function ClientDetail() {
       <section>
         <h2 className="mb-3 flex items-center gap-2 text-lg font-extrabold text-ink">
           <BadgeCheck size={20} className="text-primary-strong" />
-          Cupones canjeados ({usedCoupons.length})
+          Cupones canjeados ({redeemedCoupons.length})
         </h2>
-        {usedCoupons.length === 0 ? (
+        {redeemedCoupons.length === 0 ? (
           <p className="text-sm text-ink-muted">Aún no canjeó ningún cupón.</p>
         ) : (
           <ul className="space-y-1.5">
-            {usedCoupons.map((c) => (
+            {redeemedCoupons.map((c) => (
               <li key={c.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-line bg-surface px-3 py-2">
                 <div className="min-w-0">
                   <p className="truncate text-xs font-bold text-ink">
-                    {c.type === 'descuento' ? `${c.value}% OFF` : c.type === 'regalo' ? 'Regalo' : `${formatMoney(c.value, settings.currency)}`}
-                    {' · '}
-                    {c.description || 'premio'}
+                    {couponValue(c, currency)} · {c.title}
                   </p>
                   <p className="text-[11px] text-ink-muted">
-                    Compra #{c.milestone} · código <span className="font-mono font-bold">{c.code}</span>
+                    código <span className="font-mono font-bold">{c.code}</span>
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="text-[11px] font-semibold text-ink-muted">{formatDateTime(c.used_at)}</p>
+                  <p className="text-[11px] font-semibold text-ink-muted">{formatDateTime(c.redeemed_at)}</p>
                   <span className="rounded-full bg-surface-alt px-2 py-0.5 text-[10px] font-bold text-ink-muted">
                     canjeado
                   </span>
                 </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section>
+        <h2 className="mb-3 flex items-center gap-2 text-lg font-extrabold text-ink">
+          <Ticket size={20} className="text-primary-strong" />
+          Historial de cupones
+        </h2>
+        {(coupons || []).length === 0 ? (
+          <p className="text-sm text-ink-muted">Aún no tiene cupones.</p>
+        ) : (
+          <ul className="space-y-1.5">
+            {(coupons || []).map((c) => (
+              <li key={c.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-line bg-surface px-3 py-2">
+                <p className="min-w-0 truncate text-xs font-bold text-ink">
+                  {couponValue(c, currency)} · {c.title} ·{' '}
+                  <span className="text-ink-muted">{c.points}/{c.target_points} pts</span>
+                </p>
+                <span
+                  className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                    c.status === 'canjeado'
+                      ? 'bg-surface-alt text-ink-muted'
+                      : c.status === 'completado'
+                        ? 'bg-green-500/15 text-green-600'
+                        : 'bg-primary-soft text-primary-strong'
+                  }`}
+                >
+                  {c.status}
+                </span>
               </li>
             ))}
           </ul>
@@ -243,7 +289,7 @@ export default function ClientDetail() {
           <p className="text-sm text-ink-muted">Aún no registró compras.</p>
         ) : (
           <ul className="space-y-1.5">
-            {orders.slice(0, 10).map((o, i) => (
+            {orders.slice(0, 10).map((o) => (
               <li key={o.id} className="flex items-center justify-between gap-2 rounded-xl border border-line bg-surface px-3 py-2 text-sm">
                 <p className="flex items-center gap-2 text-xs text-ink">
                   <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-green-500/15 text-green-600">
@@ -251,6 +297,7 @@ export default function ClientDetail() {
                   </span>
                   Compra registrada
                 </p>
+                <span className="shrink-0 text-xs font-semibold text-ink-muted">{formatMoney(o.total, currency)}</span>
                 <span className="shrink-0 text-xs font-semibold text-ink-muted">{formatDateTime(o.created_at)}</span>
               </li>
             ))}

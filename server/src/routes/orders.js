@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { supabase } from '../supabase.js';
 import { requireAdmin, requireAuth } from '../middleware/auth.js';
 import { asyncHandler } from '../asyncHandler.js';
-import { notifyAdmins, notifyRewardsForCompra, notifyUser } from '../notify.js';
+import { notifyAdmins, notifyUser } from '../notify.js';
 
 const router = Router();
 
@@ -129,7 +129,6 @@ async function notifyOrderStatus(order, status) {
         data: { order_id: order.id },
       });
     }
-    await notifyRewardsForCompra(userId, order);
   }
 
   if (status === 'cancelado') {

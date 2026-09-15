@@ -1,5 +1,5 @@
 import { supabase } from './supabase.js';
-import { applyRewardRules, countCompletedOrders, nextMilestone } from './rewards.js';
+import { addActiveCouponPoint } from './rewards.js';
 
 // Inserta una o varias notificaciones. Cada fila: { user_id, type, title, body, icon, link, data }
 export async function insertNotifications(rows) {
@@ -34,59 +34,55 @@ export async function notifyAdmins(payload) {
   return insertNotifications(rows);
 }
 
-// Notifica al cliente que se le sumó una compra y premios/progreso según las reglas.
-export async function notifyRewardsForCompra(userId, compra = {}) {
+// Notifica al cliente después de que el admin sume un punto en el local.
+export async function notifyPointAdded(userId, result) {
   if (!userId) return;
-  const order = compra || {};
-  const orderId = order.id || null;
 
-  const n = await countCompletedOrders(userId);
-  await notifyUser(userId, {
-    type: 'purchase_added',
-    title: '¡Compra registrada!',
-    body: `Se sumó 1 compra a tu cuenta (compra #${n}). Seguí acumulando para tus premios.`,
-    icon: 'shopping-bag',
-    link: '/perfil',
-    data: { order_id: orderId, completed: n },
-  });
+  if (result.status === 'no_active') {
+    await notifyUser(userId, {
+      type: 'reward_progress',
+      title: 'Activá un cupón para sumar puntos',
+      body: 'El local quiso sumarte un punto, pero no tenés ningún cupón activo. Activá uno desde la página principal.',
+      icon: 'gift',
+      link: '/perfil',
+    });
+    return;
+  }
 
-  const generated = (await applyRewardRules(userId)) || [];
-
-  if (generated.length > 0) {
-    for (const c of generated) {
-      await notifyUser(userId, {
-        type: 'coupon_won',
-        title: '¡Ganaste un cupón!',
-        body: `Alcanzaste la compra #${c.milestone}: ${c.description || 'un premio'} (código ${c.code}).`,
-        icon: 'gift',
-        link: '/perfil',
-        data: { coupon_id: c.id, order_id: orderId, milestone: c.milestone },
-      });
-    }
+  const c = result.coupon;
+  if (result.status === 'completed') {
+    await notifyUser(userId, {
+      type: 'coupon_won',
+      title: '¡Completaste un cupón!',
+      body: `Completaste "${c.title}" (${c.points}/${c.target_points} puntos). Tu código es ${c.code}. Mostralo en el local para canjearlo.`,
+      icon: 'gift',
+      link: '/perfil',
+      data: { user_coupon_id: c.id, code: c.code },
+    });
     await notifyAdmins({
       type: 'milestone_reached',
-      title: 'Un usuario llegó a un premio',
-      body: `Un cliente llegó a la compra #${generated[0].milestone} y ganó ${generated.length > 1 ? `${generated.length} cupones` : 'un cupón'}.`,
+      title: 'Un cliente completó un cupón',
+      body: `"${c.title}" (${c.target_points} puntos) completado. Tiene un código listo para canjear.`,
       icon: 'gift',
-      link: '/dashboard/clientes',
-      data: { user_id: userId, order_id: orderId, milestone: generated[0].milestone },
+      link: '/dashboard/cupones',
+      data: { user_id: userId, user_coupon_id: c.id, code: c.code },
     });
-  } else {
-    const { data: rules } = await supabase
-      .from('reward_rules')
-      .select('id, every_orders, name')
-      .eq('active', true);
-    const next = await nextMilestone(rules || [], n);
-    if (next) {
-      const falta = next.next - n;
-      await notifyUser(userId, {
-        type: 'reward_progress',
-        title: '¡Seguís sumando!',
-        body: `Compra #${n} registrada. Te faltan ${falta} compra(s) para "${next.rule.name}" (compra #${next.next}).`,
-        icon: 'sparkles',
-        link: '/perfil',
-        data: { order_id: orderId, completed: n, next: next.next },
-      });
-    }
+    return;
   }
+
+  await notifyUser(userId, {
+    type: 'reward_progress',
+    title: '¡Sumaste 1 punto!',
+    body: `"${c.title}" va ${c.points}/${c.target_points} puntos. Seguí sumando para completar tu cupón.`,
+    icon: 'sparkles',
+    link: '/perfil',
+    data: { user_coupon_id: c.id, points: c.points },
+  });
+}
+
+// Mantiene la firma usada por el flujo de compras: suma un punto si hay cupón activo.
+export async function notifyRewardsForCompra(userId) {
+  if (!userId) return;
+  const result = await addActiveCouponPoint(userId);
+  return notifyPointAdded(userId, result);
 }

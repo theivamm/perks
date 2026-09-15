@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BadgePercent, Gift, Loader2, QrCode, ScanLine, Smartphone, UserRound } from 'lucide-react';
-import { api, formatMoney } from '../api.js';
+import { api } from '../api.js';
 import { useTheme } from '../context/ThemeContext.jsx';
+import { couponValue } from './CouponCards.jsx';
 import { EmptyState, toast } from './ui.jsx';
 
 export default function AdminSummary() {
@@ -19,7 +20,7 @@ export default function AdminSummary() {
     load();
   }, []);
 
-  const withCoupons = (clients || []).filter((c) => c.couponsActive.length > 0);
+  const withCoupons = (clients || []).filter((c) => c.couponsReady.length > 0);
 
   if (clients === null) {
     return (
@@ -37,7 +38,7 @@ export default function AdminSummary() {
         </div>
         <div className="min-w-0 flex-1">
           <p className="font-extrabold text-ink">Escanear QR</p>
-          <p className="text-sm text-ink-muted">Escanéá el QR de un cliente para sumarle una compra.</p>
+          <p className="text-sm text-ink-muted">Escanéá el QR de un cliente para abrir su perfil y sumarle un punto.</p>
         </div>
         <QrCode size={20} className="shrink-0 text-primary-strong" />
       </button>
@@ -49,7 +50,7 @@ export default function AdminSummary() {
         <div className="min-w-0 flex-1">
           <p className="font-extrabold text-ink">Escaneá desde tu celular</p>
           <p className="text-sm text-ink-muted">
-            Iniciá sesión con tu celular para escanear el QR de un cliente y sumarle una compra.
+            Iniciá sesión con tu celular para escanear el QR de un cliente y sumarle un punto a su cupón.
           </p>
         </div>
       </div>
@@ -57,14 +58,14 @@ export default function AdminSummary() {
       {withCoupons.length === 0 ? (
         <EmptyState
           icon={BadgePercent}
-          title="No hay cupones disponibles"
-          subtitle="Cuando un cliente gane un premio, vas a verlo acá para canjearlo."
+          title="No hay cupones listos para canjear"
+          subtitle="Cuando un cliente complete un cupón, vas a ver su código acá para canjearlo."
         />
       ) : (
         <section>
           <h2 className="mb-3 flex items-center gap-2 text-lg font-extrabold text-ink">
             <BadgePercent size={20} className="text-primary-strong" />
-            Cupones disponibles por cliente
+            Cupones listos para canjear
           </h2>
           <div className="space-y-4">
             {withCoupons.map((c) => (
@@ -80,19 +81,19 @@ export default function AdminSummary() {
                   </button>
                 </div>
                 <ul className="divide-y divide-line px-4">
-                  {c.couponsActive.map((cp) => (
+                  {c.couponsReady.map((cp) => (
                     <li key={cp.id} className="flex flex-wrap items-center justify-between gap-2 py-2.5 text-sm">
                       <div className="min-w-0">
                         <p className="truncate font-bold text-ink">
-                          {cp.type === 'descuento' ? `${cp.value}% OFF` : cp.type === 'regalo' ? 'Regalo' : `${formatMoney(cp.value, settings.currency)}`}
-                          <span className="text-ink-muted"> · {cp.description || 'premio'}</span>
+                          {couponValue(cp, settings.currency)}
+                          <span className="text-ink-muted"> · {cp.title || 'premio'}</span>
                         </p>
                         <p className="text-[11px] text-ink-muted">
-                          Compra #{cp.milestone} · código <span className="font-mono font-bold">{cp.code}</span>
+                          Código <span className="font-mono font-bold">{cp.code}</span>
                         </p>
                       </div>
                       <span className="rounded-full bg-green-500/15 px-2 py-0.5 text-[10px] font-bold text-green-600">
-                        disponible
+                        listo para canjear
                       </span>
                     </li>
                   ))}

@@ -14,67 +14,49 @@ export async function countCompletedOrders(userId) {
   return count || 0;
 }
 
-function newCode() {
-  return 'CW-' + crypto.randomBytes(3).toString('hex').toUpperCase();
+function newCouponCode() {
+  return 'CP-' + crypto.randomBytes(3).toString('hex').toUpperCase();
 }
 
-// Genera cupones por hitos cumplidos de cada regla activa (no duplica).
-export async function applyRewardRules(userId) {
-  if (!userId) return 0;
-  const n = await countCompletedOrders(userId);
-  if (n === 0) return 0;
+// Suma 1 punto al cupón activo del usuario. Devuelve el nuevo estado:
+//   { status: 'no_active' } | { status: 'progress', coupon } | { status: 'completed', coupon }
+export async function addActiveCouponPoint(userId) {
+  if (!userId) return { status: 'no_active' };
 
-  const { data: rules, error } = await supabase
-    .from('reward_rules')
+  const { data: active, error } = await supabase
+    .from('user_coupons')
     .select('*')
-    .eq('active', true);
+    .eq('user_id', userId)
+    .eq('status', 'activado')
+    .maybeSingle();
   if (error) throw error;
+  if (!active) return { status: 'no_active' };
 
-  const { data: existing, error: e2 } = await supabase
-    .from('coupons')
-    .select('rule_id, milestone')
-    .eq('user_id', userId);
-  if (e2) throw e2;
+  const points = (Number(active.points) || 0) + 1;
+  const target = Math.max(1, Number(active.target_points) || 1);
 
-  const have = new Set((existing || []).map((c) => `${c.rule_id}|${c.milestone}`));
-  const toInsert = [];
-
-  for (const rule of rules || []) {
-    const every = Math.max(1, Number(rule.every_orders) || 1);
-    for (let milestone = every; milestone <= n; milestone += every) {
-      if (have.has(`${rule.id}|${milestone}`)) continue;
-      toInsert.push({
-        user_id: userId,
-        rule_id: rule.id,
-        code: newCode(),
-        type: rule.type,
-        value: rule.value,
-        mode: rule.mode,
-        description: rule.description || rule.name,
-        milestone,
-      });
-    }
+  if (points >= target) {
+    const { data: coupon, error: upErr } = await supabase
+      .from('user_coupons')
+      .update({
+        points,
+        status: 'completado',
+        completed_at: new Date().toISOString(),
+        code: newCouponCode(),
+      })
+      .eq('id', active.id)
+      .select()
+      .single();
+    if (upErr) throw upErr;
+    return { status: 'completed', coupon };
   }
 
-  if (toInsert.length > 0) {
-    const { data: created, error: e3 } = await supabase.from('coupons').insert(toInsert).select();
-    if (e3) throw e3;
-    return created || toInsert;
-  }
-  return toInsert;
-}
-
-// Próximo hito de una regla para el count actualizado (n). Devuelve null si no hay reglas activas.
-export async function nextMilestone(rules, n) {
-  let best = null;
-  for (const rule of rules || []) {
-    const every = Math.max(1, Number(rule.every_orders) || 1);
-    if (n < every) continue;
-    const div = Math.floor(n / every);
-    const next = every * (div + 1);
-    if (!best || next < best.next) {
-      best = { next, rule };
-    }
-  }
-  return best;
+  const { data: coupon, error: upErr2 } = await supabase
+    .from('user_coupons')
+    .update({ points })
+    .eq('id', active.id)
+    .select()
+    .single();
+  if (upErr2) throw upErr2;
+  return { status: 'progress', coupon };
 }
