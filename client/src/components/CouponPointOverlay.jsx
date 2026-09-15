@@ -5,9 +5,9 @@ import { api } from '../api.js';
 import { couponValue } from './CouponCards.jsx';
 
 const BURSTS = [
-  { left: '20%', delay: '0ms' },
+  { left: '18%', delay: '0ms' },
   { left: '50%', delay: '260ms' },
-  { left: '80%', delay: '520ms' },
+  { left: '82%', delay: '520ms' },
 ];
 
 const CONFETTI_COLORS = ['#fbbf24', '#f472b6', '#34d399', '#60a5fa', '#facc15', '#f87171'];
@@ -47,13 +47,9 @@ export default function CouponPointOverlay({ note, onClose }) {
       onClick={onClose}
     >
       <div
-        className="animate-fade-up relative flex w-full flex-col overflow-hidden rounded-3xl text-white shadow-2xl"
+        className="animate-fade-up relative aspect-[9/16] w-full max-w-[min(92vw,330px)] overflow-hidden rounded-3xl text-white shadow-2xl sm:aspect-auto sm:h-[min(66vh,420px)] sm:w-[min(92vw,860px)] sm:max-w-none"
         style={{
           background: 'linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary-strong)) 100%)',
-          // 9:16 vertical en mobile; tarjeta centrada en desktop
-          height: 'min(84vh, 92vw * 16 / 9)',
-          maxHeight: '84vh',
-          maxWidth: 'min(420px, 92vw)',
         }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -80,49 +76,63 @@ export default function CouponPointOverlay({ note, onClose }) {
           />
         ))}
 
-        <div className="relative z-10 flex flex-1 flex-col items-center justify-center px-6 text-center sm:px-10">
-          {isWon ? (
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-dashed border-white/60 bg-black/20 px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em]">
-              <PartyPopper size={12} />
-              ¡Cupón completado!
-            </span>
-          ) : (
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-dashed border-white/60 bg-black/20 px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em]">
-              <Sparkles size={12} />
-              ¡Sumaste 1 punto!
-            </span>
-          )}
-
-          <p className="mt-5 text-6xl font-black drop-shadow-sm sm:text-7xl">
-            {coupon ? couponValue(coupon) : '—'}
-          </p>
-          <p className="mt-2 w-full truncate text-lg font-extrabold sm:text-xl">{coupon?.title || 'Cargando cupón…'}</p>
-
-          <div className="relative mx-auto mt-7 flex h-16 w-full max-w-[240px] items-center justify-center">
-            {BURSTS.map((b) => (
-              <span
-                key={b.left}
-                className="animate-pop point-burst absolute inline-flex items-center gap-0.5 rounded-full bg-amber-400 px-3.5 py-1.5 text-base font-black text-amber-900 shadow-lg"
-                style={{ left: b.left, animationDelay: b.delay }}
-              >
-                <Plus size={16} strokeWidth={3} />
-                {isWon ? 'PUNTOS' : '1'}
+        {/* Vertical en mobile (columna), horizontal tipo ticket en desktop */}
+        <div className="flex h-full flex-col sm:flex-row sm:items-stretch">
+          {/* Cupón */}
+          <div className="relative z-10 flex flex-col items-center justify-center gap-3 px-6 pt-14 pb-2 text-center sm:flex-1 sm:px-10 sm:py-10">
+            {isWon ? (
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-dashed border-white/60 bg-black/20 px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em]">
+                <PartyPopper size={12} />
+                ¡Cupón completado!
               </span>
-            ))}
+            ) : (
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-dashed border-white/60 bg-black/20 px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em]">
+                <Sparkles size={12} />
+                ¡Sumaste 1 punto!
+              </span>
+            )}
+
+            <p className="text-6xl font-black drop-shadow-sm sm:text-7xl">
+              {coupon ? couponValue(coupon) : '—'}
+            </p>
+            <p className="w-full truncate text-lg font-extrabold sm:text-2xl">{coupon?.title || 'Cargando cupón…'}</p>
           </div>
 
-          <div className="mt-7 h-4 w-full overflow-hidden rounded-full bg-white/20">
-            <div
-              className="h-full rounded-full bg-gradient-to-r from-amber-300 to-orange-500 transition-[width] duration-700"
-              style={{ width: `${pct}%` }}
-            />
+          {/* Perforación central tipo ticket (solo desktop) */}
+          <div className="relative z-10 hidden sm:block">
+            <div className="flex h-full flex-col items-center" aria-hidden>
+              <span className="absolute -top-3 h-6 w-6 rounded-full bg-black/60" />
+              <div className="h-full w-0 border-l-2 border-dashed border-white/40" />
+              <span className="absolute -bottom-3 h-6 w-6 rounded-full bg-black/60" />
+            </div>
           </div>
-          <p className="mt-2 text-base font-extrabold sm:text-lg">
-            {coupon ? `${points}/${target} puntos` : ''}
-          </p>
+
+          {/* Punto sumado + progreso */}
+          <div className="relative z-10 flex flex-col items-center justify-center gap-4 px-6 pb-4 sm:flex-1 sm:px-10 sm:pb-8">
+            <div className="relative mx-auto flex h-16 w-full max-w-[280px] items-center justify-center">
+              {BURSTS.map((b) => (
+                <span
+                  key={b.left}
+                  className="animate-pop point-burst absolute inline-flex items-center gap-0.5 rounded-full bg-amber-400 px-3.5 py-1.5 text-base font-black text-amber-900 shadow-lg"
+                  style={{ left: b.left, animationDelay: b.delay }}
+                >
+                  <Plus size={16} strokeWidth={3} />
+                  {isWon ? 'PUNTOS' : '1'}
+                </span>
+              ))}
+            </div>
+
+            <div className="h-4 w-full overflow-hidden rounded-full bg-white/20 sm:max-w-md">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-amber-300 to-orange-500 transition-[width] duration-700"
+                style={{ width: `${pct}%` }}
+              />
+            </div>
+            <p className="text-base font-extrabold sm:text-lg">{coupon ? `${points}/${target} puntos` : ''}</p>
+          </div>
         </div>
 
-        <div className="relative z-10 flex justify-center px-6 pb-6">
+        <div className="relative z-10 flex justify-center px-6 pb-6 pt-1 sm:absolute sm:inset-x-0 sm:bottom-6">
           <button
             className="inline-flex items-center gap-2 rounded-2xl border border-dashed border-white/70 bg-black/20 px-6 py-2.5 text-sm font-black uppercase tracking-wider text-white transition-colors hover:bg-black/30"
             onClick={onClose}
