@@ -35,6 +35,7 @@ export default function MenuManager() {
   const [showExcelHelp, setShowExcelHelp] = useState(false);
   const [generatingId, setGeneratingId] = useState(null);
   const [generatingAll, setGeneratingAll] = useState(false);
+  const [progress, setProgress] = useState({});
   const excelInput = useRef(null);
   const imageInput = useRef(null);
 
@@ -110,14 +111,39 @@ export default function MenuManager() {
 
   const runGenerateImage = async (item) => {
     setGeneratingId(item.id);
+    setProgress((p) => ({ ...p, [item.id]: 4 }));
+
+    // Simulación de progreso: las APIs síncronas no reportan avance real
+    const sim = setInterval(() => {
+      setProgress((p) => ({
+        ...p,
+        [item.id]: Math.min(90, (p[item.id] || 4) + Math.random() * 6 + 2),
+      }));
+    }, 400);
+
+    const close = (pct) => {
+      clearInterval(sim);
+      setProgress((p) => ({ ...p, [item.id]: pct }));
+      setTimeout(
+        () =>
+          setProgress((p) => {
+            const n = { ...p };
+            delete n[item.id];
+            return n;
+          }),
+        pct >= 100 ? 900 : 2000
+      );
+    };
+
     try {
       const res = await api(`/api/menu/${item.id}/generate-image`, { method: 'POST' });
       if (res?.id) {
-        // Respuesta directa (Gemini): imagen ya lista
+        // Respuesta directa (Pollinations/Gemini): imagen ya lista
         setData((d) => ({
           ...d,
           items: d.items.map((it) => (it.id === res.id ? res : it)),
         }));
+        close(100);
         return { ok: true };
       }
       // Generación en cola (AI Horde): consultamos hasta que esté lista
@@ -135,12 +161,18 @@ export default function MenuManager() {
             ...d,
             items: d.items.map((it) => (it.id === poll.item.id ? poll.item : it)),
           }));
+          close(100);
           return { ok: true };
         }
-        if (poll.status === 'error') return { ok: false, error: poll.error };
+        if (poll.status === 'error') {
+          close(90);
+          return { ok: false, error: poll.error };
+        }
       }
+      close(90);
       return { ok: false, error: 'Tardó demasiado. Volvé a intentar en unos minutos.' };
     } catch (err) {
+      close(90);
       return { ok: false, error: err.message };
     } finally {
       setGeneratingId(null);
@@ -416,6 +448,29 @@ export default function MenuManager() {
                           </span>
                         )}
                       </div>
+                      {generatingId === item.id && (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2.5 overflow-hidden rounded-t-2xl bg-ink/55 backdrop-blur-[2px]">
+                          <div className="animate-shimmer pointer-events-none absolute inset-0 bg-[linear-gradient(100deg,transparent,rgba(255,255,255,0.35)_42%,rgba(255,255,255,0.35)_50%,transparent_58%)] bg-[length:200%_100%]" />
+                          <div className="relative h-14 w-14">
+                            <div className="absolute inset-0 rounded-full border-2 border-white/25" />
+                            <div
+                              className="absolute inset-0 animate-spin rounded-full border-2 border-transparent border-t-primary-contrast"
+                              style={{ animationDuration: '1s' }}
+                            />
+                            <div className="absolute inset-2.5 rounded-full bg-white/25" />
+                            <Sparkles size={14} className="absolute inset-0 m-auto text-white" />
+                          </div>
+                          <span className="text-sm font-black text-white">
+                            {Math.round(progress[item.id] || 0)}%
+                          </span>
+                          <div className="h-1.5 w-28 overflow-hidden rounded-full bg-white/25">
+                            <div
+                              className="h-full rounded-full bg-gradient-to-r from-amber-300 to-orange-500 shadow-glow transition-[width] duration-300"
+                              style={{ width: `${Math.round(progress[item.id] || 0)}%` }}
+                            />
+                          </div>
+                        </div>
+                      )}
                     </div>
                     <div className="p-4">
                       <h3 className="font-bold text-ink">{item.title}</h3>
