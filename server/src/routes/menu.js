@@ -10,6 +10,10 @@ import { imageUpload, excelUpload, uploadsDir } from '../upload.js';
 
 const router = Router();
 
+const HORDE = 'https://aihorde.net/api/v2';
+const HORDE_HEADERS = { 'Content-Type': 'application/json', apikey: '0000000000', 'X-AI-Apikey': '0000000000' };
+const imageJobs = new Map(); // itemId -> { jobId, model, lock }
+
 router.get(
   '/',
   asyncHandler(async (_req, res) => {
@@ -115,13 +119,10 @@ router.post(
       desc ? ', ' + desc : ''
     }, appetizing presentation, studio lighting, top-down view, clean minimalist background, 4k`;
 
-    const HORDE = 'https://aihorde.net/api/v2';
-    const HEADERS = { 'Content-Type': 'application/json', apikey: '0000000000', 'X-AI-Apikey': '0000000000' };
-
     const submitJob = async (models) => {
-      const res = await fetch(`${HORDE}/generate/async`, {
+      const res2 = await fetch(`${HORDE}/generate/async`, {
         method: 'POST',
-        headers: HEADERS,
+        headers: HORDE_HEADERS,
         body: JSON.stringify({
           prompt,
           nsfw: false,
@@ -130,79 +131,85 @@ router.post(
         }),
         signal: AbortSignal.timeout(30000),
       });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.message || data.msg || `AI Horde respondió ${res.status}`);
+      const data = await res2.json();
+      if (!res2.ok) {
+        throw new Error(data.message || data.msg || `AI Horde respondió ${res2.status}`);
       }
       return data;
     };
 
-    let jobId;
+    let job;
     try {
       try {
-        jobId = (await submitJob(['flux'])).id;
+        job = await submitJob(['flux']);
       } catch {
-        jobId = (await submitJob(['SDXL 1.0'])).id;
+        job = await submitJob(['SDXL 1.0']);
       }
     } catch (e) {
       return res
         .status(502)
-        .json({ error: `No se pudo pedir la imagen: ${e.message}. Probá en unos segundos.` });
+        .json({ error: `No se pudo pedir la generación: ${e.message}. Probá en unos segundos.` });
     }
 
-    // La generación es asíncrona: consultamos el estado hasta que esté lista
-    let info;
+    imageJobs.set(String(item.id), { jobId: job.id, model: job.models?.[0] || 'flux', lock: false });
+    res.json({ queued: true });
+  })
+);
+
+// Estado de una generación: el cliente lo consulta cada pocos segundos
+router.get(
+  '/:id/generate-image/status',
+  requireAdmin,
+  asyncHandler(async (req, res) => {
+    const job = imageJobs.get(String(req.params.id));
+    if (!job || job.lock) return res.json({ status: 'processing' });
+    job.lock = true;
+
     try {
-      for (let i = 0; i < 40; i++) {
-        await new Promise((r) => setTimeout(r, 5000));
-        const st = await fetch(`${HORDE}/generate/status/${jobId}`, {
-          headers: HEADERS,
-          signal: AbortSignal.timeout(30000),
-        });
-        const j = await st.json();
-        if (j.generations?.[0]?.img) {
-          info = j;
-          break;
+      const st = await fetch(`${HORDE}/generate/status/${job.jobId}`, {
+        headers: HORDE_HEADERS,
+        signal: AbortSignal.timeout(25000),
+      });
+      const j = await st.json();
+
+      if (j.generations?.[0]?.img) {
+        const buffer = Buffer.from(j.generations[0].img, 'base64');
+        const name = `${String(req.params.id).slice(0, 8)}-${Date.now()}.jpg`;
+
+        let publicUrl;
+        try {
+          publicUrl = await uploadImage(name, buffer, 'image/jpeg');
+        } catch (e) {
+          console.warn('[SUPABASE] Fallback a almacenamiento local:', e.message);
+          fs.mkdirSync(uploadsDir, { recursive: true });
+          fs.writeFileSync(path.join(uploadsDir, name), buffer);
+          publicUrl = `/uploads/${name}`;
         }
-        if (j.faulted || j.finished && !j.generations?.length) {
-          return res
-            .status(502)
-            .json({ error: 'La generación falló en el servidor. Probá de nuevo.' });
-        }
+
+        const { data: updated, error } = await supabase
+          .from('menu_items')
+          .update({ image: publicUrl })
+          .eq('id', req.params.id)
+          .select()
+          .single();
+        if (error) throw error;
+        imageJobs.delete(String(req.params.id));
+        return res.json({ status: 'done', item: updated });
       }
-    } catch (e) {
-      return res.status(502).json({ error: `Error esperando la imagen: ${e.message}` });
+
+      if (j.faulted || (j.finished && !j.generations?.length)) {
+        imageJobs.delete(String(req.params.id));
+        return res.json({
+          status: 'error',
+          error: j.fault_reason || 'La generación falló en el servidor. Probá de nuevo.',
+        });
+      }
+
+      return res.json({ status: 'processing' });
+    } catch {
+      job.lock = false;
+      return res.json({ status: 'processing' });
     }
-
-    if (!info?.generations?.[0]?.img) {
-      return res
-        .status(504)
-        .json({ error: 'Tardó demasiado. Probá de nuevo dentro de un momento.' });
-    }
-
-    const buffer = Buffer.from(info.generations[0].img, 'base64');
-    const contentType = 'image/jpeg';
-    const name = `${String(item.id).slice(0, 8)}-${Date.now()}.jpg`;
-
-    let publicUrl;
-    try {
-      publicUrl = await uploadImage(name, buffer, contentType);
-    } catch (e) {
-      console.warn('[SUPABASE] Fallback a almacenamiento local:', e.message);
-      fs.mkdirSync(uploadsDir, { recursive: true });
-      fs.writeFileSync(path.join(uploadsDir, name), buffer);
-      publicUrl = `/uploads/${name}`;
-    }
-
-    const { data: updated, error: updErr } = await supabase
-      .from('menu_items')
-      .update({ image: publicUrl })
-      .eq('id', item.id)
-      .select()
-      .single();
-    if (updErr) throw updErr;
-
-    res.json(updated);
   })
 );
 

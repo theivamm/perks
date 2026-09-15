@@ -111,14 +111,28 @@ export default function MenuManager() {
   const runGenerateImage = async (item) => {
     setGeneratingId(item.id);
     try {
-      const updated = await api(`/api/menu/${item.id}/generate-image`, { method: 'POST' });
-      setData((d) => ({
-        ...d,
-        items: d.items.map((it) => (it.id === updated.id ? updated : it)),
-      }));
-      return { ok: true };
-    } catch {
-      return { ok: false, title: item.title };
+      await api(`/api/menu/${item.id}/generate-image`, { method: 'POST' });
+      const started = Date.now();
+      while (Date.now() - started < 5 * 60 * 1000) {
+        await new Promise((r) => setTimeout(r, 4000));
+        let res;
+        try {
+          res = await api(`/api/menu/${item.id}/generate-image/status`);
+        } catch {
+          continue; // error transitorio: seguimos consultando
+        }
+        if (res.status === 'done') {
+          setData((d) => ({
+            ...d,
+            items: d.items.map((it) => (it.id === res.item.id ? res.item : it)),
+          }));
+          return { ok: true };
+        }
+        if (res.status === 'error') return { ok: false, error: res.error };
+      }
+      return { ok: false, error: 'Tardó demasiado. Volvé a intentar en unos minutos.' };
+    } catch (err) {
+      return { ok: false, error: err.message };
     } finally {
       setGeneratingId(null);
     }
@@ -126,7 +140,7 @@ export default function MenuManager() {
 
   const generateImage = async (item) => {
     const r = await runGenerateImage(item);
-    toast(r.ok ? 'Imagen generada' : 'No se pudo generar. Probá de nuevo en unos segundos.');
+    toast(r.ok ? 'Imagen generada' : r.error || 'No se pudo generar. Probá de nuevo.');
   };
 
   const generateMissing = async () => {
