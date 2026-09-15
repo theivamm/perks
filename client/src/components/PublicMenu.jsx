@@ -1,13 +1,21 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Loader2, Star, UtensilsCrossed } from 'lucide-react';
+import { Loader2, Search, SearchX, Star, UtensilsCrossed } from 'lucide-react';
 import { api, formatMoney } from '../api.js';
 import { useTheme } from '../context/ThemeContext.jsx';
 import { EmptyState } from './ui.jsx';
+
+const normalize = (s) =>
+  String(s || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
 
 export default function PublicMenu() {
   const { settings } = useTheme();
   const [data, setData] = useState({ items: [], categories: [] });
   const [loading, setLoading] = useState(true);
+  const [query, setQuery] = useState('');
+  const [catFilter, setCatFilter] = useState('Todas');
 
   useEffect(() => {
     let alive = true;
@@ -21,13 +29,32 @@ export default function PublicMenu() {
   }, []);
 
   const visible = useMemo(() => (data.items || []).filter((it) => it.available), [data.items]);
-  const featured = useMemo(() => visible.filter((it) => it.featured), [visible]);
+
+  const categories = useMemo(() => {
+    const set = new Set(visible.map((it) => it.category).filter(Boolean));
+    return [...set];
+  }, [visible]);
+
+  const filtered = useMemo(() => {
+    const q = normalize(query.trim());
+    return visible.filter((it) => {
+      const okCat = catFilter === 'Todas' || it.category === catFilter;
+      const okSearch =
+        !q ||
+        normalize(it.title).includes(q) ||
+        normalize(it.description).includes(q) ||
+        normalize(it.category).includes(q);
+      return okCat && okSearch;
+    });
+  }, [visible, catFilter, query]);
+
+  const featured = useMemo(() => filtered.filter((it) => it.featured), [filtered]);
 
   const grouped = useMemo(() => {
     const map = {};
-    for (const it of visible) if (!it.featured) (map[it.category || 'General'] ||= []).push(it);
+    for (const it of filtered) if (!it.featured) (map[it.category || 'General'] ||= []).push(it);
     return map;
-  }, [visible]);
+  }, [filtered]);
 
   if (loading) {
     return (
@@ -50,8 +77,52 @@ export default function PublicMenu() {
   }
 
   return (
-    <div className="mt-12 space-y-12">
-      {featured.length > 0 && (
+    <div className="mt-12 space-y-8">
+      <div className="space-y-4">
+        <div className="relative">
+          <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-muted" />
+          <input
+            className="input w-full rounded-2xl py-3 pl-11 pr-10"
+            placeholder="Buscar plato, bebida, postre..."
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+          {query && (
+            <button
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-muted transition-colors hover:text-ink"
+              onClick={() => setQuery('')}
+              aria-label="Limpiar búsqueda"
+            >
+              ✕
+            </button>
+          )}
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {['Todas', ...categories].map((cat) => (
+            <button
+              key={cat}
+              onClick={() => setCatFilter(cat)}
+              className={`rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all ${
+                catFilter === cat
+                  ? 'bg-primary text-primary-contrast shadow'
+                  : 'border border-line bg-surface text-ink-muted hover:bg-surface-alt'
+              }`}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {filtered.length === 0 ? (
+        <EmptyState
+          icon={SearchX}
+          title="Sin resultados"
+          subtitle="Probá con otra búsqueda o elegí otra categoría."
+        />
+      ) : (
+        <div className="space-y-12">
+          {featured.length > 0 && (
         <section>
           <div className="mb-4 flex items-center gap-2">
             <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-glow">
@@ -136,6 +207,8 @@ export default function PublicMenu() {
           </div>
         )}
       </section>
+        </div>
+      )}
     </div>
   );
 }
