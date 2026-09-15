@@ -131,9 +131,6 @@ export default function DashboardLayout() {
             <button className="btn-icon lg:hidden" onClick={() => setOpen(true)} aria-label="Abrir menú">
               <MenuIcon size={20} />
             </button>
-            <button className="btn-icon" onClick={toggleTheme} aria-label="Cambiar tema">
-              {settings.theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
-            </button>
             <ChevronLeft size={16} className="hidden text-ink-muted lg:block" />
             <span className="hidden text-sm font-semibold text-ink-muted sm:block">
               Panel de administración
@@ -142,6 +139,9 @@ export default function DashboardLayout() {
 
           <div className="flex items-center gap-1.5">
             <NotificationsBell />
+            <button className="btn-icon" onClick={toggleTheme} aria-label="Cambiar tema">
+              {settings.theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+            </button>
             <div className="relative" ref={menuRef}>
             <button
               className="flex items-center gap-2 rounded-full border border-line bg-surface px-2 py-1.5 transition-colors hover:bg-surface-alt"

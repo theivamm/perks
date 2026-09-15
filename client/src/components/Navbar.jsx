@@ -71,6 +71,8 @@ export default function Navbar() {
         </div>
 
         <nav className="flex items-center gap-1.5">
+          {user && <NotificationsBell />}
+
           <button className="btn-icon" onClick={toggleTheme} aria-label="Cambiar tema">
             <span key={settings.theme} className="animate-pop inline-block">
               {settings.theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
@@ -79,7 +81,6 @@ export default function Navbar() {
 
           {user && (
             <>
-              <NotificationsBell />
               <div className="relative" ref={menuRef}>
               <button
                 className="flex items-center gap-2 rounded-full border border-line bg-surface px-2 py-1.5 transition-colors hover:bg-surface-alt"
