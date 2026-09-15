@@ -44,8 +44,8 @@ export function ActiveCouponCard({ coupon, currency = '$', compact = false }) {
       </div>
 
       <p className="relative mt-3 text-sm font-extrabold">{coupon.title}</p>
-      {!compact && coupon.description && (
-        <p className="relative mt-0.5 text-xs text-primary-contrast/80">{coupon.description}</p>
+      {coupon.description && (
+        <p className="relative mt-0.5 text-xs font-semibold text-primary-contrast/90 sm:text-sm">{coupon.description}</p>
       )}
 
       <div className="relative mt-4">

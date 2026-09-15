@@ -79,7 +79,7 @@ export default function CouponPointOverlay({ note, onClose }) {
         {/* Vertical en mobile (columna), horizontal tipo ticket en desktop */}
         <div className="flex h-full flex-col sm:flex-row sm:items-stretch">
           {/* Cupón */}
-          <div className="relative z-10 flex flex-col items-center justify-center gap-3 px-6 pt-14 pb-2 text-center sm:flex-1 sm:px-10 sm:py-10">
+          <div className="relative z-10 flex min-h-0 flex-col items-center justify-center gap-3 overflow-y-auto px-6 pt-14 pb-2 text-center sm:flex-1 sm:px-10 sm:py-10">
             {isWon ? (
               <span className="inline-flex items-center gap-1.5 rounded-full border border-dashed border-white/60 bg-black/20 px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em]">
                 <PartyPopper size={12} />
@@ -96,6 +96,9 @@ export default function CouponPointOverlay({ note, onClose }) {
               {coupon ? couponValue(coupon) : '—'}
             </p>
             <p className="w-full truncate text-lg font-extrabold sm:text-2xl">{coupon?.title || 'Cargando cupón…'}</p>
+            {coupon?.description && (
+              <p className="mt-1 w-full text-sm font-semibold leading-relaxed text-white/90">{coupon.description}</p>
+            )}
           </div>
 
           {/* Perforación central tipo ticket (solo desktop) */}
@@ -108,7 +111,7 @@ export default function CouponPointOverlay({ note, onClose }) {
           </div>
 
           {/* Punto sumado + progreso */}
-          <div className="relative z-10 flex flex-col items-center justify-center gap-4 px-6 pb-4 sm:flex-1 sm:px-10 sm:pb-8">
+          <div className="relative z-10 flex min-h-0 flex-col items-center justify-center gap-4 overflow-y-auto px-6 pb-4 sm:flex-1 sm:px-10 sm:pb-8">
             <div className="relative mx-auto flex h-16 w-full max-w-[280px] items-center justify-center">
               {BURSTS.map((b) => (
                 <span
