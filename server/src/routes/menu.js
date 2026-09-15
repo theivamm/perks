@@ -115,28 +115,74 @@ router.post(
       desc ? ', ' + desc : ''
     }, appetizing presentation, studio lighting, top-down view, clean minimalist background, 4k`;
 
-    const genUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(
-      prompt
-    )}?width=1024&height=1024&nologo=true&seed=${Math.floor(Math.random() * 100000)}`;
+    const HORDE = 'https://aihorde.net/api/v2';
+    const HEADERS = { 'Content-Type': 'application/json', apikey: '0000000000', 'X-AI-Apikey': '0000000000' };
 
-    let imageRes;
+    const submitJob = async (models) => {
+      const res = await fetch(`${HORDE}/generate/async`, {
+        method: 'POST',
+        headers: HEADERS,
+        body: JSON.stringify({
+          prompt,
+          nsfw: false,
+          models,
+          params: { width: 1024, height: 1024, steps: 28, cfg_scale: 7.5 },
+        }),
+        signal: AbortSignal.timeout(30000),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || data.msg || `AI Horde respondió ${res.status}`);
+      }
+      return data;
+    };
+
+    let jobId;
     try {
-      imageRes = await fetch(genUrl, { signal: AbortSignal.timeout(90000) });
-    } catch {
+      try {
+        jobId = (await submitJob(['flux'])).id;
+      } catch {
+        jobId = (await submitJob(['SDXL 1.0'])).id;
+      }
+    } catch (e) {
       return res
         .status(502)
-        .json({ error: 'No se pudo generar la imagen. Probá de nuevo en unos segundos.' });
-    }
-    if (!imageRes.ok) {
-      return res
-        .status(502)
-        .json({ error: `El servicio de IA respondió ${imageRes.status}. Probá de nuevo.` });
+        .json({ error: `No se pudo pedir la imagen: ${e.message}. Probá en unos segundos.` });
     }
 
-    const buffer = Buffer.from(await imageRes.arrayBuffer());
-    const contentType = imageRes.headers.get('content-type')?.split(';')[0] || 'image/jpeg';
-    const ext = contentType.includes('png') ? '.png' : '.jpg';
-    const name = `${String(item.id).slice(0, 8)}-${Date.now()}${ext}`;
+    // La generación es asíncrona: consultamos el estado hasta que esté lista
+    let info;
+    try {
+      for (let i = 0; i < 40; i++) {
+        await new Promise((r) => setTimeout(r, 5000));
+        const st = await fetch(`${HORDE}/generate/status/${jobId}`, {
+          headers: HEADERS,
+          signal: AbortSignal.timeout(30000),
+        });
+        const j = await st.json();
+        if (j.generations?.[0]?.img) {
+          info = j;
+          break;
+        }
+        if (j.faulted || j.finished && !j.generations?.length) {
+          return res
+            .status(502)
+            .json({ error: 'La generación falló en el servidor. Probá de nuevo.' });
+        }
+      }
+    } catch (e) {
+      return res.status(502).json({ error: `Error esperando la imagen: ${e.message}` });
+    }
+
+    if (!info?.generations?.[0]?.img) {
+      return res
+        .status(504)
+        .json({ error: 'Tardó demasiado. Probá de nuevo dentro de un momento.' });
+    }
+
+    const buffer = Buffer.from(info.generations[0].img, 'base64');
+    const contentType = 'image/jpeg';
+    const name = `${String(item.id).slice(0, 8)}-${Date.now()}.jpg`;
 
     let publicUrl;
     try {
