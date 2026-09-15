@@ -321,7 +321,7 @@ export default function Profile() {
                 subtitle="Sumá compras con tu QR y vas ganando descuentos."
               />
             ) : (
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div className="grid grid-cols-1 gap-4">
                 {activeCoupons.map((c) => (
                   <CouponCard
                     key={c.id}

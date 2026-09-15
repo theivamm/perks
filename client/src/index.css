@@ -204,3 +204,18 @@
     transform: translateY(-36px) scale(1.25);
   }
 }
+
+.animate-confetti-fall {
+  animation: confetti-fall 2.6s cubic-bezier(0.22, 0.6, 0.36, 1) forwards;
+}
+
+@keyframes confetti-fall {
+  0% {
+    opacity: 1;
+    transform: translate3d(0, -20px, 0) rotate(0deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(var(--drift, 0px), 460px, 0) rotate(var(--rot, 540deg));
+  }
+}
