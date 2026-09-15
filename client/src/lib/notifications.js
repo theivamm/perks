@@ -42,3 +42,12 @@ export function formatWhen(value) {
   if (days < 7) return `hace ${days} día${days > 1 ? 's' : ''}`;
   return d.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' });
 }
+
+export function formatDateTime(value) {
+  if (!value) return '';
+  const d = new Date(typeof value === 'string' && value.includes(' ') ? value.replace(' ', 'T') : value);
+  if (Number.isNaN(d.getTime())) return '';
+  const date = d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  const time = d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+  return `${date} · ${time}`;
+}

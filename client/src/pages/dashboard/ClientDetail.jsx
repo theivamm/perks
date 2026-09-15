@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
   ArrowLeft,
+  BadgeCheck,
   Check,
   Coffee,
   Copy,
@@ -14,11 +15,11 @@ import {
   ReceiptText,
 } from 'lucide-react';
 import QRCode from 'qrcode';
-import { api } from '../../api.js';
+import { api, formatMoney } from '../../api.js';
 import { useTheme } from '../../context/ThemeContext.jsx';
 import { EmptyState, Spinner, toast } from '../../components/ui.jsx';
 import RewardGoals from '../../components/RewardGoals.jsx';
-import { formatWhen } from '../../lib/notifications.js';
+import { formatDateTime } from '../../lib/notifications.js';
 
 export default function ClientDetail() {
   const { id } = useParams();
@@ -78,6 +79,8 @@ export default function ClientDetail() {
   if (!detail) return <EmptyState icon={Coffee} title="No se pudo cargar el cliente" />;
 
   const { user, orders, coupons, stats, rewardProgress } = detail;
+  const availableCoupons = (coupons || []).filter((c) => c.status === 'activo');
+  const usedCoupons = (coupons || []).filter((c) => c.status === 'usado');
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
@@ -171,13 +174,13 @@ export default function ClientDetail() {
       <section>
         <h2 className="mb-3 flex items-center gap-2 text-lg font-extrabold text-ink">
           <Gift size={20} className="text-primary-strong" />
-          Cupones ({coupons.length})
+          Cupones disponibles ({availableCoupons.length})
         </h2>
-        {coupons.length === 0 ? (
-          <p className="text-sm text-ink-muted">Todavía no ganó cupones.</p>
+        {availableCoupons.length === 0 ? (
+          <p className="text-sm text-ink-muted">Todavía no tiene cupones disponibles.</p>
         ) : (
           <ul className="space-y-1.5">
-            {coupons.map((c) => (
+            {availableCoupons.map((c) => (
               <li key={c.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-line bg-surface px-3 py-2">
                 <div className="min-w-0">
                   <p className="truncate text-xs font-bold text-ink">
@@ -186,16 +189,45 @@ export default function ClientDetail() {
                     {c.description || 'premio'}
                   </p>
                   <p className="text-[11px] text-ink-muted">
-                    Compra #{c.milestone} · {c.code}
+                    Compra #{c.milestone} · código <span className="font-mono font-bold">{c.code}</span>
                   </p>
                 </div>
-                <span
-                  className={`rounded-full px-2 py-0.5 text-[10px] font-bold capitalize ${
-                    c.status === 'activo' ? 'bg-green-500/15 text-green-600' : 'bg-surface-alt text-ink-muted'
-                  }`}
-                >
-                  {c.status}
+                <span className="rounded-full bg-green-500/15 px-2 py-0.5 text-[10px] font-bold text-green-600">
+                  disponible
                 </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section>
+        <h2 className="mb-3 flex items-center gap-2 text-lg font-extrabold text-ink">
+          <BadgeCheck size={20} className="text-primary-strong" />
+          Cupones canjeados ({usedCoupons.length})
+        </h2>
+        {usedCoupons.length === 0 ? (
+          <p className="text-sm text-ink-muted">Aún no canjeó ningún cupón.</p>
+        ) : (
+          <ul className="space-y-1.5">
+            {usedCoupons.map((c) => (
+              <li key={c.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-line bg-surface px-3 py-2">
+                <div className="min-w-0">
+                  <p className="truncate text-xs font-bold text-ink">
+                    {c.type === 'descuento' ? `${c.value}% OFF` : c.type === 'regalo' ? 'Regalo' : `${formatMoney(c.value, settings.currency)}`}
+                    {' · '}
+                    {c.description || 'premio'}
+                  </p>
+                  <p className="text-[11px] text-ink-muted">
+                    Compra #{c.milestone} · código <span className="font-mono font-bold">{c.code}</span>
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-[11px] font-semibold text-ink-muted">{formatDateTime(c.used_at)}</p>
+                  <span className="rounded-full bg-surface-alt px-2 py-0.5 text-[10px] font-bold text-ink-muted">
+                    canjeado
+                  </span>
+                </div>
               </li>
             ))}
           </ul>
@@ -219,7 +251,7 @@ export default function ClientDetail() {
                   </span>
                   Compra registrada
                 </p>
-                <span className="shrink-0 text-xs font-semibold text-ink-muted">{formatWhen(o.created_at)}</span>
+                <span className="shrink-0 text-xs font-semibold text-ink-muted">{formatDateTime(o.created_at)}</span>
               </li>
             ))}
           </ul>
