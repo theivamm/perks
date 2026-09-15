@@ -175,6 +175,53 @@ router.post(
   })
 );
 
+// Eliminar la cuenta del usuario: borra sus datos y la cuenta de Supabase Auth
+router.post(
+  '/delete-account',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const { confirm } = req.body || {};
+    if (String(confirm || '').trim().toUpperCase() !== 'ELIMINAR') {
+      return res.status(400).json({ error: 'Escribí ELIMINAR para confirmar' });
+    }
+
+    const userId = req.user.id;
+    const ignoreMissing = (e) => /relation .* does not exist/i.test(String(e?.message || ''));
+    const note = (table, e) => {
+      if (e && !ignoreMissing(e)) console.warn(`[DELETE USUARIO] ${table}:`, e.message);
+    };
+
+    // Borra compras del usuario (y sus items). order_items cuelga de orders.
+    const { data: orderIdsData } = await supabase.from('orders').select('id').eq('user_id', userId);
+    const orderIds = (orderIdsData || []).map((o) => o.id);
+    if (orderIds.length > 0) {
+      const { error: e1 } = await supabase.from('order_items').delete().in('order_id', orderIds);
+      note('order_items', e1);
+    }
+    const { error: e2 } = await supabase.from('orders').delete().eq('user_id', userId);
+    note('orders', e2);
+
+    // Cupones y notificaciones del usuario
+    const { error: e3 } = await supabase.from('user_coupons').delete().eq('user_id', userId);
+    note('user_coupons', e3);
+    const { error: e4 } = await supabase.from('notifications').delete().eq('user_id', userId);
+    note('notifications', e4);
+
+    // Fila en users
+    const { error: e5 } = await supabase.from('users').delete().eq('id', userId);
+    note('users', e5);
+
+    // Cuenta de Supabase Auth
+    const { error: authErr } = await supabase.auth.admin.deleteUser(userId);
+    if (authErr) {
+      note('auth', authErr);
+      return res.status(500).json({ error: `No se pudo eliminar la cuenta: ${authErr.message}` });
+    }
+
+    res.json({ ok: true });
+  })
+);
+
 async function buildSuggestions(orders) {
   const counts = {};
   const snap = {};

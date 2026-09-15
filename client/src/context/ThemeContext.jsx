@@ -9,6 +9,7 @@ export function ThemeProvider({ children }) {
     primaryColor: '#2563eb',
     theme: 'light',
     currency: '$',
+    logo: '',
   });
 
   useEffect(() => {
@@ -19,6 +20,7 @@ export function ThemeProvider({ children }) {
             primaryColor: data.primaryColor,
             theme: data.theme || 'light',
             currency: data.currency || '$',
+            logo: data.logo || '',
           };
           setSettings(next);
           applyPalette(next.primaryColor, next.theme === 'dark');

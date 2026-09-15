@@ -20,6 +20,7 @@ import {
 import { useAuth } from '../../context/AuthContext.jsx';
 import { useTheme } from '../../context/ThemeContext.jsx';
 import NotificationsBell from '../../components/NotificationsBell.jsx';
+import Logo from '../../components/Logo.jsx';
 
 const NAV = [
   { to: '/dashboard/menu', label: 'Menú', icon: UtensilsCrossed },
@@ -143,10 +144,7 @@ export default function DashboardLayout() {
               className="flex items-center gap-2.5"
               aria-label="Ir a la página pública"
             >
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary-strong text-primary-contrast shadow-glow">
-                <ChefHat size={20} />
-              </div>
-              <span className="hidden text-sm font-extrabold text-ink sm:block">Fidelización App</span>
+              <Logo size="md" />
             </Link>
           </div>
 

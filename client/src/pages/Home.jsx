@@ -8,7 +8,7 @@ import { useTheme } from '../context/ThemeContext.jsx';
 import { ActiveCouponCard, couponValue } from '../components/CouponCards.jsx';
 import Navbar from '../components/Navbar.jsx';
 import PublicMenu from '../components/PublicMenu.jsx';
-import { toast } from '../components/ui.jsx';
+import { toast, Modal } from '../components/ui.jsx';
 
 export default function Home() {
   const { user, isAuthed } = useAuth();
@@ -20,6 +20,7 @@ export default function Home() {
   const [mine, setMine] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activating, setActivating] = useState(null);
+  const [confirmCoupon, setConfirmCoupon] = useState(null);
 
   const loadCatalog = async () => {
     try {
@@ -88,6 +89,7 @@ export default function Home() {
       toast(err.message);
     } finally {
       setActivating(null);
+      setConfirmCoupon(null);
     }
   };
 
@@ -128,7 +130,7 @@ export default function Home() {
             <button
               className="btn-primary w-full justify-center text-sm"
               disabled={activating === c.id}
-              onClick={() => activate(c)}
+              onClick={() => setConfirmCoupon(c)}
             >
               {activating === c.id ? 'Activando…' : 'Activar este cupón'}
             </button>
@@ -326,6 +328,39 @@ export default function Home() {
       <footer className="border-t border-line py-8 text-center text-sm text-ink-muted">
         © {new Date().getFullYear()} Fidelización App · {currency} moneda configurable desde el panel
       </footer>
+
+      <Modal open={!!confirmCoupon} onClose={() => { if (!activating) setConfirmCoupon(null); }} title="¿Seguro querés activar este cupón?">
+        {confirmCoupon && (
+          <div className="space-y-4">
+            <div className="rounded-2xl border border-line bg-surface-alt p-4 text-center">
+              <p className="text-3xl font-black text-ink">{couponValue(confirmCoupon, currency)}</p>
+              <p className="mt-1 font-bold text-ink">{confirmCoupon.title}</p>
+              {confirmCoupon.description && (
+                <p className="mt-1 text-sm text-ink-muted">{confirmCoupon.description}</p>
+              )}
+            </div>
+            <p className="rounded-xl border border-amber-300/60 bg-amber-50 px-3 py-2.5 text-sm leading-relaxed text-amber-800 dark:border-amber-400/40 dark:bg-amber-400/10 dark:text-amber-200">
+              Una vez activado tendrás que completarlo para obtener otro cupón.
+            </p>
+            <div className="flex justify-end gap-2">
+              <button type="button" className="btn-ghost" onClick={() => setConfirmCoupon(null)} disabled={!!activating}>
+                Cancelar
+              </button>
+              <button className="btn-primary" onClick={() => activate(confirmCoupon)} disabled={!!activating}>
+                {activating === confirmCoupon.id ? (
+                  <>
+                    <span className="animate-spin inline-block h-4 w-4 border-2 border-white/40 border-t-white rounded-full" />
+                    Activando...
+                  </>
+                ) : (
+                  <Zap size={15} />
+                )}
+                Sí, activar
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }

@@ -1,6 +1,7 @@
-import { useState } from 'react';
-import { Check, Loader2, Moon, Palette, Save, Sun } from 'lucide-react';
+import { useRef, useState } from 'react';
+import { Check, ImagePlus, Loader2, Moon, Palette, Save, Sun, Trash2 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext.jsx';
+import { api } from '../../api.js';
 import { PRESET_COLORS, hexToHsl } from '../../color.js';
 import { toast } from '../../components/ui.jsx';
 
@@ -9,6 +10,8 @@ const CURRENCIES = ['$', '€', 'Bs', 'S/', 'Q', 'L', 'C$'];
 export default function SettingsPage() {
   const { settings, updateSettings } = useTheme();
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const logoInput = useRef(null);
 
   const setColor = async (color) => {
     setSaving(true);
@@ -21,6 +24,29 @@ export default function SettingsPage() {
     setSaving(true);
     await updateSettings({ theme });
     setSaving(false);
+  };
+
+  const uploadLogo = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = '';
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append('logo', file);
+      const res = await api('/api/settings/upload-logo', { method: 'POST', body: fd });
+      await updateSettings({ logo: res.url });
+      toast('Logo actualizado');
+    } catch (err) {
+      toast(err.message);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const removeLogo = async () => {
+    await updateSettings({ logo: '' });
+    toast('Logo eliminado');
   };
 
   const { h, s, l } = hexToHsl(settings.primaryColor);
@@ -40,6 +66,45 @@ export default function SettingsPage() {
       </div>
 
       <div className="space-y-6">
+        <section className="card p-6">
+          <h2 className="mb-1 flex items-center gap-2 text-lg font-extrabold text-ink">
+            <ImagePlus size={20} className="text-primary-strong" />
+            Logo de la plataforma
+          </h2>
+          <p className="mb-5 text-sm text-ink-muted">
+            Se muestra en la barra de navegación de toda la web.
+          </p>
+
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="relative flex h-16 w-16 items-center justify-center overflow-hidden rounded-2xl border border-line bg-gradient-to-br from-primary to-primary-strong text-primary-contrast shadow-sm">
+              {settings.logo ? (
+                <img src={settings.logo} alt="Logo actual" className="h-full w-full object-cover" />
+              ) : (
+                <ImagePlus size={24} className="opacity-80" />
+              )}
+              {uploading && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+                  <Loader2 className="animate-spin text-white" size={18} />
+                </div>
+              )}
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <input ref={logoInput} type="file" accept="image/*" className="hidden" onChange={uploadLogo} />
+              <button className="btn-ghost" onClick={() => logoInput.current?.click()} disabled={uploading}>
+                <ImagePlus size={15} />
+                Subir logo
+              </button>
+              {settings.logo && (
+                <button className="btn-ghost text-red-500 hover:bg-red-500/10" onClick={removeLogo}>
+                  <Trash2 size={15} />
+                  Quitar logo
+                </button>
+              )}
+            </div>
+          </div>
+        </section>
+
         <section className="card p-6">
           <h2 className="mb-1 flex items-center gap-2 text-lg font-extrabold text-ink">
             <Palette size={20} className="text-primary-strong" />

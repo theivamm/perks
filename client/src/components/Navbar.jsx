@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import {
-  ChefHat,
   ChevronDown,
   LogIn,
   LogOut,
@@ -13,6 +12,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import NotificationsBell from './NotificationsBell.jsx';
+import Logo from './Logo.jsx';
 
 function initials(name = '') {
   return name
@@ -61,12 +61,7 @@ export default function Navbar() {
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
         <div className="flex items-center gap-2.5">
           <Link to="/" className="flex items-center gap-2.5 font-extrabold text-ink">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary-strong text-primary-contrast shadow-glow">
-              <ChefHat size={20} />
-            </div>
-            <span className="hidden sm:block">
-              Fidelización <span className="text-primary-strong">App</span>
-            </span>
+            <Logo />
           </Link>
         </div>
 
