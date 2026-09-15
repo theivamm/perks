@@ -65,6 +65,9 @@ router.get(
       activeCoupon.qr_code = await ensureCouponQrCode(activeCoupon.id);
     }
     const readyCoupons = coupons.filter((c) => c.status === 'completado');
+    for (const rc of readyCoupons) {
+      if (rc.qr_code == null) rc.qr_code = await ensureCouponQrCode(rc.id);
+    }
 
     res.json({
       user,

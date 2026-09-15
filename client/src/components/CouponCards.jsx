@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { BadgePercent, Check, Copy, Gift, PartyPopper, Ticket, Trophy } from 'lucide-react';
+import { BadgePercent, Check, Copy, Gift, PartyPopper, QrCode, Ticket, Trophy } from 'lucide-react';
+import QRCode from 'qrcode';
 import { formatMoney } from '../api.js';
 
 export function couponValue(c, currency = '$') {
@@ -68,6 +69,18 @@ export function ActiveCouponCard({ coupon, currency = '$', compact = false }) {
 
 export function ReadyCouponCard({ coupon, currency = '$' }) {
   const [copied, setCopied] = useState(false);
+  const [qrImg, setQrImg] = useState('');
+  const qrCode = String(coupon.qr_code || '').trim();
+
+  useEffect(() => {
+    if (!qrCode) {
+      setQrImg('');
+      return;
+    }
+    QRCode.toDataURL(qrCode, { margin: 1, width: 480, color: { dark: '#065f46', light: '#ffffff' } })
+      .then(setQrImg)
+      .catch(() => {});
+  }, [qrCode]);
 
   const copy = async (e) => {
     e.stopPropagation();
@@ -111,16 +124,34 @@ export function ReadyCouponCard({ coupon, currency = '$' }) {
           </p>
         )}
 
-        <div className="mt-3 flex items-center gap-2 rounded-2xl border-2 border-dashed border-line bg-surface-alt px-4 py-3">
-          <p className="flex-1 select-all font-mono text-lg font-extrabold tracking-widest text-ink">{coupon.code}</p>
-          <button className="btn-icon !h-8 !w-8" onClick={copy} aria-label="Copiar código">
-            {copied ? <Check size={15} className="text-green-600" /> : <Copy size={15} />}
-          </button>
-        </div>
+        <div className="mt-4 flex flex-col items-center gap-4 sm:flex-row">
+          {qrImg && (
+            <div className="shrink-0 rounded-2xl border border-emerald-400/40 bg-white p-2 shadow-sm">
+              <img src={qrImg} alt={`Código QR ${qrCode}`} className="h-40 w-40 rounded-xl" />
+            </div>
+          )}
 
-        <p className="mt-2 text-center text-[11px] font-semibold text-ink-muted">
-          Mostrá este código al pagar en el local para canjearlo.
-        </p>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2 rounded-2xl border-2 border-dashed border-line bg-surface-alt px-4 py-3">
+              <p className="min-w-0 flex-1 select-all truncate font-mono text-lg font-extrabold tracking-widest text-ink">
+                {coupon.code}
+              </p>
+              <button className="btn-icon !h-8 !w-8 shrink-0" onClick={copy} aria-label="Copiar código">
+                {copied ? <Check size={15} className="text-green-600" /> : <Copy size={15} />}
+              </button>
+            </div>
+            <p className="mt-2 text-center text-[11px] font-semibold text-ink-muted sm:text-left">
+              {qrCode ? (
+                <>
+                  <QrCode size={12} className="mr-1 inline-block text-emerald-600" />
+                  Mostrá este QR (o el código) al pagar: el local lo escanea y canjea el cupón directo.
+                </>
+              ) : (
+                'Mostrá este código al pagar en el local para canjearlo.'
+              )}
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   );

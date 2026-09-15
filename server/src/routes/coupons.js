@@ -3,7 +3,7 @@ import crypto from 'crypto';
 import { supabase } from '../supabase.js';
 import { requireAdmin, requireAuth } from '../middleware/auth.js';
 import { asyncHandler } from '../asyncHandler.js';
-import { notifyUser } from '../notify.js';
+import { redeemReadyCouponAndNotify } from '../notify.js';
 
 const router = Router();
 
@@ -185,31 +185,9 @@ router.post(
     if (error) throw error;
     if (!data) return res.status(404).json({ error: 'Cupón no encontrado' });
 
-    if (data.status !== 'completado') {
-      return res
-        .status(400)
-        .json({ error: `Este cupón no está listo para canjear (estado: ${data.status}).` });
-    }
-
-    const { data: updated, error: upErr } = await supabase
-      .from('user_coupons')
-      .update({ status: 'canjeado', redeemed_at: new Date().toISOString() })
-      .eq('id', data.id)
-      .select()
-      .single();
-    if (upErr) throw upErr;
-
-    try {
-      await notifyUser(data.user_id, {
-        type: 'coupon_used',
-        title: '¡Cupón canjeado!',
-        body: `Tu cupón "${updated.title || 'premio'}" (${updated.code}) fue canjeado en el local. Ya podés activar otro cupón.`,
-        icon: 'badge-check',
-        link: '/perfil',
-        data: { user_coupon_id: updated.id, code: updated.code },
-      });
-    } catch (err) {
-      console.warn('[Notificaciones] No se pudo crear:', err.message);
+    const updated = await redeemReadyCouponAndNotify(data.id);
+    if (!updated) {
+      return res.status(400).json({ error: `Este cupón no está listo para canjear (estado: ${data.status}).` });
     }
 
     res.json(updated);

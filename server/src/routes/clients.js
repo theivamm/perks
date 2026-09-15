@@ -8,7 +8,7 @@ import { requireAdmin } from '../middleware/auth.js';
 import { asyncHandler } from '../asyncHandler.js';
 import { imageUpload, excelUpload, uploadsDir } from '../upload.js';
 import { addActiveCouponPoint, countCompletedOrders } from '../rewards.js';
-import { notifyPointAdded } from '../notify.js';
+import { notifyPointAdded, notifyUser, redeemReadyCouponAndNotify } from '../notify.js';
 
 const router = Router();
 
@@ -206,7 +206,32 @@ router.post(
     }
 
     if (!coupon || !userId) {
-      return res.status(404).json({ error: 'Cupón activo no encontrado' });
+      // Compatibilidad: si escanean el QR de un cupón LISTO para canjear (completado),
+      // se canjea directo sin pasar por el perfil.
+      const { data: readyCoupon, error: rcErr } = await supabase
+        .from('user_coupons')
+        .select('*')
+        .eq('qr_code', code)
+        .eq('status', 'completado')
+        .maybeSingle();
+      if (rcErr) throw rcErr;
+      if (!readyCoupon) {
+        return res.status(404).json({ error: 'Cupón activo no encontrado' });
+      }
+      const { data: readyUser, error: ruErr } = await supabase
+        .from('users')
+        .select('id, name, email, phone, qr_code, created_at')
+        .eq('id', readyCoupon.user_id)
+        .eq('role', 'cliente')
+        .maybeSingle();
+      if (ruErr) throw ruErr;
+
+      const redeemed = await redeemReadyCouponAndNotify(readyCoupon.id);
+      if (!redeemed) {
+        return res.status(400).json({ error: 'El cupón ya fue canjeado o no está disponible.' });
+      }
+
+      return res.json({ client: readyUser, coupon: redeemed, user_coupon_id: readyCoupon.id, redeemed: true });
     }
 
     const { data: user, error: uErr } = await supabase

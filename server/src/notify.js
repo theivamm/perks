@@ -1,5 +1,5 @@
 import { supabase } from './supabase.js';
-import { addActiveCouponPoint } from './rewards.js';
+import { addActiveCouponPoint, redeemReadyCoupon } from './rewards.js';
 
 // Inserta una o varias notificaciones. Cada fila: { user_id, type, title, body, icon, link, data }
 export async function insertNotifications(rows) {
@@ -85,4 +85,20 @@ export async function notifyRewardsForCompra(userId) {
   if (!userId) return;
   const result = await addActiveCouponPoint(userId);
   return notifyPointAdded(userId, result);
+}
+
+// Canjea un cupón completado y le notifica al cliente. Devuelve el cupón
+// actualizado o null si no estaba listo.
+export async function redeemReadyCouponAndNotify(userCouponId) {
+  const updated = await redeemReadyCoupon(userCouponId);
+  if (!updated) return null;
+  await notifyUser(updated.user_id, {
+    type: 'coupon_used',
+    title: '¡Cupón canjeado!',
+    body: `Tu cupón "${updated.title || 'premio'}" (${updated.code}) fue canjeado en el local. Ya podés activar otro cupón.`,
+    icon: 'badge-check',
+    link: '/perfil',
+    data: { user_coupon_id: updated.id, code: updated.code },
+  });
+  return updated;
 }
