@@ -1,9 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
 import {
   BadgePercent,
-  ChevronDown,
-  ChevronLeft,
+  ChefHat,
   ExternalLink,
   LayoutDashboard,
   LogOut,
@@ -28,6 +27,14 @@ const NAV = [
   { to: '/dashboard/configuracion', label: 'Configuración', icon: SettingsIcon },
 ];
 
+const FAB_ITEMS = [
+  { to: '/dashboard/menu', label: 'Menú', icon: UtensilsCrossed },
+  { to: '/dashboard/clientes', label: 'Clientes', icon: Users },
+  { to: '/dashboard/cupones', label: 'Cupones', icon: BadgePercent },
+  { to: '/dashboard/configuracion', label: 'Configuración', icon: SettingsIcon },
+  { to: '/', label: 'Página pública', icon: ExternalLink },
+];
+
 function initials(name = '') {
   return name
     .trim()
@@ -43,6 +50,7 @@ export default function DashboardLayout() {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [fabOpen, setFabOpen] = useState(false);
   const menuRef = useRef(null);
 
   useEffect(() => {
@@ -126,14 +134,19 @@ export default function DashboardLayout() {
 
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-30 flex items-center justify-between gap-3 border-b border-line bg-surface/page px-5 py-3 backdrop-blur-md">
-          <div className="flex items-center gap-3">
-            <button className="btn-icon lg:hidden" onClick={() => setOpen(true)} aria-label="Abrir menú">
-              <MenuIcon size={20} />
-            </button>
-            <ChevronLeft size={16} className="hidden text-ink-muted lg:block" />
-            <span className="hidden text-sm font-semibold text-ink-muted sm:block">
-              Panel de administración
-            </span>
+          <div className="flex items-center gap-2.5">
+            <Link
+              to="/"
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center gap-2.5"
+              aria-label="Ir a la página pública"
+            >
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary-strong text-primary-contrast shadow-glow">
+                <ChefHat size={20} />
+              </div>
+              <span className="hidden text-sm font-extrabold text-ink sm:block">Fidelización App</span>
+            </Link>
           </div>
 
           <div className="flex items-center gap-1.5">
@@ -210,6 +223,57 @@ export default function DashboardLayout() {
       >
         <ScanLine size={26} />
       </NavLink>
+
+      {fabOpen && (
+        <div className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm lg:hidden" onClick={() => setFabOpen(false)} />
+      )}
+
+      <div className="fixed bottom-5 left-5 z-50 flex items-end lg:hidden">
+        <div className="relative flex items-end">
+          {FAB_ITEMS.map((item, i) => {
+            const angle = ((-90 + i * 30) * Math.PI) / 180;
+            const x = Math.round(110 * Math.cos(angle));
+            const y = Math.round(110 * Math.sin(angle));
+            return (
+              <button
+                key={item.to}
+                className={`absolute -ml-6 bottom-2 left-1/2 flex flex-col items-center gap-1 transition-all duration-500 ${
+                  fabOpen ? 'opacity-100' : 'pointer-events-none opacity-0'
+                }`}
+                style={{
+                  transform: `translate(${fabOpen ? x : 0}px, ${fabOpen ? y : 0}px) scale(${fabOpen ? 1 : 0.3})`,
+                  transitionTimingFunction: 'cubic-bezier(0.34, 1.56, 0.64, 1)',
+                  transitionDelay: fabOpen ? `${i * 40}ms` : '0ms',
+                }}
+                onClick={() => {
+                  setFabOpen(false);
+                  navigate(item.to);
+                }}
+                aria-label={item.label}
+              >
+                <span className="flex h-12 w-12 items-center justify-center rounded-full bg-surface text-primary-strong shadow-lg ring-1 ring-line">
+                  <item.icon size={20} />
+                </span>
+                <span className="rounded-full bg-ink px-2 py-0.5 text-[10px] font-bold text-surface shadow">
+                  {item.label}
+                </span>
+              </button>
+            );
+          })}
+
+          <button
+            className={`relative flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary-strong text-primary-contrast shadow-glow transition-transform hover:scale-105 active:scale-95 ${
+              fabOpen ? 'rotate-45' : ''
+            }`}
+            onClick={() => setFabOpen((v) => !v)}
+            aria-label={fabOpen ? 'Cerrar menú' : 'Abrir menú'}
+          >
+            <span key={fabOpen} className="animate-pop inline-flex">
+              {fabOpen ? <X size={26} /> : <MenuIcon size={26} />}
+            </span>
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
