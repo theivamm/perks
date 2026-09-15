@@ -166,6 +166,25 @@ router.post(
         .single();
     };
 
+    // 1) Pollinations con modelo flux: gratis, rápido y fotorrealista
+    try {
+      const genUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(
+        prompt
+      )}?width=1024&height=1024&model=flux&nologo=true&seed=${Math.floor(Math.random() * 100000)}`;
+      const imageRes = await fetch(genUrl, { signal: AbortSignal.timeout(60000) });
+      if (imageRes.ok) {
+        const buffer = Buffer.from(await imageRes.arrayBuffer());
+        const contentType = imageRes.headers.get('content-type')?.split(';')[0] || 'image/jpeg';
+        const { data: updated, error: pollErr } = await attachToItem(buffer, contentType);
+        if (pollErr) throw pollErr;
+        return res.json(updated);
+      }
+      console.warn('[POLLINATIONS] respondió', imageRes.status);
+    } catch (e) {
+      console.warn('[POLLINATIONS] fallo, sigo con Gemini:', e.message);
+    }
+
+    // 2) Gemini (gratis solo con billing; si la clave falla seguimos)
     const geminiKey = process.env.GEMINI_API_KEY;
     if (geminiKey) {
       try {
@@ -174,13 +193,11 @@ router.post(
         if (gemErr) throw gemErr;
         return res.json(updated);
       } catch (e) {
-        if (e.message && /no devolvi|falló|(4|5)\d\d|API key|api key|unauthorized/i.test(e.message)) {
-          console.warn('[GEMINI] No disponible, uso AI Horde:', e.message);
-        } else {
-          throw new Error(`Gemini: ${e.message}`);
-        }
+        console.warn('[GEMINI] no disponible, uso AI Horde:', e.message);
       }
     }
+
+    // 3) AI Horde: cola asíncrona (el cliente consulta el estado)
 
     const submitJob = async (models) => {
       const res2 = await fetch(`${HORDE}/generate/async`, {
