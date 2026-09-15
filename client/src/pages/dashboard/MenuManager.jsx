@@ -17,7 +17,7 @@ import { useTheme } from '../../context/ThemeContext.jsx';
 import { EmptyState, Modal, Spinner, toast } from '../../components/ui.jsx';
 import ImageCropper from '../../components/ImageCropper.jsx';
 
-const EMPTY_FORM = { title: '', description: '', price: '', category: 'General', image: '', available: 1, featured: 0, featured_label: '' };
+const EMPTY_FORM = { title: '', description: '', price: '', category: 'General', image: '', available: 1, featured: 0, featured_label: '', discount: 0 };
 
 export default function MenuManager() {
   const { settings } = useTheme();
@@ -356,8 +356,20 @@ export default function MenuManager() {
                           {item.title.slice(0, 2).toUpperCase()}
                         </div>
                       )}
-                      <div className="absolute right-2 top-2 rounded-full bg-surface/90 px-2.5 py-1 text-xs font-bold text-primary-strong">
-                        {formatMoney(item.price, settings.currency)}
+                      <div className="absolute right-2 top-2 rounded-full bg-surface/90 px-2.5 py-1 text-xs font-bold shadow">
+                        {Number(item.discount) > 0 ? (
+                          <span className="flex flex-col items-end gap-0.5">
+                            <span className="text-ink-muted line-through">{formatMoney(item.price, settings.currency)}</span>
+                            <span className="text-lg font-black text-green-600">
+                              {formatMoney((Number(item.price) * (100 - Number(item.discount))) / 100, settings.currency)}
+                            </span>
+                            <span className="rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-black text-white">
+                              -{Number(item.discount)}%
+                            </span>
+                          </span>
+                        ) : (
+                          <span className="text-primary-strong">{formatMoney(item.price, settings.currency)}</span>
+                        )}
                       </div>
                       <div className="absolute left-2 top-2 flex flex-col items-start gap-1">
                         <button
@@ -531,15 +543,41 @@ export default function MenuManager() {
           </label>
 
           {Boolean(form.featured) && (
-            <div className="animate-fade-up">
-              <label className="label">Texto de la oferta</label>
-              <input
-                className="input"
-                value={form.featured_label}
-                onChange={set('featured_label')}
-                placeholder="Ej: 30% OFF · 2x1 · Regalo con tu pedido"
-              />
-            </div>
+            <>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="animate-fade-up">
+                  <label className="label">Descuento %</label>
+                  <input
+                    className="input"
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="1"
+                    value={form.discount}
+                    onChange={set('discount')}
+                    placeholder="0"
+                  />
+                  {Number(form.discount) > 0 && Number(form.price) > 0 && (
+                    <p className="mt-1.5 rounded-lg bg-green-500/10 px-2.5 py-1.5 text-[11px] font-bold text-green-600">
+                      {formatMoney(Number(form.price), settings.currency)} →{' '}
+                      {formatMoney((Number(form.price) * (100 - Number(form.discount))) / 100, settings.currency)}
+                    </p>
+                  )}
+                </div>
+                <div className="animate-fade-up">
+                  <label className="label">Texto de la oferta</label>
+                  <input
+                    className="input"
+                    value={form.featured_label}
+                    onChange={set('featured_label')}
+                    placeholder="Ej: 2x1 · Regalo · Combos"
+                  />
+                </div>
+              </div>
+              <p className="text-[11px] text-ink-muted">
+                El % se calcula solo: el precio original queda tachado y se muestra el nuevo. El texto es un mensaje aparte que acompaña a la oferta.
+              </p>
+            </>
           )}
 
           <div className="flex justify-end gap-2 pt-2">

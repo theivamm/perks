@@ -25,6 +25,7 @@ create table if not exists public.menu_items (
   available boolean not null default true,
   featured boolean not null default false,
   featured_label text default '',
+  discount numeric not null default 0,
   created_at timestamptz not null default now()
 );
 

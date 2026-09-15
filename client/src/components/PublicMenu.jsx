@@ -147,7 +147,7 @@ export default function PublicMenu() {
                   )}
                   <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-amber-400 to-orange-500 px-3 py-1.5 text-sm font-black text-white shadow-glow">
                     <Star size={14} className="fill-white" />
-                    {item.featured_label || 'Oferta'}
+                    {Number(item.discount) > 0 ? `-${Number(item.discount)}% OFF` : item.featured_label || 'Oferta'}
                   </span>
                 </div>
                 <div className="p-5">
@@ -156,9 +156,24 @@ export default function PublicMenu() {
                   {item.description && (
                     <p className="mt-1 line-clamp-2 text-sm text-ink-muted">{item.description}</p>
                   )}
-                  <p className="mt-4 text-3xl font-black text-primary-strong drop-shadow-sm">
-                    {formatMoney(item.price, settings.currency)}
+                  <p className="mt-3 flex flex-wrap items-end gap-2">
+                    <span className="text-3xl font-black text-primary-strong drop-shadow-sm">
+                      {formatMoney(
+                        Number(item.discount) > 0
+                          ? (Number(item.price) * (100 - Number(item.discount))) / 100
+                          : item.price,
+                        settings.currency
+                      )}
+                    </span>
+                    {Number(item.discount) > 0 && (
+                      <span className="pb-0.5 text-lg font-bold text-ink-muted line-through">
+                        {formatMoney(item.price, settings.currency)}
+                      </span>
+                    )}
                   </p>
+                  {item.featured_label && Number(item.discount) > 0 && (
+                    <p className="mt-2 text-sm font-bold text-amber-600">{item.featured_label}</p>
+                  )}
                 </div>
               </article>
             ))}
