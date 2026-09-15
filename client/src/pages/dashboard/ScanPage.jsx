@@ -47,7 +47,7 @@ export default function ScanPage() {
     try {
       const res = await api('/api/clients/scan', { method: 'POST', body: { qr_code: decodedText.trim() } });
       setLastError('');
-      navigate(`/dashboard/cliente/${res.client.id}`);
+      navigate(`/dashboard/cliente/${res.client.id}?cupon=${res.user_coupon_id}`);
     } catch (err) {
       setLastError(err.message);
       toast(err.message);
@@ -66,7 +66,7 @@ export default function ScanPage() {
       <div className="mb-6">
         <h1 className="text-2xl font-extrabold text-ink">Escanear QR</h1>
         <p className="text-sm text-ink-muted">
-          Apuntá la cámara al código QR del cliente para abrir su perfil y sumar puntos a su cupón.
+          Apuntá la cámara al código QR del cupón activo del cliente para abrir su perfil y sumarle el punto.
         </p>
       </div>
 

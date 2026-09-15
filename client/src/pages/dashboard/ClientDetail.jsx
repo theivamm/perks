@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
 import {
   ArrowLeft,
   BadgeCheck,
@@ -24,6 +24,8 @@ import { formatDateTime } from '../../lib/notifications.js';
 
 export default function ClientDetail() {
   const { id } = useParams();
+  const [searchParams] = useSearchParams();
+  const scannedCouponId = searchParams.get('cupon');
   const { settings } = useTheme();
   const currency = settings.currency || '$';
   const [detail, setDetail] = useState(null);
@@ -37,10 +39,13 @@ export default function ClientDetail() {
     try {
       const res = await api(`/api/clients/registered/${id}`);
       setDetail(res);
-      if (res.user?.qr_code) {
-        QRCode.toDataURL(res.user.qr_code, { margin: 1, width: 480, color: { dark: '#1f2937', light: '#ffffff' } })
+      const code = res.activeCoupon?.qr_code;
+      if (code) {
+        QRCode.toDataURL(code, { margin: 1, width: 480, color: { dark: '#1f2937', light: '#ffffff' } })
           .then(setQrImg)
           .catch(() => {});
+      } else {
+        setQrImg('');
       }
     } catch (err) {
       toast(err.message);
@@ -57,7 +62,10 @@ export default function ClientDetail() {
   const addPoint = async () => {
     setSaving(true);
     try {
-      const res = await api(`/api/clients/registered/${id}/puntos`, { method: 'POST' });
+      const res = await api(`/api/clients/registered/${id}/puntos`, {
+        method: 'POST',
+        body: { user_coupon_id: scannedCouponId || undefined },
+      });
       if (res.result?.status === 'completed') {
         toast('¡Cupón completado! Se generó el código de canje y el cliente fue notificado.');
       } else {
@@ -73,7 +81,7 @@ export default function ClientDetail() {
 
   const copyCode = async () => {
     try {
-      await navigator.clipboard.writeText(detail.user.qr_code);
+      await navigator.clipboard.writeText(detail.activeCoupon?.qr_code || '');
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {
@@ -128,8 +136,8 @@ export default function ClientDetail() {
               {!user.phone && <p className="text-xs">—</p>}
             </div>
           </div>
-          <button className="btn-ghost ml-auto" onClick={() => copyCode()} title="Copiar código">
-            <span className="font-mono text-sm font-bold tracking-wider text-ink">{user.qr_code || '—'}</span>
+          <button className="btn-ghost ml-auto" onClick={() => copyCode()} title="Copiar código QR del cupón activo">
+            <span className="font-mono text-sm font-bold tracking-wider text-ink">{activeCoupon?.qr_code || '—'}</span>
             {copied ? (
               <span className="text-primary-strong">
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -145,20 +153,20 @@ export default function ClientDetail() {
         <div className="mt-5 flex flex-wrap items-center gap-4 rounded-2xl border border-line bg-surface-alt/40 p-4">
           <div className="flex items-center gap-3">
             {qrImg ? (
-              <img src={qrImg} alt={`QR ${user.qr_code}`} className="h-24 w-24 rounded-lg bg-white p-1" />
+              <img src={qrImg} alt={`QR ${activeCoupon?.qr_code}`} className="h-24 w-24 rounded-lg bg-white p-1" />
             ) : (
               <div className="flex h-24 w-24 items-center justify-center rounded-lg bg-surface text-ink-muted">
                 <QrCode size={24} />
               </div>
             )}
             <p className="max-w-52 text-xs leading-relaxed text-ink-muted">
-              Verificá el QR con la cámara del panel para abrir este perfil y sumar puntos.
+              QR del cupón activo. Escanealo con la cámara del panel (o copialo) y sumá el punto acá abajo.
             </p>
           </div>
           <div className="ml-auto flex flex-col items-center gap-1">
-            <p className="text-3xl font-extrabold text-primary-strong">{stats.completedOrders}</p>
+            <p className="text-3xl font-extrabold text-primary-strong">{activeCoupon ? activeCoupon.points : '—'}</p>
             <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
-              compra{stats.completedOrders !== 1 && 's'}
+              puntos de {activeCoupon ? activeCoupon.target_points : '—'}
             </p>
           </div>
         </div>

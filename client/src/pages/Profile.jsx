@@ -53,7 +53,7 @@ export default function Profile() {
   const me = data?.user;
   const isCliente = me?.role === 'cliente';
 
-  const qrCode = useMemo(() => String(me?.qr_code || '').trim(), [me]);
+  const qrCode = useMemo(() => String(data?.activeCoupon?.qr_code || '').trim(), [data]);
 
   useEffect(() => {
     if (!qrCode) return;
@@ -256,36 +256,45 @@ export default function Profile() {
             <QrCode size={26} />
           </div>
           <h1 className="mt-3 text-xl font-extrabold text-ink">{fullName(me)}</h1>
-          <p className="text-sm text-ink-muted">Mostrá este código al pagar para sumar tus compras y ganar premios.</p>
+          {qrCode ? (
+            <>
+              <p className="text-sm text-ink-muted">
+                Mostrá este código al pagar para que el local sume puntos a tu cupón activo.
+              </p>
 
-          <div className="mx-auto mt-5 w-fit rounded-3xl border border-line bg-white p-4 shadow-sm">
-            {qrCode ? (
-              qrImg ? (
-                <img src={qrImg} alt={`Código QR ${qrCode}`} className="h-52 w-52" />
-              ) : (
-                <div className="flex h-52 w-52 items-center justify-center text-sm font-bold text-ink-muted">
-                  <Loader2 className="animate-spin" size={22} />
-                </div>
-              )
-            ) : (
-              <div className="flex h-52 w-52 flex-col items-center justify-center gap-3 p-4 text-center">
-                <QrCode size={26} className="text-ink-muted" />
-                <p className="text-sm font-bold text-ink-muted">No se pudo generar tu código QR</p>
-                <button className="btn-ghost" onClick={load}>
-                  Reintentar
-                </button>
+              <div className="mx-auto mt-5 w-fit rounded-3xl border border-line bg-white p-4 shadow-sm">
+                {qrImg ? (
+                  <img src={qrImg} alt={`Código QR ${qrCode}`} className="h-52 w-52" />
+                ) : (
+                  <div className="flex h-52 w-52 items-center justify-center text-sm font-bold text-ink-muted">
+                    <Loader2 className="animate-spin" size={22} />
+                  </div>
+                )}
               </div>
-            )}
-          </div>
 
-          <button
-            className="btn-ghost mx-auto mt-4 inline-flex items-center gap-2"
-            onClick={copyCode}
-            title="Copiar código"
-          >
-            <span className="font-mono text-sm font-bold tracking-wider text-ink">{qrCode}</span>
-            {copied ? <CheckCircleMini /> : <Copy size={14} />}
-          </button>
+              <button
+                className="btn-ghost mx-auto mt-4 inline-flex items-center gap-2"
+                onClick={copyCode}
+                title="Copiar código"
+              >
+                <span className="font-mono text-sm font-bold tracking-wider text-ink">{qrCode}</span>
+                {copied ? <CheckCircleMini /> : <Copy size={14} />}
+              </button>
+            </>
+          ) : (
+            <>
+              <p className="text-sm text-ink-muted">
+                Activá un cupón para obtener tu código QR y que el local te sume puntos.
+              </p>
+              <div className="mx-auto mt-5 flex h-52 w-52 flex-col items-center justify-center gap-3 rounded-3xl border border-dashed border-line bg-surface-alt/40 p-4 text-center">
+                <QrCode size={26} className="text-ink-muted" />
+                <p className="text-sm font-bold text-ink-muted">Sin cupón activo</p>
+                <Link to="/" className="btn-primary text-sm">
+                  Ver cupones y activar
+                </Link>
+              </div>
+            </>
+          )}
         </section>
         )}
 

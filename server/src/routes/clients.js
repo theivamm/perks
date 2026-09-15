@@ -160,7 +160,8 @@ router.get(
   })
 );
 
-// Busca un usuario por su código QR (para el lector del admin)
+// Escaneo del QR del CUPÓN ACTIVO: busca el cupón por su código QR único.
+// Devuelve el cliente y el cupón para que el local sume puntos directo ahí.
 router.post(
   '/scan',
   requireAdmin,
@@ -169,38 +170,65 @@ router.post(
     const code = String(qr_code || '').trim().toUpperCase();
     if (!code) return res.status(400).json({ error: 'Código QR requerido' });
 
-    let { data: user, error } = await supabase
-      .from('users')
-      .select('id, name, email, phone, qr_code, created_at')
+    const { data: coupon, error } = await supabase
+      .from('user_coupons')
+      .select('*')
       .eq('qr_code', code)
-      .eq('role', 'cliente')
+      .eq('status', 'activado')
       .maybeSingle();
     if (error) throw error;
 
-    if (!user) {
-      // Compatibilidad: también acepta el id del usuario como texto
-      const { data: byId } = await supabase
+    let userCouponId = coupon?.id || null;
+    let userId = coupon?.user_id || null;
+
+    // Compatibilidad: si escanean el QR viejo del perfil (users.qr_code),
+    // busca al usuario y usa su cupón activo.
+    if (!coupon) {
+      const { data: userByQr } = await supabase
         .from('users')
         .select('id, name, email, phone, qr_code, created_at')
-        .eq('id', code)
+        .eq('qr_code', code)
         .eq('role', 'cliente')
         .maybeSingle();
-      if (byId) user = byId;
+      if (userByQr) {
+        userId = userByQr.id;
+        const { data: userCoupon } = await supabase
+          .from('user_coupons')
+          .select('*')
+          .eq('user_id', userByQr.id)
+          .eq('status', 'activado')
+          .maybeSingle();
+        if (userCoupon) {
+          coupon = userCoupon;
+          userCouponId = userCoupon.id;
+        }
+      }
     }
 
-    if (!user) return res.status(404).json({ error: 'Cliente no encontrado' });
+    if (!coupon || !userId) {
+      return res.status(404).json({ error: 'Cupón activo no encontrado' });
+    }
 
-    const completed = await countCompletedOrders(user.id);
-    res.json({ client: user, stats: { completedOrders: completed } });
+    const { data: user, error: uErr } = await supabase
+      .from('users')
+      .select('id, name, email, phone, qr_code, created_at')
+      .eq('id', userId)
+      .eq('role', 'cliente')
+      .maybeSingle();
+    if (uErr) throw uErr;
+
+    res.json({ client: user, coupon, user_coupon_id: userCouponId });
   })
 );
 
-// Suma 1 punto al cupón activo del cliente (el admin verifica en el local y toca el botón)
+// Suma 1 punto al cupón activo del cliente (el admin escanea el QR del cupón
+// y toca el botón). Si llega user_coupon_id, suma a ESE cupón concretamente.
 router.post(
   '/registered/:id/puntos',
   requireAdmin,
   asyncHandler(async (req, res) => {
     const userId = req.params.id;
+    const userCouponId = (req.body || {}).user_coupon_id || null;
 
     const { data: user, error: userErr } = await supabase
       .from('users')
@@ -211,20 +239,36 @@ router.post(
     if (userErr) throw userErr;
     if (!user) return res.status(404).json({ error: 'Cliente no encontrado' });
 
-    const { data: active, error: aErr } = await supabase
-      .from('user_coupons')
-      .select('id')
-      .eq('user_id', user.id)
-      .eq('status', 'activado')
-      .maybeSingle();
-    if (aErr) throw aErr;
-    if (!active) {
-      return res
-        .status(400)
-        .json({ error: 'El cliente no tiene un cupón activo para sumar puntos.' });
+    if (userCouponId) {
+      const { data: target, error: tErr } = await supabase
+        .from('user_coupons')
+        .select('id')
+        .eq('id', userCouponId)
+        .eq('user_id', user.id)
+        .eq('status', 'activado')
+        .maybeSingle();
+      if (tErr) throw tErr;
+      if (!target) {
+        return res
+          .status(400)
+          .json({ error: 'El cupón escaneado ya no está activo para sumar puntos.' });
+      }
+    } else {
+      const { data: active, error: aErr } = await supabase
+        .from('user_coupons')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('status', 'activado')
+        .maybeSingle();
+      if (aErr) throw aErr;
+      if (!active) {
+        return res
+          .status(400)
+          .json({ error: 'El cliente no tiene un cupón activo para sumar puntos.' });
+      }
     }
 
-    const result = await addActiveCouponPoint(user.id);
+    const result = await addActiveCouponPoint(user.id, userCouponId);
 
     try {
       await notifyPointAdded(user.id, result);

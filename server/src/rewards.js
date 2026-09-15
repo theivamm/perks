@@ -18,17 +18,18 @@ function newCouponCode() {
   return 'CP-' + crypto.randomBytes(3).toString('hex').toUpperCase();
 }
 
-// Suma 1 punto al cupón activo del usuario. Devuelve el nuevo estado:
+// Suma 1 punto al cupón activo del usuario. Si llega targetId (el cupón
+// escaneado por el local), suma a ESE cupón siempre que sea del usuario y
+// siga activo. Devuelve el nuevo estado:
 //   { status: 'no_active' } | { status: 'progress', coupon } | { status: 'completed', coupon }
-export async function addActiveCouponPoint(userId) {
+export async function addActiveCouponPoint(userId, targetId) {
   if (!userId) return { status: 'no_active' };
 
-  const { data: active, error } = await supabase
-    .from('user_coupons')
-    .select('*')
-    .eq('user_id', userId)
-    .eq('status', 'activado')
-    .maybeSingle();
+  let query = supabase.from('user_coupons').select('*').eq('user_id', userId);
+  if (targetId) query = query.eq('id', targetId);
+  query = query.eq('status', 'activado');
+
+  const { data: active, error } = await query.maybeSingle();
   if (error) throw error;
   if (!active) return { status: 'no_active' };
 

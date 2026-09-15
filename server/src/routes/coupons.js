@@ -1,10 +1,15 @@
 import { Router } from 'express';
+import crypto from 'crypto';
 import { supabase } from '../supabase.js';
 import { requireAdmin, requireAuth } from '../middleware/auth.js';
 import { asyncHandler } from '../asyncHandler.js';
 import { notifyUser } from '../notify.js';
 
 const router = Router();
+
+function newQrCode() {
+  return 'CQ-' + crypto.randomBytes(3).toString('hex').toUpperCase();
+}
 
 const ALLOWED = { title: 1, description: 1, type: 1, value: 1, target_points: 1, active: 1 };
 
@@ -155,6 +160,7 @@ router.post(
         target_points: coupon.target_points,
         points: 0,
         status: 'activado',
+        qr_code: newQrCode(),
       })
       .select()
       .single();
