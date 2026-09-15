@@ -89,7 +89,7 @@ export default function NotificationsBell() {
       </button>
 
       {open && (
-        <div className="animate-fade-up absolute right-0 top-full z-50 mt-2 w-80 max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border border-line bg-surface shadow-xl">
+        <div className="animate-fade-up fixed left-1/2 top-[4.25rem] z-50 w-[calc(100vw-2rem)] max-w-sm -translate-x-1/2 overflow-hidden rounded-2xl border border-line bg-surface shadow-xl sm:max-w-md">
           <div className="flex items-center justify-between gap-2 border-b border-line px-4 py-3">
             <p className="text-sm font-extrabold text-ink">Notificaciones</p>
             <div className="flex items-center gap-1">
