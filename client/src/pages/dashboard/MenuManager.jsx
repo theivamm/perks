@@ -35,6 +35,7 @@ export default function MenuManager() {
   const [showExcelHelp, setShowExcelHelp] = useState(false);
   const [generatingId, setGeneratingId] = useState(null);
   const [progress, setProgress] = useState({});
+  const generatingRef = useRef(null);
   const excelInput = useRef(null);
   const imageInput = useRef(null);
 
@@ -109,6 +110,8 @@ export default function MenuManager() {
   };
 
   const runGenerateImage = async (item) => {
+    if (generatingRef.current) return;
+    generatingRef.current = item.id;
     setGeneratingId(item.id);
     setProgress((p) => ({ ...p, [item.id]: 4 }));
 
@@ -125,7 +128,10 @@ export default function MenuManager() {
     };
 
     try {
-      const res = await api(`/api/menu/${item.id}/generate-image`, { method: 'POST' });
+      const res = await api(`/api/menu/${item.id}/generate-image`, {
+        method: 'POST',
+        signal: AbortSignal.timeout(70000),
+      });
       setData((d) => ({
         ...d,
         items: d.items.map((it) => (it.id === res.id ? res : it)),
@@ -136,6 +142,7 @@ export default function MenuManager() {
       close(90);
       return { ok: false, error: err.message };
     } finally {
+      generatingRef.current = null;
       setTimeout(() => {
         setGeneratingId(null);
         setProgress((p) => {
@@ -149,6 +156,7 @@ export default function MenuManager() {
 
   const generateImage = async (item) => {
     const r = await runGenerateImage(item);
+    if (!r) return;
     toast(r.ok ? 'Imagen generada' : r.error || 'No se pudo generar. Probá de nuevo.');
   };
 
@@ -427,16 +435,18 @@ export default function MenuManager() {
                         </button>
                       </div>
                       <button
-                        className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-primary/40 py-1.5 text-xs font-semibold text-primary-strong transition-colors hover:bg-primary-soft"
+                        type="button"
+                        className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-primary/40 py-2.5 text-xs font-semibold text-primary-strong transition-colors hover:bg-primary-soft active:scale-[0.98]"
+                        style={{ touchAction: 'manipulation' }}
                         onClick={() => generateImage(item)}
-                        disabled={generatingId === item.id}
+                        disabled={!!generatingId}
                       >
                         {generatingId === item.id ? (
                           <Loader2 className="animate-spin" size={14} />
                         ) : (
                           <Sparkles size={14} />
                         )}
-                        {generatingId === item.id ? 'Generando...' : 'Generar imagen con IA'}
+                        {generatingId === item.id ? 'Generando...' : generatingId ? 'Esperá...' : 'Generar imagen con IA'}
                       </button>
                     </div>
                   </div>

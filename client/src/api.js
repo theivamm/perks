@@ -21,7 +21,8 @@ export async function api(path, options = {}) {
       headers,
       body: isForm ? options.body : options.body ? JSON.stringify(options.body) : undefined,
     });
-  } catch {
+  } catch (err) {
+    if (options.signal?.aborted) throw new Error('La operación tardó demasiado. Probá de nuevo.');
     throw new Error('No se pudo conectar con el servidor');
   }
 
