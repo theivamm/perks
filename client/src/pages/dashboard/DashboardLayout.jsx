@@ -229,7 +229,7 @@ export default function DashboardLayout() {
         <div className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm lg:hidden" onClick={() => setFabOpen(false)} />
       )}
 
-      <div className="fixed bottom-5 left-5 z-50 flex flex-col items-end lg:hidden">
+      <div className="fixed bottom-5 left-5 z-50 flex flex-col items-start lg:hidden">
         <div className="flex flex-col-reverse items-start gap-2.5">
           {FAB_ITEMS.map((item, i) => (
             <button
