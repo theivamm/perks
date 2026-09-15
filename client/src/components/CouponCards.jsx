@@ -78,7 +78,6 @@ function TicketShell({ from, to, children, className = '', hover = true }) {
         }}
       />
       <div className="ticket-dots" />
-      <div className="ticket-stripe" />
       <div className="ticket-shine" />
       {children}
       <span className="ticket-notch ticket-notch-left" />
