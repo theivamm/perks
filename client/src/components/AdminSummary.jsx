@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BadgePercent, Gift, Loader2, QrCode, ScanLine, UserRound } from 'lucide-react';
+import { BadgePercent, Gift, Loader2, QrCode, ScanLine, Smartphone, UserRound } from 'lucide-react';
 import { api, formatMoney } from '../api.js';
 import { useTheme } from '../context/ThemeContext.jsx';
 import { EmptyState, toast } from './ui.jsx';
@@ -31,7 +31,7 @@ export default function AdminSummary() {
 
   return (
     <div className="space-y-6">
-      <button className="card flex w-full items-center gap-4 p-5 text-left transition-all hover:-translate-y-0.5 hover:bg-surface-alt" onClick={() => navigate('/dashboard/escanear')}>
+      <button className="card flex w-full items-center gap-4 p-5 text-left transition-all hover:-translate-y-0.5 hover:bg-surface-alt lg:hidden" onClick={() => navigate('/dashboard/escanear')}>
         <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-primary-strong text-primary-contrast shadow-glow">
           <ScanLine size={22} />
         </div>
@@ -41,6 +41,18 @@ export default function AdminSummary() {
         </div>
         <QrCode size={20} className="shrink-0 text-primary-strong" />
       </button>
+
+      <div className="card hidden items-center gap-4 p-5 lg:flex">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-surface-alt text-primary-strong">
+          <Smartphone size={24} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="font-extrabold text-ink">Escaneá desde tu celular</p>
+          <p className="text-sm text-ink-muted">
+            Iniciá sesión con tu celular para escanear el QR de un cliente y sumarle una compra.
+          </p>
+        </div>
+      </div>
 
       {withCoupons.length === 0 ? (
         <EmptyState

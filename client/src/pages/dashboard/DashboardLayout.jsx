@@ -24,7 +24,6 @@ import NotificationsBell from '../../components/NotificationsBell.jsx';
 const NAV = [
   { to: '/dashboard/menu', label: 'Menú', icon: UtensilsCrossed },
   { to: '/dashboard/clientes', label: 'Clientes', icon: Users },
-  { to: '/dashboard/escanear', label: 'Escanear QR', icon: ScanLine },
   { to: '/dashboard/cupones', label: 'Cupones', icon: BadgePercent },
   { to: '/dashboard/configuracion', label: 'Configuración', icon: SettingsIcon },
 ];
@@ -199,10 +198,18 @@ export default function DashboardLayout() {
           </div>
         </header>
 
-        <main className="flex-1 p-5 lg:p-8">
+        <main className="flex-1 p-5 pb-24 lg:p-8 lg:pb-8">
           <Outlet />
         </main>
       </div>
+
+      <NavLink
+        to="/dashboard/escanear"
+        aria-label="Escanear QR"
+        className="fixed bottom-5 right-5 z-40 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary-strong text-primary-contrast shadow-glow transition-transform hover:scale-105 active:scale-95 lg:hidden"
+      >
+        <ScanLine size={26} />
+      </NavLink>
     </div>
   );
 }
