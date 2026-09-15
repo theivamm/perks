@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
-import { CircleCheck, QrCode, Sparkles, Ticket } from 'lucide-react';
+import { CircleCheck, QrCode, Sparkles, Ticket, Zap } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { api } from '../api.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useTheme } from '../context/ThemeContext.jsx';
-import { ActiveCouponCard, CatalogCouponCard } from '../components/CouponCards.jsx';
+import { ActiveCouponCard, couponValue } from '../components/CouponCards.jsx';
 import Navbar from '../components/Navbar.jsx';
 import PublicMenu from '../components/PublicMenu.jsx';
 import { toast } from '../components/ui.jsx';
@@ -64,6 +64,53 @@ export default function Home() {
     } finally {
       setActivating(null);
     }
+  };
+
+  const CatalogCard = ({ c }) => {
+    const isActiveCoupon = activeCoupon?.coupon_id === c.id;
+    const disabled = Boolean(activeCoupon) && !isActiveCoupon;
+
+    return (
+      <div className="card flex flex-col p-5">
+        <div className="flex items-start justify-between gap-3">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-soft px-3 py-1 text-xs font-black text-primary-strong">
+            <Ticket size={12} />
+            {c.type === 'monto' ? 'Recompensa' : c.type === 'descuento' ? 'Descuento' : 'Regalo'}
+          </span>
+          <span className="inline-flex items-center gap-1 rounded-full bg-surface-alt px-2.5 py-1 text-xs font-black text-ink">
+            <Zap size={12} /> {Number(c.target_points)} pts
+          </span>
+        </div>
+
+        <p className="mt-3 text-3xl font-black text-ink drop-shadow-sm">{couponValue(c, currency)}</p>
+        <h3 className="mt-1 font-extrabold text-ink">{c.title}</h3>
+        {c.description && <p className="mt-1 text-sm text-ink-muted">{c.description}</p>}
+
+        <div className="mt-auto pt-4">
+          {isActiveCoupon ? (
+            <span className="block rounded-full bg-emerald-100 px-3 py-2 text-center text-xs font-black text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">
+              ✓ Tu cupón activo
+            </span>
+          ) : !isAuthed ? (
+            <Link to="/registro" className="btn-secondary block text-center text-sm">
+              Creá tu cuenta y activá
+            </Link>
+          ) : disabled ? (
+            <span className="block rounded-full bg-surface-alt px-3 py-2 text-center text-xs font-black text-ink-muted">
+              Completá tu cupón activo
+            </span>
+          ) : (
+            <button
+              className="btn-primary w-full justify-center text-sm"
+              disabled={activating === c.id}
+              onClick={() => activate(c)}
+            >
+              {activating === c.id ? 'Activando…' : 'Activar este cupón'}
+            </button>
+          )}
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -158,7 +205,7 @@ export default function Home() {
                   </div>
                 </div>
               ) : activeCoupon ? (
-                <div className="w-full">
+                <div className="mx-auto max-w-lg">
                   <ActiveCouponCard coupon={activeCoupon} currency={currency} />
                   {readyCount > 0 && (
                     <p className="mt-3 text-center text-sm font-semibold text-emerald-600 dark:text-emerald-400">
@@ -179,7 +226,7 @@ export default function Home() {
               )}
             </div>
           ) : (
-            <div className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {loading ? (
                 <>
                   <div className="card h-64 animate-pulse" />
@@ -191,21 +238,7 @@ export default function Home() {
                   No hay cupones disponibles por ahora.
                 </div>
               ) : (
-                catalog.map((c, i) => (
-                  <CatalogCouponCard
-                    key={c.id}
-                    c={c}
-                    currency={currency}
-                    index={i}
-                    state={{
-                      isAuthed,
-                      isActiveCoupon: activeCoupon?.coupon_id === c.id,
-                      disabled: Boolean(activeCoupon) && activeCoupon?.coupon_id !== c.id,
-                      activating: activating === c.id,
-                      onActivate: () => activate(c),
-                    }}
-                  />
-                ))
+                catalog.map((c) => <CatalogCard key={c.id} c={c} />)
               )}
             </div>
           )}
