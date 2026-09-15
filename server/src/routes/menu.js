@@ -34,10 +34,29 @@ const generateWithGemini = async (prompt, apiKey) => {
   const parts = data?.candidates?.[0]?.content?.parts || [];
   const img = parts.find((p) => p.inlineData?.data);
   if (!img?.inlineData?.data) throw new Error('Gemini no devolvió una imagen');
+return {
+        buffer: Buffer.from(img.inlineData.data, 'base64'),
+        contentType: img.inlineData.mimeType || 'image/png',
+        usedPolicy: Boolean(data?.usageMetadata),
+      };
+};
+
+const generateWithHfSchnell = async (prompt, token) => {
+  const res = await fetch('https://router.huggingface.co/hf-inference/models/black-forest-labs/FLUX.1-schnell', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ inputs: prompt, parameters: { width: 1024, height: 1024 } }),
+    signal: AbortSignal.timeout(60000),
+  });
+  if (!res.ok) {
+    const msg = (await res.text().catch(() => '')).slice(0, 200) || `HF respondió ${res.status}`;
+    const err = new Error(msg);
+    err.status = res.status;
+    throw err;
+  }
   return {
-    buffer: Buffer.from(img.inlineData.data, 'base64'),
-    contentType: img.inlineData.mimeType || 'image/png',
-    usedPolicy: Boolean(data?.usageMetadata),
+    buffer: Buffer.from(await res.arrayBuffer()),
+    contentType: res.headers.get('content-type')?.split(';')[0] || 'image/jpeg',
   };
 };
 
@@ -175,11 +194,24 @@ router.post(
         if (gemErr) throw gemErr;
         return res.json(updated);
       } catch (e) {
-        console.warn('[GEMINI] no disponible, uso Pollinations:', e.message);
+        console.warn('[GEMINI] no disponible, uso FLUX Schnell:', e.message);
       }
     }
 
-    // 2) Pollinations con modelo flux: gratis y rápido (puede incluir marca de agua)
+    // 2) FLUX Schnell via Hugging Face: rápido y gratis con token (sin marca de agua)
+    const hfToken = process.env.HUGGINGFACE_TOKEN;
+    if (hfToken) {
+      try {
+        const gen = await generateWithHfSchnell(prompt, hfToken);
+        const { data: updated, error: hfErr } = await attachToItem(gen.buffer, gen.contentType);
+        if (hfErr) throw hfErr;
+        return res.json(updated);
+      } catch (e) {
+        console.warn('[HF] no disponible, uso Pollinations:', e.message);
+      }
+    }
+
+    // 3) Pollinations con modelo flux: gratis y rápido (puede incluir marca de agua)
     try {
       const genUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(
         prompt
@@ -197,9 +229,9 @@ router.post(
       console.warn('[POLLINATIONS] fallo, sigo con AI Horde:', e.message);
     }
 
-    // 3) AI Horde: cola asíncrona (el cliente consulta el estado)
+    // 4) AI Horde: FLUX Schnell en cola asíncrona (el cliente consulta el estado)
 
-    const submitJob = async (models) => {
+    const submitJob = async (models, params) => {
       const res2 = await fetch(`${HORDE}/generate/async`, {
         method: 'POST',
         headers: HORDE_HEADERS,
@@ -207,7 +239,7 @@ router.post(
           prompt,
           nsfw: false,
           models,
-          params: { width: 1024, height: 1024, steps: 28, cfg_scale: 7.5 },
+          params: params || { width: 1024, height: 1024, steps: 4, cfg_scale: 2 },
         }),
         signal: AbortSignal.timeout(30000),
       });
@@ -220,15 +252,15 @@ router.post(
 
     let job;
     try {
+      job = await submitJob(['Flux.1-Schnell fp8 (Compact)']);
+    } catch {
       try {
-        job = await submitJob(['flux']);
-      } catch {
-        job = await submitJob(['SDXL 1.0']);
+        job = await submitJob(['SDXL 1.0'], { width: 1024, height: 1024, steps: 25, cfg_scale: 7 });
+      } catch (e) {
+        return res
+          .status(502)
+          .json({ error: `No se pudo pedir la generación: ${e.message}. Probá en unos segundos.` });
       }
-    } catch (e) {
-      return res
-        .status(502)
-        .json({ error: `No se pudo pedir la generación: ${e.message}. Probá en unos segundos.` });
     }
 
     imageJobs.set(String(item.id), { jobId: job.id, model: job.models?.[0] || 'flux', lock: false });
