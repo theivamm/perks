@@ -14,9 +14,10 @@ const DEFAULTS = {
   theme: 'light',
   currency: '$',
   logo: '',
+  logoIso: '',
 };
 
-const ALLOWED = ['primaryColor', 'theme', 'currency', 'logo'];
+const ALLOWED = ['primaryColor', 'theme', 'currency', 'logo', 'logoIso'];
 
 async function readSettings() {
   const { data, error } = await supabase.from('settings').select('key, value');
@@ -76,6 +77,37 @@ router.post(
         return res.status(500).json({ error: 'No se pudo guardar el logo (Supabase y almacenamiento local no disponibles).' });
       }
       await supabase.from('settings').upsert({ key: 'logo', value: url }, { onConflict: 'key' });
+      return res.json({ url });
+    }
+  })
+);
+
+// Subir el ISO (ícono cuadrado) de la plataforma
+router.post(
+  '/upload-iso',
+  requireAdmin,
+  imageUpload.single('iso'),
+  asyncHandler(async (req, res) => {
+    if (!req.file) return res.status(400).json({ error: 'Imagen requerida' });
+    const ext = path.extname(req.file.originalname).toLowerCase() || '.png';
+    const name = `iso-${Date.now()}-${crypto.randomBytes(6).toString('hex')}${ext}`;
+
+    try {
+      const url = await uploadImage(name, req.file.buffer, req.file.mimetype);
+      await supabase.from('settings').upsert({ key: 'logoIso', value: url }, { onConflict: 'key' });
+      return res.json({ url });
+    } catch (err) {
+      console.warn('[SUPABASE] Fallback iso local:', err.message);
+      let url;
+      try {
+        fs.mkdirSync(uploadsDir, { recursive: true });
+        fs.writeFileSync(path.join(uploadsDir, name), req.file.buffer);
+        url = `/uploads/${name}`;
+      } catch (diskErr) {
+        console.error('[STORAGE] No se pudo guardar el iso localmente:', diskErr.message);
+        return res.status(500).json({ error: 'No se pudo guardar el ISO (Supabase y almacenamiento local no disponibles).' });
+      }
+      await supabase.from('settings').upsert({ key: 'logoIso', value: url }, { onConflict: 'key' });
       return res.json({ url });
     }
   })

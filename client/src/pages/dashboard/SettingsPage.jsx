@@ -108,27 +108,73 @@ export default function SettingsPage() {
     setSaving(false);
   };
 
-  const uploadLogo = async (e) => {
+  const pickImage = (e, kind) => {
     const file = e.target.files?.[0];
     if (!file) return;
     e.target.value = '';
+    const src = URL.createObjectURL(file);
+    setCropFor({ src, kind });
+  };
+
+  const saveCropped = async (file) => {
+    if (!cropFor) return;
+    const { kind } = cropFor;
     setUploading(true);
+    const field = kind === 'iso' ? 'iso' : 'logo';
     try {
       const fd = new FormData();
-      fd.append('logo', file);
-      const res = await api('/api/settings/upload-logo', { method: 'POST', body: fd });
-      await updateSettings({ logo: res.url });
-      toast('Logo actualizado');
+      fd.append(field, file);
+      const res = await api(`/api/settings/upload-${field}`, { method: 'POST', body: fd });
+      await updateSettings(kind === 'iso' ? { logoIso: res.url } : { logo: res.url });
+      toast(kind === 'iso' ? 'ISO actualizado' : 'Logo actualizado');
     } catch (err) {
       toast(err.message);
     } finally {
       setUploading(false);
+      URL.revokeObjectURL(cropFor.src);
+      setCropFor(null);
     }
   };
 
-  const removeLogo = async () => {
-    await updateSettings({ logo: '' });
-    toast('Logo eliminado');
+  const removeImage = async (kind) => {
+    await updateSettings(kind === 'iso' ? { logoIso: '' } : { logo: '' });
+    toast(kind === 'iso' ? 'ISO eliminado' : 'Logo eliminado');
+  };
+
+  const LogoUploader = ({ kind, label, previewBox, display }) => {
+    const ref = kind === 'iso' ? isoInput : logoInput;
+    const has = settings[kind === 'iso' ? 'logoIso' : 'logo'];
+    return (
+      <div className="flex flex-wrap items-center gap-4">
+        <div
+          className={`relative flex items-center justify-center overflow-hidden border border-line bg-gradient-to-br from-primary to-primary-strong text-primary-contrast shadow-sm ${previewBox}`}
+        >
+          {has ? (
+            <img src={has} alt={`${label} actual`} className={display} />
+          ) : (
+            <ImagePlus size={24} className="opacity-80" />
+          )}
+          {uploading && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+              <Loader2 className="animate-spin text-white" size={18} />
+            </div>
+          )}
+        </div>
+        <div className="flex flex-col gap-2">
+          <input ref={ref} type="file" accept="image/*" className="hidden" onChange={(e) => pickImage(e, kind)} />
+          <button className="btn-ghost" onClick={() => ref.current?.click()} disabled={uploading}>
+            <ImagePlus size={15} />
+            {has ? 'Cambiar' : `Subir ${label.toLowerCase()}`}
+          </button>
+          {has && (
+            <button className="btn-ghost text-red-500 hover:bg-red-500/10" onClick={() => removeImage(kind)}>
+              <Trash2 size={15} />
+              Quitar {label.toLowerCase()}
+            </button>
+          )}
+        </div>
+      </div>
+    );
   };
 
   const { h, s, l } = hexToHsl(settings.primaryColor);
@@ -150,41 +196,24 @@ export default function SettingsPage() {
       <div className="space-y-6">
         <section className="card p-6">
           <h2 className="mb-1 flex items-center gap-2 text-lg font-extrabold text-ink">
-            <ImagePlus size={20} className="text-primary-strong" />
+            <Image size={20} className="text-primary-strong" />
             Logo de la plataforma
           </h2>
           <p className="mb-5 text-sm text-ink-muted">
-            Se muestra en la barra de navegación de toda la web.
+            Imagen horizontal, se muestra completa en la barra de navegación. Podés recortar los bordes a tu gusto.
           </p>
+          <LogoUploader kind="logo" label="Logo" previewBox="h-20 w-44 rounded-2xl" display="h-full w-full object-contain" />
+        </section>
 
-          <div className="flex flex-wrap items-center gap-4">
-            <div className="relative flex h-16 w-16 items-center justify-center overflow-hidden rounded-2xl border border-line bg-gradient-to-br from-primary to-primary-strong text-primary-contrast shadow-sm">
-              {settings.logo ? (
-                <img src={settings.logo} alt="Logo actual" className="h-full w-full object-cover" />
-              ) : (
-                <ImagePlus size={24} className="opacity-80" />
-              )}
-              {uploading && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/40">
-                  <Loader2 className="animate-spin text-white" size={18} />
-                </div>
-              )}
-            </div>
-
-            <div className="flex flex-col gap-2">
-              <input ref={logoInput} type="file" accept="image/*" className="hidden" onChange={uploadLogo} />
-              <button className="btn-ghost" onClick={() => logoInput.current?.click()} disabled={uploading}>
-                <ImagePlus size={15} />
-                Subir logo
-              </button>
-              {settings.logo && (
-                <button className="btn-ghost text-red-500 hover:bg-red-500/10" onClick={removeLogo}>
-                  <Trash2 size={15} />
-                  Quitar logo
-                </button>
-              )}
-            </div>
-          </div>
+        <section className="card p-6">
+          <h2 className="mb-1 flex items-center gap-2 text-lg font-extrabold text-ink">
+            <Square size={20} className="text-primary-strong" />
+            ISO (ícono cuadrado)
+          </h2>
+          <p className="mb-5 text-sm text-ink-muted">
+            Ícono cuadrado que se usa como imagen del logo cuando no hay un logo horizontal cargado.
+          </p>
+          <LogoUploader kind="iso" label="ISO" previewBox="h-20 w-20 rounded-2xl" display="h-full w-full object-cover" />
         </section>
 
         <section className="card p-6">
@@ -499,6 +528,19 @@ export default function SettingsPage() {
           </button>
         </div>
       </div>
+
+      {cropFor && (
+        <ImageCropper
+          src={cropFor.src}
+          aspect={cropFor.kind === 'iso' ? 1 : undefined}
+          cropShape="rect"
+          onSave={saveCropped}
+          onCancel={() => {
+            URL.revokeObjectURL(cropFor.src);
+            setCropFor(null);
+          }}
+        />
+      )}
     </div>
   );
 }

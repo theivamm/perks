@@ -9,6 +9,7 @@ const DEFAULT_SETTINGS = {
   theme: 'light',
   currency: '$',
   logo: '',
+  logoIso: '',
 };
 
 export function ThemeProvider({ children }) {
@@ -23,6 +24,7 @@ export function ThemeProvider({ children }) {
             theme: data.theme || 'light',
             currency: data.currency || '$',
             logo: data.logo || '',
+            logoIso: data.logoIso || '',
           };
           setSettings(next);
           applyPalette(next.primaryColor, next.theme === 'dark');
