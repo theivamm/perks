@@ -26,6 +26,7 @@ import ImageCropper from '../components/ImageCropper.jsx';
 import { ActiveCouponCard, ReadyCouponCard } from '../components/CouponCards.jsx';
 import NotificationsBell from '../components/NotificationsBell.jsx';
 import UserMenu from '../components/UserMenu.jsx';
+import PhoneInput from '../components/PhoneInput.jsx';
 import AdminSummary from '../components/AdminSummary.jsx';
 import { formatWhen, notificationMeta } from '../lib/notifications.js';
 
@@ -383,12 +384,7 @@ export default function Profile() {
           </div>
           <div>
             <label className="label">Teléfono</label>
-            <input
-              className="input"
-              value={form.phone}
-              onChange={(e) => setForm({ ...form, phone: e.target.value })}
-              placeholder="Ej: +54 9 11..."
-            />
+            <PhoneInput value={form.phone} onChange={(v) => setForm((f) => ({ ...f, phone: v }))} />
           </div>
           <div className="flex justify-end gap-2 pt-1">
             <button type="button" className="btn-ghost" onClick={() => setEditModal(false)}>
