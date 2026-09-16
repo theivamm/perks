@@ -40,11 +40,12 @@ export default function UserMenu() {
   };
 
   const onProfile = location.pathname === '/perfil';
+  const isHome = location.pathname === '/';
 
   const items =
     user?.role === 'admin'
       ? [
-          { label: 'Ir a página de inicio', to: '/', icon: Home },
+          ...(!isHome ? [{ label: 'Ir a página de inicio', to: '/', icon: Home }] : []),
           { label: 'Ir a dashboard', to: '/dashboard', icon: LayoutDashboard },
           { label: 'Escanear QR', to: '/dashboard/escanear', icon: ScanLine },
           { label: 'Configuración', to: '/dashboard/configuracion', icon: SettingsIcon },

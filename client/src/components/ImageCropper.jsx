@@ -11,7 +11,7 @@ function createImage(src) {
   });
 }
 
-export default function ImageCropper({ src, aspect = 4 / 3, onSave, onCancel }) {
+export default function ImageCropper({ src, aspect = 4 / 3, cropShape = 'rect', onSave, onCancel }) {
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [cropPixels, setCropPixels] = useState(null);
@@ -40,7 +40,7 @@ export default function ImageCropper({ src, aspect = 4 / 3, onSave, onCancel }) 
       const blob = await new Promise((resolve, reject) =>
         canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('No se pudo procesar la imagen'))), 'image/jpeg', 0.92)
       );
-      const file = new File([blob], `producto-${Date.now()}.jpg`, { type: 'image/jpeg' });
+      const file = new File([blob], `imagen-${Date.now()}.jpg`, { type: 'image/jpeg' });
       await onSave(file);
       onCancel();
     } catch (err) {
@@ -68,7 +68,7 @@ export default function ImageCropper({ src, aspect = 4 / 3, onSave, onCancel }) 
             crop={crop}
             zoom={zoom}
             aspect={aspect}
-            cropShape="rect"
+            cropShape={cropShape}
             showGrid
             onCropChange={setCrop}
             onZoomChange={setZoom}

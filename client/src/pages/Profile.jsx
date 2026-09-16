@@ -22,6 +22,7 @@ import { api } from '../api.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useTheme } from '../context/ThemeContext.jsx';
 import { EmptyState, Modal, Spinner, toast } from '../components/ui.jsx';
+import ImageCropper from '../components/ImageCropper.jsx';
 import { ActiveCouponCard, ReadyCouponCard } from '../components/CouponCards.jsx';
 import NotificationsBell from '../components/NotificationsBell.jsx';
 import UserMenu from '../components/UserMenu.jsx';
@@ -36,6 +37,7 @@ export default function Profile() {
   const [qrImg, setQrImg] = useState('');
   const [copied, setCopied] = useState(false);
   const fileRef = useRef(null);
+  const [cropSrc, setCropSrc] = useState(null);
   const [editModal, setEditModal] = useState(false);
   const [form, setForm] = useState({ name: '', last_name: '', phone: '', email: '', image: '' });
   const [saving, setSaving] = useState(false);
@@ -97,9 +99,14 @@ export default function Profile() {
     setEditModal(true);
   };
 
-  const uploadPhoto = async (e) => {
+  const onPickPhoto = (e) => {
     const file = e.target.files?.[0];
+    e.target.value = '';
     if (!file) return;
+    setCropSrc(URL.createObjectURL(file));
+  };
+
+  const uploadCropped = async (file) => {
     setSaving(true);
     const fd = new FormData();
     fd.append('image', file);
@@ -110,6 +117,8 @@ export default function Profile() {
       toast(err.message);
     } finally {
       setSaving(false);
+      if (cropSrc) URL.revokeObjectURL(cropSrc);
+      setCropSrc(null);
     }
   };
 
@@ -337,7 +346,7 @@ export default function Profile() {
               </button>
             </div>
             <p className="text-sm text-ink-muted">Tu foto ayuda a que te reconozcan en el local.</p>
-            <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={uploadPhoto} />
+            <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={onPickPhoto} />
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
@@ -389,6 +398,19 @@ export default function Profile() {
           </div>
         </form>
       </Modal>
+
+      {cropSrc && (
+        <ImageCropper
+          src={cropSrc}
+          aspect={1}
+          cropShape="round"
+          onSave={uploadCropped}
+          onCancel={() => {
+            URL.revokeObjectURL(cropSrc);
+            setCropSrc(null);
+          }}
+        />
+      )}
     </div>
   );
 }

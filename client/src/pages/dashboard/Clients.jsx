@@ -266,9 +266,13 @@ export default function Clients() {
                 {reFiltered.map((c) => (
                   <li key={c.id} className="grid grid-cols-1 gap-2 px-4 py-3.5 sm:grid-cols-12 sm:items-center sm:gap-3">
                     <div className="col-span-4 flex items-center gap-3">
-                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary-soft text-sm font-extrabold text-primary-strong">
-                        {c.name.charAt(0).toUpperCase()}
-                      </div>
+                      {c.image ? (
+                        <img src={c.image} alt={c.name} className="h-9 w-9 shrink-0 rounded-full object-cover" />
+                      ) : (
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary-soft text-sm font-extrabold text-primary-strong">
+                          {c.name.charAt(0).toUpperCase()}
+                        </div>
+                      )}
                       <p className="truncate font-bold text-ink">{c.name}</p>
                     </div>
                     <div className="col-span-4 text-sm text-ink-muted">

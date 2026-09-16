@@ -15,6 +15,7 @@ import { api } from '../api.js';
 import { useTheme } from '../context/ThemeContext.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import { Modal, toast } from '../components/ui.jsx';
+import ImageCropper from '../components/ImageCropper.jsx';
 import { avatarInitials } from '../components/UserMenu.jsx';
 import Navbar from '../components/Navbar.jsx';
 
@@ -26,13 +27,19 @@ export default function UserSettings() {
 
   const fileRef = useRef(null);
   const [uploading, setUploading] = useState(false);
+  const [cropSrc, setCropSrc] = useState(null);
   const [deleteModal, setDeleteModal] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState('');
   const [deleting, setDeleting] = useState(false);
 
-  const uploadPhoto = async (e) => {
+  const onPickPhoto = (e) => {
     const file = e.target.files?.[0];
+    e.target.value = '';
     if (!file) return;
+    setCropSrc(URL.createObjectURL(file));
+  };
+
+  const uploadCropped = async (file) => {
     setUploading(true);
     const fd = new FormData();
     fd.append('image', file);
@@ -44,7 +51,8 @@ export default function UserSettings() {
       toast(err.message);
     } finally {
       setUploading(false);
-      e.target.value = '';
+      if (cropSrc) URL.revokeObjectURL(cropSrc);
+      setCropSrc(null);
     }
   };
 
@@ -117,7 +125,7 @@ export default function UserSettings() {
                 {uploading ? <Loader2 className="animate-spin" size={15} /> : <Camera size={15} />}
                 {uploading ? 'Subiendo...' : 'Cambiar foto'}
               </button>
-              <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={uploadPhoto} />
+              <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={onPickPhoto} />
             </div>
           </div>
 
@@ -241,6 +249,19 @@ export default function UserSettings() {
           </div>
         </form>
       </Modal>
+
+      {cropSrc && (
+        <ImageCropper
+          src={cropSrc}
+          aspect={1}
+          cropShape="round"
+          onSave={uploadCropped}
+          onCancel={() => {
+            URL.revokeObjectURL(cropSrc);
+            setCropSrc(null);
+          }}
+        />
+      )}
     </div>
   );
 }

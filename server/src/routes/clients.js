@@ -39,7 +39,7 @@ router.get(
     const [usersRes, ordersRes] = await Promise.all([
       supabase
         .from('users')
-        .select('id, name, email, phone, qr_code, created_at')
+        .select('id, name, email, phone, image, qr_code, created_at')
         .eq('role', 'cliente')
         .order('created_at', { ascending: false }),
       supabase.from('orders').select('user_id, status'),

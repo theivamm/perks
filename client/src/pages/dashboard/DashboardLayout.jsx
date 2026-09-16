@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
 import {
   BadgePercent,
   ChevronDown,
@@ -7,7 +7,6 @@ import {
   ChevronsRight,
   ExternalLink,
   Home,
-  LayoutDashboard,
   LogOut,
   Menu as MenuIcon,
   Moon,
@@ -185,7 +184,15 @@ export default function DashboardLayout() {
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 flex items-center justify-end gap-3 border-b border-line bg-surface/page px-5 py-3 backdrop-blur-md">
+        <header className="sticky top-0 z-30 flex items-center justify-between gap-3 border-b border-line bg-surface/page px-5 py-3 backdrop-blur-md">
+          <div className="flex items-center gap-2 lg:hidden">
+            <button className="btn-icon" onClick={() => setOpen(true)} aria-label="Abrir menú">
+              <MenuIcon size={20} />
+            </button>
+            <Link to="/dashboard" onClick={() => setOpen(false)} aria-label="Ir al inicio del panel">
+              <Logo size="sm" showText={false} />
+            </Link>
+          </div>
           <div className="flex items-center gap-1.5">
             <NotificationsBell />
             <button className="btn-icon" onClick={toggleTheme} aria-label="Cambiar tema">
@@ -226,13 +233,6 @@ export default function DashboardLayout() {
                     >
                       <Home size={15} />
                       Ir a página de inicio
-                    </button>
-                    <button
-                      className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-ink transition-colors hover:bg-surface-alt"
-                      onClick={go('/dashboard')}
-                    >
-                      <LayoutDashboard size={15} />
-                      Ir a dashboard
                     </button>
                     <button
                       className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-ink transition-colors hover:bg-surface-alt"
