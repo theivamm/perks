@@ -49,7 +49,6 @@ export default function DashboardLayout() {
   const { user, logout } = useAuth();
   const { settings, toggleTheme } = useTheme();
   const navigate = useNavigate();
-  const [open, setOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [fabOpen, setFabOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem('sidebar-collapsed') === '1');
@@ -85,7 +84,6 @@ export default function DashboardLayout() {
     <NavLink
       key={item.to}
       to={item.to}
-      onClick={() => setOpen(false)}
       title={collapsed ? item.label : undefined}
       className={({ isActive }) =>
         `group relative flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-semibold transition-all duration-300 ${
@@ -108,17 +106,10 @@ export default function DashboardLayout() {
 
   return (
     <div className="page-aurora flex min-h-screen">
-      <div
-        className={`fixed inset-0 z-40 bg-black/50 transition-opacity lg:hidden ${
-          open ? 'opacity-100' : 'pointer-events-none opacity-0'
-        }`}
-        onClick={() => setOpen(false)}
-      />
-
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-line bg-surface p-4 transition-all duration-300 lg:sticky lg:top-0 lg:h-screen lg:translate-x-0 ${
+        className={`hidden w-64 flex-col border-r border-line bg-surface p-4 transition-all duration-300 lg:sticky lg:top-0 lg:flex lg:h-screen ${
           collapsed ? 'lg:w-[76px]' : 'lg:w-64'
-        } ${open ? 'translate-x-0' : '-translate-x-full'}`}
+        }`}
       >
         <button
           onClick={toggleCollapsed}
@@ -131,9 +122,6 @@ export default function DashboardLayout() {
 
         <div className={`mb-6 flex items-center justify-between ${collapsed ? 'lg:justify-center' : ''}`}>
           <Logo size={collapsed ? 'sm' : 'md'} showText={false} />
-          <button className="btn-icon lg:hidden" onClick={() => setOpen(false)}>
-            <X size={18} />
-          </button>
         </div>
 
         <nav className={`flex flex-1 flex-col gap-1.5 ${collapsed ? 'lg:items-center' : ''}`}>
@@ -145,7 +133,6 @@ export default function DashboardLayout() {
             to="/dashboard/configuracion"
             title={collapsed ? 'Configuración' : undefined}
             aria-label="Configuración"
-            onClick={() => setOpen(false)}
             className={({ isActive }) =>
               `group flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-semibold transition-all duration-300 ${
                 collapsed ? 'justify-center' : ''
@@ -185,14 +172,13 @@ export default function DashboardLayout() {
 
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-30 flex items-center justify-between gap-3 border-b border-line bg-surface/page px-5 py-3 backdrop-blur-md">
-          <div className="flex items-center gap-2 lg:hidden">
-            <button className="btn-icon" onClick={() => setOpen(true)} aria-label="Abrir menú">
-              <MenuIcon size={20} />
-            </button>
-            <Link to="/dashboard" onClick={() => setOpen(false)} aria-label="Ir al inicio del panel">
-              <Logo size="sm" showText={false} />
-            </Link>
-          </div>
+          <Link
+            to="/dashboard"
+            aria-label="Ir al inicio del panel"
+            className="lg:hidden"
+          >
+            <Logo size="sm" showText={false} />
+          </Link>
           <div className="flex items-center gap-1.5">
             <NotificationsBell />
             <button className="btn-icon" onClick={toggleTheme} aria-label="Cambiar tema">
