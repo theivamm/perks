@@ -168,10 +168,14 @@ export default function Profile() {
       <main className="mx-auto max-w-3xl space-y-6 px-4 py-8">
         {isCliente && (
           <section className="card p-6 text-center">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-primary-strong text-primary-contrast shadow-glow">
-            <QrCode size={26} />
-          </div>
-          <h1 className="mt-3 text-xl font-extrabold text-ink">{fullName(me)}</h1>
+          {me.image ? (
+            <img src={me.image} alt={fullName(me)} className="mx-auto h-28 w-28 rounded-3xl object-cover shadow-md" />
+          ) : (
+            <div className="mx-auto flex h-28 w-28 items-center justify-center rounded-3xl bg-gradient-to-br from-primary to-primary-strong text-4xl font-extrabold text-primary-contrast shadow-md">
+              {initials(me)}
+            </div>
+          )}
+          <h1 className="mt-4 text-xl font-extrabold text-ink">{fullName(me)}</h1>
           <button className="btn-ghost mx-auto mt-2 inline-flex items-center gap-1.5 text-xs" onClick={openEdit}>
             <Pencil size={13} />
             Editar perfil

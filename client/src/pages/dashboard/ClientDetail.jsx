@@ -115,9 +115,9 @@ export default function ClientDetail() {
         <div className="flex flex-wrap items-center gap-5">
           <div className="flex flex-1 flex-wrap items-center justify-center gap-4 sm:justify-start">
             {user.image ? (
-              <img src={user.image} alt={user.name} className="h-14 w-14 rounded-2xl object-cover shadow-sm" />
+              <img src={user.image} alt={user.name} className="h-28 w-28 shrink-0 rounded-3xl object-cover shadow-md" />
             ) : (
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-primary-strong text-lg font-extrabold text-primary-contrast shadow-sm">
+              <div className="flex h-28 w-28 shrink-0 items-center justify-center rounded-3xl bg-gradient-to-br from-primary to-primary-strong text-4xl font-extrabold text-primary-contrast shadow-md">
                 {(user.name || '?').charAt(0).toUpperCase()}
               </div>
             )}
