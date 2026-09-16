@@ -233,7 +233,7 @@ export default function MenuManager() {
   const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
 
   return (
-    <div className="mx-auto max-w-5xl">
+    <div>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-extrabold text-ink">Gestión del menú</h1>
@@ -341,7 +341,7 @@ export default function MenuManager() {
                 <span className="badge">{list.length}</span>
                 <div className="h-px flex-1 bg-line" />
               </div>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {list.map((item) => (
                   <div key={item.id} className="card overflow-hidden">
                     <div className="relative aspect-square bg-gradient-to-br from-primary to-primary-strong">

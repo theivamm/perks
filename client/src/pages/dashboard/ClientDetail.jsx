@@ -95,7 +95,7 @@ export default function ClientDetail() {
   const redeemedCoupons = (coupons || []).filter((c) => c.status === 'canjeado');
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <Link to="/dashboard/clientes" className="btn-ghost !px-2.5 !py-2">

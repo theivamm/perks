@@ -86,8 +86,8 @@ export default function ScanPage() {
   };
 
   return (
-    <div className="mx-auto max-w-2xl">
-      <div className="mb-6">
+<div>
+          <div className="mb-6">
         <h1 className="text-2xl font-extrabold text-ink">Escanear QR</h1>
         <p className="text-sm text-ink-muted">
           Apuntá la cámara al código QR del cupón activo del cliente para sumarle el punto, o al de un cupón listo

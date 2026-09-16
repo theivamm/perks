@@ -65,7 +65,67 @@
     @apply w-full rounded-xl border border-line bg-surface px-3 py-2 text-sm text-ink outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/30;
   }
   .card {
-    @apply rounded-2xl border border-line bg-surface shadow-sm;
+    @apply rounded-3xl border border-line bg-surface shadow-sm;
+  }
+  .tile {
+    border-radius: 1.5rem;
+    border: 1px solid hsl(var(--line) / 0.65);
+    box-shadow: 0 14px 34px -16px hsl(var(--line) / 0.6);
+  }
+  .orb {
+    position: absolute;
+    border-radius: 9999px;
+    filter: blur(56px);
+    pointer-events: none;
+  }
+  .tile-mint {
+    background-image: linear-gradient(135deg, hsl(161 80% 90%), hsl(165 60% 76%));
+  }
+  .tile-peach {
+    background-image: linear-gradient(135deg, hsl(30 95% 92%), hsl(20 78% 82%));
+  }
+  .tile-lilac {
+    background-image: linear-gradient(135deg, hsl(265 70% 94%), hsl(260 58% 86%));
+  }
+  .tile-sky {
+    background-image: linear-gradient(135deg, hsl(200 90% 91%), hsl(205 68% 82%));
+  }
+  .tile-rose {
+    background-image: linear-gradient(135deg, hsl(350 90% 94%), hsl(345 74% 86%));
+  }
+  .tile-lemon {
+    background-image: linear-gradient(135deg, hsl(50 95% 90%), hsl(45 80% 79%));
+  }
+  .page-aurora {
+    background-color: hsl(var(--bg));
+    background-image:
+      radial-gradient(42rem 32rem at 8% -8%, hsl(var(--primary) / 0.09), transparent 60%),
+      radial-gradient(38rem 30rem at 100% 0%, hsl(262 70% 80% / 0.11), transparent 60%),
+      radial-gradient(40rem 34rem at 50% 112%, hsl(161 60% 78% / 0.12), transparent 60%);
+  }
+  html.dark .tile-mint {
+    background-image: linear-gradient(135deg, hsl(161 45% 22%), hsl(165 40% 13%));
+  }
+  html.dark .tile-peach {
+    background-image: linear-gradient(135deg, hsl(25 45% 22%), hsl(20 40% 13%));
+  }
+  html.dark .tile-lilac {
+    background-image: linear-gradient(135deg, hsl(264 45% 22%), hsl(260 40% 13%));
+  }
+  html.dark .tile-sky {
+    background-image: linear-gradient(135deg, hsl(202 48% 21%), hsl(205 42% 12%));
+  }
+  html.dark .tile-rose {
+    background-image: linear-gradient(135deg, hsl(350 48% 21%), hsl(345 40% 12%));
+  }
+  html.dark .tile-lemon {
+    background-image: linear-gradient(135deg, hsl(47 48% 20%), hsl(45 42% 12%));
+  }
+  html.dark .page-aurora {
+    background-image:
+      radial-gradient(42rem 32rem at 8% -8%, hsl(var(--primary) / 0.12), transparent 60%),
+      radial-gradient(38rem 30rem at 100% 0%, hsl(262 60% 32% / 0.16), transparent 60%),
+      radial-gradient(40rem 34rem at 50% 112%, hsl(161 55% 30% / 0.16), transparent 60%);
   }
   .label {
     @apply mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-muted;
@@ -111,6 +171,24 @@
   }
   .animate-float-up {
     animation: float-up 0.9s ease forwards;
+  }
+  .animate-icon-wiggle {
+    animation: icon-wiggle 0.55s cubic-bezier(0.22, 0.9, 0.24, 1);
+  }
+}
+
+@keyframes icon-wiggle {
+  0% {
+    transform: rotate(0deg) scale(1);
+  }
+  30% {
+    transform: rotate(-12deg) scale(1.25);
+  }
+  60% {
+    transform: rotate(10deg) scale(1.18);
+  }
+  100% {
+    transform: rotate(0deg) scale(1.12);
   }
 }
 

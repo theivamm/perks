@@ -97,21 +97,29 @@ export default function Home() {
     const isActiveCoupon = activeCoupon?.coupon_id === c.id;
     const disabled = Boolean(activeCoupon) && !isActiveCoupon;
 
+    const band =
+      c.type === 'descuento'
+        ? { cls: 'tile-sky', text: 'text-sky-800 dark:text-sky-100' }
+        : c.type === 'regalo'
+        ? { cls: 'tile-rose', text: 'text-rose-800 dark:text-rose-100' }
+        : { cls: 'tile-lemon', text: 'text-amber-800 dark:text-amber-100' };
+
     return (
-      <div className="card flex flex-col p-5">
-        <div className="flex items-start justify-between gap-3">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-soft px-3 py-1 text-xs font-black text-primary-strong">
+      <div className="tile flex flex-col overflow-hidden transition-transform hover:-translate-y-1">
+        <div className={`flex items-center justify-between gap-3 px-5 py-4 ${band.cls}`}>
+          <span className={`inline-flex items-center gap-1.5 rounded-full bg-white/75 px-3 py-1 text-xs font-black ${band.text}`}>
             <Ticket size={12} />
             {c.type === 'monto' ? 'Recompensa' : c.type === 'descuento' ? 'Descuento' : 'Regalo'}
           </span>
-          <span className="inline-flex items-center gap-1 rounded-full bg-surface-alt px-2.5 py-1 text-xs font-black text-ink">
+          <span className="inline-flex items-center gap-1 rounded-full bg-white/75 px-2.5 py-1 text-xs font-black text-ink">
             <Zap size={12} /> {Number(c.target_points)} pts
           </span>
         </div>
 
-        <p className="mt-3 text-3xl font-black text-ink drop-shadow-sm">{couponValue(c, currency)}</p>
-        <h3 className="mt-1 font-extrabold text-ink">{c.title}</h3>
-        {c.description && <p className="mt-1 text-sm text-ink-muted">{c.description}</p>}
+        <div className="flex flex-1 flex-col p-5 pt-4">
+          <p className="text-3xl font-black text-ink drop-shadow-sm">{couponValue(c, currency)}</p>
+          <h3 className="mt-1 font-extrabold text-ink">{c.title}</h3>
+          {c.description && <p className="mt-1 text-sm text-ink-muted">{c.description}</p>}
 
         <div className="mt-auto pt-4">
           {isActiveCoupon ? (
@@ -136,59 +144,106 @@ export default function Home() {
             </button>
           )}
         </div>
+        </div>
       </div>
     );
   };
 
   return (
-    <div className="min-h-screen bg-surface-page">
+    <div className="page-aurora min-h-screen">
       <Navbar />
 
       <main className="mx-auto max-w-6xl px-4 pt-12 pb-16">
         <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary via-primary-strong to-primary-soft p-8 text-primary-contrast shadow-glow sm:p-12">
-          <div className="absolute -right-10 -top-10 h-48 w-48 rounded-full bg-primary-contrast/10" />
-          <div className="absolute -bottom-14 right-24 h-40 w-40 rounded-full bg-primary-contrast/10" />
-          <div className="relative max-w-xl">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-contrast/15 px-3 py-1 text-xs font-bold tracking-wide uppercase">
-              <Sparkles size={14} />
-              Programa de fidelización
-            </span>
-            <h1 className="mt-4 text-3xl font-extrabold sm:text-5xl">
-              Sumá compras, ganá premios
-            </h1>
-            <p className="mt-3 text-sm text-primary-contrast/85 sm:text-base">
-              Activá un cupón, mostrá tu código QR al pagar y empezá a sumar puntos para canjearlo.
-            </p>
+          <div className="orb -right-16 -top-16 h-64 w-64 bg-primary-contrast/15" />
+          <div className="orb -bottom-24 right-32 h-52 w-52 bg-primary-contrast/12" />
+
+          <div className="relative flex items-center justify-between gap-10">
+            <div className="relative max-w-xl">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-contrast/15 px-3 py-1 text-xs font-bold tracking-wide uppercase">
+                <Sparkles size={14} />
+                Programa de fidelización
+              </span>
+              <h1 className="mt-4 text-3xl font-extrabold sm:text-5xl">
+                Sumá compras, ganá premios
+              </h1>
+              <p className="mt-3 text-sm text-primary-contrast/85 sm:text-base">
+                Activá un cupón, mostrá tu código QR al pagar y empezá a sumar puntos para canjearlo.
+              </p>
+            </div>
+
+            <div className="relative hidden shrink-0 gap-3 lg:grid">
+              <div className="tile tile-mint flex items-center gap-3 px-4 py-3">
+                <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/75 text-emerald-700 shadow-sm">
+                  <QrCode size={18} />
+                </span>
+                <div>
+                  <p className="text-sm font-black text-ink">Tu QR personal</p>
+                  <p className="text-xs text-ink-muted">Escanealo al pagar</p>
+                </div>
+              </div>
+              <div className="tile tile-peach flex items-center gap-3 px-4 py-3">
+                <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/75 text-orange-700 shadow-sm">
+                  <Zap size={18} />
+                </span>
+                <div>
+                  <p className="text-sm font-black text-ink">Sumás puntos</p>
+                  <p className="text-xs text-ink-muted">Con cada compra</p>
+                </div>
+              </div>
+              <div className="tile tile-lilac flex items-center gap-3 px-4 py-3">
+                <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/75 text-violet-700 shadow-sm">
+                  <Sparkles size={18} />
+                </span>
+                <div>
+                  <p className="text-sm font-black text-ink">Canjeá tu premio</p>
+                  <p className="text-xs text-ink-muted">Al completar el cupón</p>
+                </div>
+              </div>
+            </div>
           </div>
         </section>
 
-        <section className="mt-10 grid gap-5 sm:grid-cols-3">
-          <div className="card p-6 text-center">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-soft text-primary-strong">
-              <QrCode size={22} />
+        <section className="mt-10 grid gap-5 md:grid-cols-3">
+          <div className="tile tile-mint relative overflow-hidden p-6 transition-transform hover:-translate-y-1 md:col-span-2">
+            <div className="orb -right-10 -top-14 h-40 w-40 bg-white/50" />
+            <div className="relative flex items-start gap-4">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/75 text-emerald-700 shadow-sm">
+                <QrCode size={22} />
+              </div>
+              <div>
+                <h2 className="font-extrabold text-ink">Tu código QR</h2>
+                <p className="mt-1 text-sm text-ink-muted">
+                  Un código único que te identifica al pagar en el local.
+                </p>
+              </div>
             </div>
-            <h2 className="mt-3 font-extrabold text-ink">Tu código QR</h2>
-            <p className="mt-1 text-sm text-ink-muted">
-              Un código único que te identifica al pagar en el local.
-            </p>
           </div>
-          <div className="card p-6 text-center">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-soft text-primary-strong">
-              <CircleCheck size={22} />
+          <div className="tile tile-peach relative overflow-hidden p-6 transition-transform hover:-translate-y-1">
+            <div className="orb -right-8 -top-12 h-32 w-32 bg-white/50" />
+            <div className="relative">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/75 text-orange-700 shadow-sm">
+                <CircleCheck size={22} />
+              </div>
+              <h2 className="mt-3 font-extrabold text-ink">El local suma tus puntos</h2>
+              <p className="mt-1 text-sm text-ink-muted">
+                Al pagar, el local verifica tus requisitos y suma puntos a tu cupón activo.
+              </p>
             </div>
-            <h2 className="mt-3 font-extrabold text-ink">El local suma tus puntos</h2>
-            <p className="mt-1 text-sm text-ink-muted">
-              Al pagar, el local verifica tus requisitos y suma puntos a tu cupón activo.
-            </p>
           </div>
-          <div className="card p-6 text-center">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-soft text-primary-strong">
-              <Sparkles size={22} />
+          <div className="tile tile-lilac relative overflow-hidden p-6 transition-transform hover:-translate-y-1 md:col-span-3">
+            <div className="orb -left-8 -bottom-14 h-36 w-36 bg-white/50" />
+            <div className="relative flex items-start gap-4">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/75 text-violet-700 shadow-sm">
+                <Sparkles size={22} />
+              </div>
+              <div className="flex-1">
+                <h2 className="font-extrabold text-ink">Completá y canjeá</h2>
+                <p className="mt-1 text-sm text-ink-muted">
+                  Al llegar al objetivo te damos un código para canjear en el local y activás el siguiente.
+                </p>
+              </div>
             </div>
-            <h2 className="mt-3 font-extrabold text-ink">Completá y canjeá</h2>
-            <p className="mt-1 text-sm text-ink-muted">
-              Al llegar al objetivo te damos un código para canjear en el local y activás el siguiente.
-            </p>
           </div>
         </section>
 

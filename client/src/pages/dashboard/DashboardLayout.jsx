@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import {
   BadgePercent,
-  ChefHat,
   ChevronDown,
+  ChevronsLeft,
+  ChevronsRight,
   ExternalLink,
+  Home,
   LayoutDashboard,
   LogOut,
   Menu as MenuIcon,
@@ -12,7 +14,6 @@ import {
   ScanLine,
   Settings as SettingsIcon,
   Sun,
-  User as UserIcon,
   Users,
   UtensilsCrossed,
   X,
@@ -26,7 +27,6 @@ const NAV = [
   { to: '/dashboard/menu', label: 'Menú', icon: UtensilsCrossed },
   { to: '/dashboard/clientes', label: 'Clientes', icon: Users },
   { to: '/dashboard/cupones', label: 'Cupones', icon: BadgePercent },
-  { to: '/dashboard/configuracion', label: 'Configuración', icon: SettingsIcon },
 ];
 
 const FAB_ITEMS = [
@@ -53,7 +53,16 @@ export default function DashboardLayout() {
   const [open, setOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [fabOpen, setFabOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(() => localStorage.getItem('sidebar-collapsed') === '1');
   const menuRef = useRef(null);
+
+  const toggleCollapsed = () => {
+    setCollapsed((c) => {
+      const next = !c;
+      localStorage.setItem('sidebar-collapsed', next ? '1' : '0');
+      return next;
+    });
+  };
 
   useEffect(() => {
     const onClickOutside = (e) => {
@@ -78,21 +87,28 @@ export default function DashboardLayout() {
       key={item.to}
       to={item.to}
       onClick={() => setOpen(false)}
+      title={collapsed ? item.label : undefined}
       className={({ isActive }) =>
-        `flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors ${
+        `group relative flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-semibold transition-all duration-300 ${
+          collapsed ? 'justify-center' : 'w-full'
+        } ${
           isActive
-            ? 'bg-primary text-primary-contrast shadow-md'
+            ? 'bg-gradient-to-r from-primary to-primary-strong text-primary-contrast shadow-glow'
             : 'text-ink-muted hover:bg-surface-alt hover:text-ink'
         }`
       }
     >
-      <item.icon size={18} />
-      {item.label}
+      <item.icon
+        size={collapsed ? 23 : 20}
+        strokeWidth={2.4}
+        className="shrink-0 transition-all duration-300 group-hover:animate-icon-wiggle group-hover:drop-shadow-[0_0_10px_hsl(var(--primary)/0.55)]"
+      />
+      {!collapsed && <span>{item.label}</span>}
     </NavLink>
   );
 
   return (
-    <div className="flex min-h-screen bg-surface-page">
+    <div className="page-aurora flex min-h-screen">
       <div
         className={`fixed inset-0 z-40 bg-black/50 transition-opacity lg:hidden ${
           open ? 'opacity-100' : 'pointer-events-none opacity-0'
@@ -101,53 +117,75 @@ export default function DashboardLayout() {
       />
 
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-line bg-surface p-4 transition-transform lg:static lg:translate-x-0 ${
-          open ? 'translate-x-0' : '-translate-x-full'
-        }`}
+        className={`fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-line bg-surface p-4 transition-all duration-300 lg:sticky lg:top-0 lg:h-screen lg:translate-x-0 ${
+          collapsed ? 'lg:w-[76px]' : 'lg:w-64'
+        } ${open ? 'translate-x-0' : '-translate-x-full'}`}
       >
-        <div className="mb-6 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary-strong text-primary-contrast">
-              <LayoutDashboard size={18} />
-            </div>
-            <div className="leading-tight">
-              <p className="text-sm font-extrabold text-ink">Dashboard</p>
-              <p className="text-xs text-ink-muted">Fidelización App</p>
-            </div>
-          </div>
+        <button
+          onClick={toggleCollapsed}
+          aria-label={collapsed ? 'Expandir menú' : 'Colapsar menú'}
+          title={collapsed ? 'Expandir menú' : 'Colapsar menú'}
+          className="absolute -right-3.5 top-6 z-10 hidden h-8 w-8 items-center justify-center rounded-full border border-line bg-surface text-ink-muted shadow-md transition-all duration-300 hover:scale-110 hover:bg-primary hover:text-primary-contrast lg:flex"
+        >
+          {collapsed ? <ChevronsRight size={16} /> : <ChevronsLeft size={16} />}
+        </button>
+
+        <div className={`mb-6 flex items-center justify-between ${collapsed ? 'lg:justify-center' : ''}`}>
+          <Logo size={collapsed ? 'sm' : 'md'} showText={false} />
           <button className="btn-icon lg:hidden" onClick={() => setOpen(false)}>
             <X size={18} />
           </button>
         </div>
 
-        <nav className="flex flex-1 flex-col gap-1.5">
+        <nav className={`flex flex-1 flex-col gap-1.5 ${collapsed ? 'lg:items-center' : ''}`}>
           {NAV.map(link)}
+        </nav>
+
+        <div className={`mt-4 flex flex-col gap-2 border-t border-line pt-4 ${collapsed ? 'lg:items-center' : ''}`}>
+          <NavLink
+            to="/dashboard/configuracion"
+            title={collapsed ? 'Configuración' : undefined}
+            aria-label="Configuración"
+            onClick={() => setOpen(false)}
+            className={({ isActive }) =>
+              `group flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-semibold transition-all duration-300 ${
+                collapsed ? 'justify-center' : ''
+              } ${
+                isActive
+                  ? 'bg-gradient-to-r from-primary to-primary-strong text-primary-contrast shadow-glow'
+                  : 'text-ink-muted hover:bg-surface-alt hover:text-ink'
+              }`
+            }
+          >
+            <SettingsIcon
+              size={23}
+              strokeWidth={2.4}
+              className="shrink-0 transition-all duration-300 group-hover:animate-icon-wiggle"
+            />
+            {!collapsed && <span>Configuración</span>}
+          </NavLink>
           <a
             href="/"
             target="_blank"
             rel="noreferrer"
-            className="mt-2 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-ink-muted transition-colors hover:bg-surface-alt hover:text-ink"
+            title={collapsed ? 'Ver página de inicio' : undefined}
+            aria-label="Ver página de inicio"
+            className={`group flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-semibold text-ink-muted transition-all duration-300 hover:bg-surface-alt hover:text-ink ${
+              collapsed ? 'justify-center' : ''
+            }`}
           >
-            <ExternalLink size={18} />
-            Ver página pública
+            <ExternalLink
+              size={23}
+              strokeWidth={2.4}
+              className="shrink-0 transition-all duration-300 group-hover:animate-icon-wiggle"
+            />
+            {!collapsed && <span>Ver página de inicio</span>}
           </a>
-        </nav>
+        </div>
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 flex items-center justify-between gap-3 border-b border-line bg-surface/page px-5 py-3 backdrop-blur-md">
-          <div className="flex items-center gap-2.5">
-            <Link
-              to="/"
-              target="_blank"
-              rel="noreferrer"
-              className="flex items-center gap-2.5"
-              aria-label="Ir a la página pública"
-            >
-              <Logo size="md" />
-            </Link>
-          </div>
-
+        <header className="sticky top-0 z-30 flex items-center justify-end gap-3 border-b border-line bg-surface/page px-5 py-3 backdrop-blur-md">
           <div className="flex items-center gap-1.5">
             <NotificationsBell />
             <button className="btn-icon" onClick={toggleTheme} aria-label="Cambiar tema">
@@ -182,35 +220,49 @@ export default function DashboardLayout() {
                   <p className="truncate text-xs text-ink-muted">{user.email}</p>
                 </div>
                 <div className="p-1.5">
-                  <button
-                    className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-ink transition-colors hover:bg-surface-alt"
-                    onClick={go('/perfil')}
-                  >
-                    <UserIcon size={15} />
-                    Mi perfil
-                  </button>
-                  <button
-                    className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-ink transition-colors hover:bg-surface-alt"
-                    onClick={go('/dashboard/configuracion')}
-                  >
-                    <SettingsIcon size={15} />
-                    Configuración
-                  </button>
-                  <button
-                    className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-red-500 transition-colors hover:bg-red-500/10"
-                    onClick={doLogout}
-                  >
-                    <LogOut size={15} />
-                    Salir
-                  </button>
-                </div>
+                    <button
+                      className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-ink transition-colors hover:bg-surface-alt"
+                      onClick={go('/')}
+                    >
+                      <Home size={15} />
+                      Ir a página de inicio
+                    </button>
+                    <button
+                      className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-ink transition-colors hover:bg-surface-alt"
+                      onClick={go('/dashboard')}
+                    >
+                      <LayoutDashboard size={15} />
+                      Ir a dashboard
+                    </button>
+                    <button
+                      className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-ink transition-colors hover:bg-surface-alt"
+                      onClick={go('/dashboard/escanear')}
+                    >
+                      <ScanLine size={15} />
+                      Escanear QR
+                    </button>
+                    <button
+                      className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-ink transition-colors hover:bg-surface-alt"
+                      onClick={go('/dashboard/configuracion')}
+                    >
+                      <SettingsIcon size={15} />
+                      Configuración
+                    </button>
+                    <button
+                      className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-red-500 transition-colors hover:bg-red-500/10"
+                      onClick={doLogout}
+                    >
+                      <LogOut size={15} />
+                      Salir
+                    </button>
+                  </div>
               </div>
             )}
             </div>
           </div>
         </header>
 
-        <main className="flex-1 p-5 pb-24 lg:p-8 lg:pb-8">
+        <main className="flex-1 p-5 pb-24 lg:p-6 lg:pb-8">
           <Outlet />
         </main>
       </div>

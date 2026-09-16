@@ -1,9 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   ChevronDown,
+  Home,
+  LayoutDashboard,
   LogIn,
   LogOut,
   Moon,
+  ScanLine,
   Settings as SettingsIcon,
   Sun,
   User as UserIcon,
@@ -105,20 +108,44 @@ export default function Navbar() {
                     <p className="truncate text-xs text-ink-muted">{user.email}</p>
                   </div>
                   <div className="p-1.5">
-                    <button
-                      className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-ink transition-colors hover:bg-surface-alt"
-                      onClick={go('/perfil')}
-                    >
-                      <UserIcon size={15} />
-                      Mi perfil
-                    </button>
-                    {user.role === 'admin' && (
+                    {user.role === 'admin' ? (
+                      <>
+                        <button
+                          className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-ink transition-colors hover:bg-surface-alt"
+                          onClick={go('/')}
+                        >
+                          <Home size={15} />
+                          Ir a página de inicio
+                        </button>
+                        <button
+                          className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-ink transition-colors hover:bg-surface-alt"
+                          onClick={go('/dashboard')}
+                        >
+                          <LayoutDashboard size={15} />
+                          Ir a dashboard
+                        </button>
+                        <button
+                          className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-ink transition-colors hover:bg-surface-alt"
+                          onClick={go('/dashboard/escanear')}
+                        >
+                          <ScanLine size={15} />
+                          Escanear QR
+                        </button>
+                        <button
+                          className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-ink transition-colors hover:bg-surface-alt"
+                          onClick={go('/dashboard/configuracion')}
+                        >
+                          <SettingsIcon size={15} />
+                          Configuración
+                        </button>
+                      </>
+                    ) : (
                       <button
                         className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-ink transition-colors hover:bg-surface-alt"
-                        onClick={go('/dashboard')}
+                        onClick={go('/perfil')}
                       >
-                        <SettingsIcon size={15} />
-                        Configuración
+                        <UserIcon size={15} />
+                        Mi perfil
                       </button>
                     )}
                     <button

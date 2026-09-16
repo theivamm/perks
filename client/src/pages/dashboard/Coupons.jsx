@@ -140,7 +140,7 @@ export default function Coupons() {
   };
 
   return (
-    <div className="mx-auto max-w-5xl">
+    <div>
       <div className="mb-6 flex w-fit gap-2 rounded-2xl bg-surface-alt p-1">
         <button
           className={`rounded-xl px-4 py-2 text-sm font-extrabold transition ${
@@ -184,7 +184,7 @@ export default function Coupons() {
               subtitle="Creá el primer premio del catálogo para que tus clientes puedan activarlo."
             />
           ) : (
-            <ul className="grid gap-4 sm:grid-cols-2">
+            <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
               {list.map((c) => (
                 <li key={c.id} className={`card relative overflow-hidden p-5 ${!c.active ? 'opacity-60' : ''}`}>
                   <div className="flex items-start justify-between gap-3">
@@ -324,7 +324,7 @@ export default function Coupons() {
           </Modal>
         </>
       ) : (
-        <div className="mx-auto max-w-3xl">
+        <div>
           <div className="mb-6">
             <h1 className="text-2xl font-extrabold text-ink">Validar cupón</h1>
             <p className="text-sm text-ink-muted">
