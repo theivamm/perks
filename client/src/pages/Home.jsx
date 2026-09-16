@@ -397,25 +397,26 @@ export default function Home() {
         © {new Date().getFullYear()} Fidelización App · {currency} moneda configurable desde el panel
       </footer>
 
-      {isAuthed && (
-        <Link
-          to="/cupones"
-          className="group fixed bottom-6 right-4 z-40 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-primary to-primary-strong px-5 py-3 text-sm font-extrabold text-primary-contrast shadow-glow transition-transform hover:-translate-y-0.5 hover:shadow-xl sm:right-6"
-        >
-          <Gift size={17} className="transition-transform group-hover:-rotate-6" />
-          Ver cupones
-        </Link>
-      )}
-
       {showSearchFab && (
-        <button
-          onClick={focusSearch}
-          className="fixed bottom-6 left-4 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary-strong text-primary-contrast shadow-glow transition-all hover:scale-105 active:scale-95 sm:left-6"
-          aria-label="Buscar en el menú"
-          title="Buscar en el menú"
-        >
-          <Search size={20} />
-        </button>
+        <div className="fixed bottom-6 left-4 z-40 flex items-center gap-2 sm:left-6">
+          {isAuthed && (
+            <Link
+              to="/cupones"
+              className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-primary to-primary-strong px-4 py-3 text-sm font-extrabold text-primary-contrast shadow-glow transition-transform hover:-translate-y-0.5 hover:shadow-xl"
+            >
+              <Gift size={17} className="transition-transform group-hover:-rotate-6" />
+              Ver cupones
+            </Link>
+          )}
+          <button
+            onClick={focusSearch}
+            className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary-strong text-primary-contrast shadow-glow transition-all hover:scale-105 active:scale-95"
+            aria-label="Buscar en el menú"
+            title="Buscar en el menú"
+          >
+            <Search size={20} />
+          </button>
+        </div>
       )}
 
       <Modal open={!!confirmCoupon} onClose={() => { if (!activating) setConfirmCoupon(null); }} title="¿Seguro querés activar este cupón?">
