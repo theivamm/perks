@@ -363,8 +363,18 @@ export default function Home() {
                   <div className="card h-64 animate-pulse" />
                 </>
               ) : catalog.length === 0 ? (
-                <div className="card col-span-full border-2 border-dashed border-line p-10 text-center text-ink-muted">
-                  No hay cupones disponibles por ahora.
+                <div className="card col-span-full border-2 border-dashed border-line p-10 text-center">
+                  {isAuthed && activeCoupon ? (
+                    <>
+                      <Ticket size={36} className="mx-auto text-emerald-600 dark:text-emerald-400" />
+                      <p className="mt-3 font-extrabold text-ink">
+                        Ya activaste el cupón “{activeCoupon.title}”
+                      </p>
+                      <p className="mt-1 text-sm text-ink-muted">Completalo para poder activar uno nuevo.</p>
+                    </>
+                  ) : (
+                    <p className="text-ink-muted">No hay cupones disponibles por ahora.</p>
+                  )}
                 </div>
               ) : (
                 catalog.map((c) => <CatalogCard key={c.id} c={c} />)
