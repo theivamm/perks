@@ -15,7 +15,6 @@ export default function Login() {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [busy, setBusy] = useState(false);
 
-  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loginToken, setLoginToken] = useState('');
   const [otpCode, setOtpCode] = useState('');
@@ -81,11 +80,13 @@ export default function Login() {
     setError('');
     setBusy(true);
     try {
-      const res = await login(username.trim(), password);
+      const res = await login('administracion', password);
       if (res?.step === 'otp') {
         setLoginToken(res.login_token);
         setOtpCode('');
         setPassword('');
+      } else {
+        go(res);
       }
     } catch (err) {
       setError(err.message);
@@ -249,24 +250,7 @@ export default function Login() {
               <form onSubmit={submitAdmin} className="space-y-4">
                 <div>
                   <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-ink-muted">
-                    Usuario
-                  </label>
-                  <div className="relative">
-                    <UserRound size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted" />
-                    <input
-                      className="input !pl-9"
-                      placeholder="administracion"
-                      value={username}
-                      onChange={(e) => setUsername(e.target.value)}
-                      autoCapitalize="none"
-                      autoCorrect="off"
-                      required
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-ink-muted">
-                    Contraseña
+                    Contraseña de administración
                   </label>
                   <div className="relative">
                     <KeyRound size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted" />
@@ -276,11 +260,12 @@ export default function Login() {
                       placeholder="••••••••"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
+                      autoFocus
                       required
                     />
                   </div>
                 </div>
-                <button className="btn-primary w-full justify-center" disabled={busy || !username || !password}>
+                <button className="btn-primary w-full justify-center" disabled={busy || !password}>
                   {busy ? <Loader2 className="animate-spin" size={17} /> : <LogIn size={17} />}
                   Iniciar sesión
                 </button>
