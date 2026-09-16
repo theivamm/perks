@@ -111,15 +111,6 @@ export default function DashboardLayout() {
           collapsed ? 'lg:w-[76px]' : 'lg:w-64'
         }`}
       >
-        <button
-          onClick={toggleCollapsed}
-          aria-label={collapsed ? 'Expandir menú' : 'Colapsar menú'}
-          title={collapsed ? 'Expandir menú' : 'Colapsar menú'}
-          className="absolute -right-3.5 top-6 z-40 hidden h-8 w-8 items-center justify-center rounded-full border border-line bg-surface text-ink-muted shadow-md transition-all duration-300 hover:scale-110 hover:bg-primary hover:text-primary-contrast lg:flex"
-        >
-          {collapsed ? <ChevronsRight size={16} /> : <ChevronsLeft size={16} />}
-        </button>
-
         <div className={`mb-6 flex items-center justify-between ${collapsed ? 'lg:justify-center' : ''}`}>
           <Logo size={collapsed ? 'sm' : 'md'} showText={false} />
         </div>
@@ -167,6 +158,21 @@ export default function DashboardLayout() {
             />
             {!collapsed && <span>Ver página de inicio</span>}
           </a>
+          <button
+            onClick={toggleCollapsed}
+            title={collapsed ? 'Expandir menú' : 'Colapsar menú'}
+            aria-label={collapsed ? 'Expandir menú' : 'Colapsar menú'}
+            className={`group flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-semibold text-ink-muted transition-all duration-300 hover:bg-surface-alt hover:text-ink ${
+              collapsed ? 'justify-center' : ''
+            }`}
+          >
+            {collapsed ? (
+              <ChevronsRight size={23} strokeWidth={2.4} className="shrink-0" />
+            ) : (
+              <ChevronsLeft size={23} strokeWidth={2.4} className="shrink-0" />
+            )}
+            {!collapsed && <span>Colapsar menú</span>}
+          </button>
         </div>
       </aside>
 
