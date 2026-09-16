@@ -265,8 +265,8 @@ export default function DashboardLayout() {
         <div className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm lg:hidden" onClick={() => setFabOpen(false)} />
       )}
 
-      <div className="fixed bottom-5 left-5 z-50 flex flex-col items-start lg:hidden">
-        <div className="flex flex-col-reverse items-start gap-2.5">
+      <div className="pointer-events-none fixed bottom-5 left-5 z-50 flex flex-col items-start lg:hidden">
+        <div className={`flex flex-col-reverse items-start gap-2.5 ${fabOpen ? 'pointer-events-auto' : ''}`}>
           {FAB_ITEMS.map((item, i) => (
             <button
               key={item.to}
@@ -289,7 +289,7 @@ export default function DashboardLayout() {
         </div>
 
         <button
-          className="relative mt-2.5 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary-strong text-primary-contrast shadow-glow transition-transform hover:scale-105 active:scale-95"
+          className="pointer-events-auto relative mt-2.5 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary-strong text-primary-contrast shadow-glow transition-transform hover:scale-105 active:scale-95"
           onClick={() => setFabOpen((v) => !v)}
           aria-label={fabOpen ? 'Cerrar menú' : 'Abrir menú'}
         >
