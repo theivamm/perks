@@ -94,19 +94,19 @@ export default function CouponsPage() {
 
     const band =
       c.type === 'descuento'
-        ? { cls: 'tile-sky', text: 'text-sky-800 dark:text-sky-100' }
+        ? { cls: 'tile-sky', chip: 'dark:bg-sky-500/15', text: 'text-sky-800 dark:text-sky-300' }
         : c.type === 'regalo'
-        ? { cls: 'tile-rose', text: 'text-rose-800 dark:text-rose-100' }
-        : { cls: 'tile-lemon', text: 'text-amber-800 dark:text-amber-100' };
+        ? { cls: 'tile-rose', chip: 'dark:bg-rose-500/15', text: 'text-rose-800 dark:text-rose-300' }
+        : { cls: 'tile-lemon', chip: 'dark:bg-amber-500/15', text: 'text-amber-800 dark:text-amber-300' };
 
     return (
       <div className="tile flex flex-col overflow-hidden transition-transform hover:-translate-y-1">
         <div className={`flex items-center justify-between gap-3 px-5 py-4 ${band.cls}`}>
-          <span className={`inline-flex items-center gap-1.5 rounded-full bg-white/75 px-3 py-1 text-xs font-black dark:bg-white/12 ${band.text}`}>
+          <span className={`inline-flex items-center gap-1.5 rounded-full bg-white/75 px-3 py-1 text-xs font-black ${band.chip} ${band.text}`}>
             <Ticket size={12} />
             {c.type === 'monto' ? 'Recompensa' : c.type === 'descuento' ? 'Descuento' : 'Regalo'}
           </span>
-          <span className="inline-flex items-center gap-1 rounded-full bg-white/75 px-2.5 py-1 text-xs font-black text-ink dark:bg-white/12">
+          <span className={`inline-flex items-center gap-1 rounded-full bg-white/75 px-2.5 py-1 text-xs font-black ${band.chip} ${band.text}`}>
             <Zap size={12} /> {Number(c.target_points)} pts
           </span>
         </div>

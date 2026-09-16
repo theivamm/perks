@@ -99,19 +99,19 @@ export default function Home() {
 
     const band =
       c.type === 'descuento'
-        ? { cls: 'tile-sky', text: 'text-sky-800 dark:text-sky-100' }
+        ? { cls: 'tile-sky', chip: 'dark:bg-sky-500/15', text: 'text-sky-800 dark:text-sky-300' }
         : c.type === 'regalo'
-        ? { cls: 'tile-rose', text: 'text-rose-800 dark:text-rose-100' }
-        : { cls: 'tile-lemon', text: 'text-amber-800 dark:text-amber-100' };
+        ? { cls: 'tile-rose', chip: 'dark:bg-rose-500/15', text: 'text-rose-800 dark:text-rose-300' }
+        : { cls: 'tile-lemon', chip: 'dark:bg-amber-500/15', text: 'text-amber-800 dark:text-amber-300' };
 
     return (
       <div className="tile flex flex-col overflow-hidden transition-transform hover:-translate-y-1">
         <div className={`flex items-center justify-between gap-3 px-5 py-4 ${band.cls}`}>
-          <span className={`inline-flex items-center gap-1.5 rounded-full bg-white/75 px-3 py-1 text-xs font-black dark:bg-white/12 ${band.text}`}>
+          <span className={`inline-flex items-center gap-1.5 rounded-full bg-white/75 px-3 py-1 text-xs font-black ${band.chip} ${band.text}`}>
             <Ticket size={12} />
             {c.type === 'monto' ? 'Recompensa' : c.type === 'descuento' ? 'Descuento' : 'Regalo'}
           </span>
-          <span className="inline-flex items-center gap-1 rounded-full bg-white/75 px-2.5 py-1 text-xs font-black text-ink dark:bg-white/12">
+          <span className={`inline-flex items-center gap-1 rounded-full bg-white/75 px-2.5 py-1 text-xs font-black ${band.chip} ${band.text}`}>
             <Zap size={12} /> {Number(c.target_points)} pts
           </span>
         </div>
@@ -174,7 +174,7 @@ export default function Home() {
 
             <div className="relative hidden shrink-0 gap-3 lg:grid">
               <div className="tile tile-mint flex items-center gap-3 px-4 py-3">
-                <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/75 text-emerald-700 shadow-sm dark:bg-white/12 dark:text-emerald-200">
+                <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/75 text-emerald-700 shadow-sm dark:bg-emerald-500/15 dark:text-emerald-300">
                   <QrCode size={18} />
                 </span>
                 <div>
@@ -183,7 +183,7 @@ export default function Home() {
                 </div>
               </div>
               <div className="tile tile-peach flex items-center gap-3 px-4 py-3">
-                <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/75 text-orange-700 shadow-sm dark:bg-white/12 dark:text-orange-200">
+                <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/75 text-orange-700 shadow-sm dark:bg-orange-500/15 dark:text-orange-300">
                   <Zap size={18} />
                 </span>
                 <div>
@@ -192,7 +192,7 @@ export default function Home() {
                 </div>
               </div>
               <div className="tile tile-lilac flex items-center gap-3 px-4 py-3">
-                <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/75 text-violet-700 shadow-sm dark:bg-white/12 dark:text-violet-200">
+                <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/75 text-violet-700 shadow-sm dark:bg-violet-500/15 dark:text-violet-300">
                   <Sparkles size={18} />
                 </span>
                 <div>
@@ -208,7 +208,7 @@ export default function Home() {
           <div className="tile tile-mint relative overflow-hidden p-6 transition-transform hover:-translate-y-1 md:col-span-2">
             <div className="orb -right-10 -top-14 h-40 w-40 bg-white/50" />
             <div className="relative flex items-start gap-4">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/75 text-emerald-700 shadow-sm dark:bg-white/12 dark:text-emerald-200">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/75 text-emerald-700 shadow-sm dark:bg-emerald-500/15 dark:text-emerald-300">
                 <QrCode size={22} />
               </div>
               <div>
@@ -222,7 +222,7 @@ export default function Home() {
           <div className="tile tile-peach relative overflow-hidden p-6 transition-transform hover:-translate-y-1">
             <div className="orb -right-8 -top-12 h-32 w-32 bg-white/50" />
             <div className="relative">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/75 text-orange-700 shadow-sm dark:bg-white/12 dark:text-orange-200">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/75 text-orange-700 shadow-sm dark:bg-orange-500/15 dark:text-orange-300">
                 <CircleCheck size={22} />
               </div>
               <h2 className="mt-3 font-extrabold text-ink">El local suma tus puntos</h2>
@@ -234,7 +234,7 @@ export default function Home() {
           <div className="tile tile-lilac relative overflow-hidden p-6 transition-transform hover:-translate-y-1 md:col-span-3">
             <div className="orb -left-8 -bottom-14 h-36 w-36 bg-white/50" />
             <div className="relative flex items-start gap-4">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/75 text-violet-700 shadow-sm dark:bg-white/12 dark:text-violet-200">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/75 text-violet-700 shadow-sm dark:bg-violet-500/15 dark:text-violet-300">
                 <Sparkles size={22} />
               </div>
               <div className="flex-1">

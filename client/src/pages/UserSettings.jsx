@@ -125,7 +125,7 @@ export default function UserSettings() {
             <div className="orb -right-10 -top-14 h-36 w-36 bg-white/50" />
             <div className="relative flex flex-wrap items-center justify-between gap-4">
               <div className="flex items-center gap-4">
-                <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/80 text-emerald-700 shadow-sm dark:bg-white/12 dark:text-emerald-200">
+                <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/80 text-emerald-700 shadow-sm dark:bg-emerald-500/15 dark:text-emerald-300">
                   {dark ? <Moon size={22} /> : <Sun size={22} />}
                 </span>
                 <div>
@@ -155,7 +155,7 @@ export default function UserSettings() {
             <div className="orb -right-10 -top-14 h-36 w-36 bg-white/50" />
             <div className="relative">
               <div className="flex items-center gap-4">
-                <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/80 text-violet-700 shadow-sm dark:bg-white/12 dark:text-violet-200">
+                <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/80 text-violet-700 shadow-sm dark:bg-violet-500/15 dark:text-violet-300">
                   <Palette size={22} />
                 </span>
                 <div>
@@ -166,7 +166,7 @@ export default function UserSettings() {
                   </p>
                 </div>
               </div>
-              <p className="mt-3 rounded-xl bg-white/70 px-3 py-2 text-xs font-semibold text-ink-muted dark:bg-white/10">
+              <p className="mt-3 rounded-xl bg-white/70 px-3 py-2 text-xs font-semibold text-ink-muted dark:bg-violet-500/15 dark:text-violet-200">
                 La moneda la define el local en su configuración del dashboard.
               </p>
             </div>
