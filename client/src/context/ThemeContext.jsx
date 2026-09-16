@@ -1,16 +1,18 @@
 import { createContext, useContext, useCallback, useEffect, useState } from 'react';
 import { api } from '../api';
-import { applyPalette } from '../color';
+import { applyPalette, initialPalette } from '../color';
 
 const ThemeContext = createContext(null);
 
+const DEFAULT_SETTINGS = {
+  primaryColor: '#2563eb',
+  theme: 'light',
+  currency: '$',
+  logo: '',
+};
+
 export function ThemeProvider({ children }) {
-  const [settings, setSettings] = useState({
-    primaryColor: '#2563eb',
-    theme: 'light',
-    currency: '$',
-    logo: '',
-  });
+  const [settings, setSettings] = useState(() => ({ ...DEFAULT_SETTINGS, ...(initialPalette || {}) }));
 
   useEffect(() => {
     api('/api/settings')
@@ -26,7 +28,9 @@ export function ThemeProvider({ children }) {
           applyPalette(next.primaryColor, next.theme === 'dark');
         }
       })
-      .catch(() => applyPalette('#2563eb', false));
+      .catch(() => {
+        if (!initialPalette) applyPalette('#2563eb', false, false);
+      });
   }, []);
 
   const updateSettings = useCallback(

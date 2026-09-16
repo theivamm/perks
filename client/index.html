@@ -12,6 +12,76 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
+    <script>
+      (function () {
+        try {
+          var raw = localStorage.getItem('perks:palette');
+          if (!raw) return;
+          var data = JSON.parse(raw);
+          var hex = data && /^#[0-9a-fA-F]{6}$/.test(String(data.primaryHex || '')) ? data.primaryHex : '';
+          if (!hex) return;
+          function hexToHsl(hx) {
+            var c = hx.replace('#', '');
+            var r = parseInt(c.slice(0, 2), 16) / 255;
+            var g = parseInt(c.slice(2, 4), 16) / 255;
+            var b = parseInt(c.slice(4, 6), 16) / 255;
+            var max = Math.max(r, g, b);
+            var min = Math.min(r, g, b);
+            var d = max - min;
+            var h = 0;
+            var s = 0;
+            var l = (max + min) / 2;
+            if (d) {
+              s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+              if (max === r) h = (g - b) / d + (g < b ? 6 : 0);
+              else if (max === g) h = (b - r) / d + 2;
+              else h = (r - g) / d + 4;
+              h /= 6;
+            }
+            return { h: Math.round(h * 360), s: Math.round(s * 100) };
+          }
+          function clamp(n, lo, hi) {
+            return Math.min(hi, Math.max(lo, n));
+          }
+          var dark = !!data.dark;
+          var p = hexToHsl(hex);
+          var sat = clamp(p.s, 40, 75);
+          var h = p.h;
+          var root = document.documentElement;
+          root.classList.toggle('dark', dark);
+          var vars = dark
+            ? {
+                '--primary': h + ' ' + sat + '% 55%',
+                '--primary-strong': h + ' ' + clamp(sat + 5, 40, 75) + '% 66%',
+                '--primary-soft': h + ' ' + clamp(sat + 8, 40, 80) + '% 20%',
+                '--primary-softer': h + ' ' + clamp(sat + 8, 40, 80) + '% 14%',
+                '--primary-contrast': '0 0% 100%',
+                '--bg': h + ' 26% 9%',
+                '--surface': h + ' 22% 13%',
+                '--surface-alt': h + ' 24% 18%',
+                '--ink': '0 0% 92%',
+                '--ink-muted': '0 0% 66%',
+                '--line': h + ' 16% 26%'
+              }
+            : {
+                '--primary': h + ' ' + sat + '% 45%',
+                '--primary-strong': h + ' ' + sat + '% 34%',
+                '--primary-soft': h + ' ' + clamp(sat + 12, 50, 88) + '% 90%',
+                '--primary-softer': h + ' ' + clamp(sat + 12, 50, 88) + '% 96%',
+                '--primary-contrast': '0 0% 100%',
+                '--bg': h + ' 45% 97%',
+                '--surface': '0 0% 100%',
+                '--surface-alt': h + ' 55% 92%',
+                '--ink': h + ' 30% 13%',
+                '--ink-muted': h + ' 12% 42%',
+                '--line': h + ' 25% 86%'
+              };
+          for (var k in vars) root.style.setProperty(k, vars[k]);
+        } catch (e) {
+          /* noop */
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

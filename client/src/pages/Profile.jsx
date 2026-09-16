@@ -6,7 +6,6 @@ import {
   BadgePercent,
   Bell,
   Camera,
-  ChevronDown,
   Coffee,
   Copy,
   Gift,
@@ -18,7 +17,6 @@ import {
   QrCode,
   Save,
   Sun,
-  User as UserIcon,
   X,
 } from 'lucide-react';
 import QRCode from 'qrcode';
@@ -28,6 +26,7 @@ import { useTheme } from '../context/ThemeContext.jsx';
 import { EmptyState, Modal, Spinner, toast } from '../components/ui.jsx';
 import { ActiveCouponCard, ReadyCouponCard } from '../components/CouponCards.jsx';
 import NotificationsBell from '../components/NotificationsBell.jsx';
+import UserMenu from '../components/UserMenu.jsx';
 import AdminSummary from '../components/AdminSummary.jsx';
 import { formatWhen, notificationMeta } from '../lib/notifications.js';
 
@@ -39,8 +38,6 @@ export default function Profile() {
   const [loading, setLoading] = useState(true);
   const [qrImg, setQrImg] = useState('');
   const [copied, setCopied] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const menuRef = useRef(null);
   const fileRef = useRef(null);
   const [editModal, setEditModal] = useState(false);
   const [form, setForm] = useState({ name: '', last_name: '', phone: '', email: '', image: '' });
@@ -64,14 +61,6 @@ export default function Profile() {
       .then(setQrImg)
       .catch(() => {});
   }, [qrCode]);
-
-  useEffect(() => {
-    const onClick = (e) => {
-      if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpen(false);
-    };
-    document.addEventListener('mousedown', onClick);
-    return () => document.removeEventListener('mousedown', onClick);
-  }, []);
 
   const load = () =>
     api('/api/profile/me')
@@ -114,7 +103,6 @@ export default function Profile() {
       email: me?.email || '',
       image: me?.image || '',
     });
-    setMenuOpen(false);
     setEditModal(true);
   };
 
@@ -167,12 +155,6 @@ export default function Profile() {
     }
   };
 
-  const handleLogout = async () => {
-    setMenuOpen(false);
-    await logout();
-    navigate('/');
-  };
-
   const deleteAccount = async (e) => {
     e.preventDefault();
     if (String(deleteConfirm || '').trim().toUpperCase() !== 'ELIMINAR') {
@@ -206,66 +188,14 @@ export default function Profile() {
             Inicio
           </Link>
           <span className="text-sm font-bold text-ink">Mi perfil</span>
-          <div className="flex items-center gap-1.5">
+<div className="flex items-center gap-1.5">
             <NotificationsBell />
             <button className="btn-icon" onClick={toggleTheme} aria-label="Cambiar tema">
               <span key={settings.theme} className="animate-pop inline-block">
                 {settings.theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
               </span>
             </button>
-            <div className="relative" ref={menuRef}>
-              <button
-                className="flex items-center gap-1.5 rounded-full border border-line bg-surface px-2 py-1.5 transition-colors hover:bg-surface-alt"
-                onClick={() => setMenuOpen((o) => !o)}
-                aria-label="Menú de usuario"
-              >
-                {me.image ? (
-                  <img src={me.image} alt={fullName(me)} className="h-8 w-8 rounded-full object-cover" />
-                ) : (
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary-strong text-xs font-extrabold text-primary-contrast">
-                    {initials(me)}
-                  </div>
-                )}
-                <ChevronDown
-                  size={14}
-                  className={`hidden text-ink-muted transition-transform sm:block ${menuOpen ? 'rotate-180' : ''}`}
-                />
-              </button>
-              {menuOpen && (
-                <div className="animate-fade-up absolute right-0 top-full z-50 mt-2 w-60 overflow-hidden rounded-2xl border border-line bg-surface shadow-xl">
-                  <div className="border-b border-line px-4 py-3">
-                    <p className="truncate text-sm font-extrabold text-ink">{fullName(me)}</p>
-                    <p className="truncate text-xs text-ink-muted">{me.email}</p>
-                  </div>
-                  <div className="p-1.5">
-                    <button
-                      className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-semibold text-ink transition-colors hover:bg-surface-alt"
-                      onClick={openEdit}
-                    >
-                      <UserIcon size={15} className="text-ink-muted" />
-                      Editar perfil
-                    </button>
-                    <button
-                      className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-semibold text-ink transition-colors hover:bg-surface-alt"
-                      onClick={() => {
-                        setMenuOpen(false);
-                        setPwdModal(true);
-                      }}
-                    >
-                      <KeyRound size={15} className="text-ink-muted" />
-                      Cambiar contraseña
-                    </button>
-                    <button
-                      className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-semibold text-red-500 transition-colors hover:bg-surface-alt"
-                      onClick={handleLogout}
-                    >
-                      <LogOut size={15} />
-                      Salir
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
+            <UserMenu />
           </div>
         </div>
       </header>
@@ -277,6 +207,10 @@ export default function Profile() {
             <QrCode size={26} />
           </div>
           <h1 className="mt-3 text-xl font-extrabold text-ink">{fullName(me)}</h1>
+          <button className="btn-ghost mx-auto mt-2 inline-flex items-center gap-1.5 text-xs" onClick={openEdit}>
+            <Pencil size={13} />
+            Editar perfil
+          </button>
           {qrCode ? (
             <>
               <p className="text-sm text-ink-muted">
@@ -310,7 +244,7 @@ export default function Profile() {
               <div className="mx-auto mt-5 flex h-52 w-52 flex-col items-center justify-center gap-3 rounded-3xl border border-dashed border-line bg-surface-alt/40 p-4 text-center">
                 <QrCode size={26} className="text-ink-muted" />
                 <p className="text-sm font-bold text-ink-muted">Sin cupón activo</p>
-                <Link to="/" className="btn-primary text-sm">
+                <Link to="/cupones" className="btn-primary text-sm">
                   Ver cupones y activar
                 </Link>
               </div>

@@ -29,7 +29,17 @@ export function hexToHsl(hex) {
 
 const clamp = (n, min, max) => Math.min(max, Math.max(min, n));
 
-export function applyPalette(primaryHex, dark) {
+const PALETTE_KEY = 'perks:palette';
+
+export function persistPalette(primaryHex, dark) {
+  try {
+    localStorage.setItem(PALETTE_KEY, JSON.stringify({ primaryHex, dark: !!dark }));
+  } catch {
+    /* noop */
+  }
+}
+
+export function applyPalette(primaryHex, dark, persist = true) {
   const { h, s } = hexToHsl(primaryHex);
   const sat = clamp(s, 40, 75);
   const root = document.documentElement;
@@ -60,7 +70,26 @@ export function applyPalette(primaryHex, dark) {
     root.style.setProperty('--ink-muted', `${h} 12% 42%`);
     root.style.setProperty('--line', `${h} 25% 86%`);
   }
+
+  if (persist) persistPalette(primaryHex, dark);
 }
+
+export function initPalette() {
+  try {
+    const raw = localStorage.getItem(PALETTE_KEY);
+    if (!raw) return null;
+    const data = JSON.parse(raw);
+    const hex = data && /^#[0-9a-fA-F]{6}$/.test(String(data.primaryHex || '')) ? data.primaryHex : '';
+    if (!hex) return null;
+    const dark = !!data.dark;
+    applyPalette(hex, dark, false);
+    return { primaryColor: hex, theme: dark ? 'dark' : 'light' };
+  } catch (e) {
+    return null;
+  }
+}
+
+export const initialPalette = initPalette();
 
 export const PRESET_COLORS = [
   '#2563eb',
