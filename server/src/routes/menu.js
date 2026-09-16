@@ -152,9 +152,16 @@ router.post(
       publicUrl = await uploadImage(name, buffer, contentType);
     } catch (e) {
       console.warn('[SUPABASE] Fallback a almacenamiento local:', e.message);
-      fs.mkdirSync(uploadsDir, { recursive: true });
-      fs.writeFileSync(path.join(uploadsDir, name), buffer);
-      publicUrl = `/uploads/${name}`;
+      try {
+        fs.mkdirSync(uploadsDir, { recursive: true });
+        fs.writeFileSync(path.join(uploadsDir, name), buffer);
+        publicUrl = `/uploads/${name}`;
+      } catch (diskErr) {
+        console.error('[STORAGE] No se pudo guardar la imagen localmente:', diskErr.message);
+        return res.status(500).json({
+          error: 'La imagen se generó, pero no se pudo guardar: el storage de Supabase y el almacenamiento local no están disponibles.',
+        });
+      }
     }
 
     const { data: updated, error } = await supabase
@@ -182,9 +189,14 @@ router.post(
       return res.json({ url });
     } catch (err) {
       console.warn('[SUPABASE] Fallback a almacenamiento local:', err.message);
-      fs.mkdirSync(uploadsDir, { recursive: true });
-      fs.writeFileSync(path.join(uploadsDir, name), req.file.buffer);
-      return res.json({ url: `/uploads/${name}` });
+      try {
+        fs.mkdirSync(uploadsDir, { recursive: true });
+        fs.writeFileSync(path.join(uploadsDir, name), req.file.buffer);
+        return res.json({ url: `/uploads/${name}` });
+      } catch (diskErr) {
+        console.error('[STORAGE] No se pudo guardar la imagen localmente:', diskErr.message);
+        return res.status(500).json({ error: 'No se pudo guardar la imagen (Supabase y almacenamiento local no disponibles).' });
+      }
     }
   })
 );

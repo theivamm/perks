@@ -66,9 +66,15 @@ router.post(
       return res.json({ url });
     } catch (err) {
       console.warn('[SUPABASE] Fallback logo local:', err.message);
-      fs.mkdirSync(uploadsDir, { recursive: true });
-      fs.writeFileSync(path.join(uploadsDir, name), req.file.buffer);
-      const url = `/uploads/${name}`;
+      let url;
+      try {
+        fs.mkdirSync(uploadsDir, { recursive: true });
+        fs.writeFileSync(path.join(uploadsDir, name), req.file.buffer);
+        url = `/uploads/${name}`;
+      } catch (diskErr) {
+        console.error('[STORAGE] No se pudo guardar el logo localmente:', diskErr.message);
+        return res.status(500).json({ error: 'No se pudo guardar el logo (Supabase y almacenamiento local no disponibles).' });
+      }
       await supabase.from('settings').upsert({ key: 'logo', value: url }, { onConflict: 'key' });
       return res.json({ url });
     }

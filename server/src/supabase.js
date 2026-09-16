@@ -35,6 +35,7 @@ export async function ensureBucket() {
 }
 
 export async function uploadImage(name, buffer, contentType) {
+  await ensureBucket();
   const { error } = await supabase.storage.from(BUCKET).upload(name, buffer, {
     contentType,
     upsert: false,

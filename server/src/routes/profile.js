@@ -168,9 +168,14 @@ router.post(
       return res.json({ url });
     } catch (err) {
       console.warn('[SUPABASE] Fallback avatar local:', err.message);
-      fs.mkdirSync(uploadsDir, { recursive: true });
-      fs.writeFileSync(path.join(uploadsDir, name), req.file.buffer);
-      return res.json({ url: `/uploads/${name}` });
+      try {
+        fs.mkdirSync(uploadsDir, { recursive: true });
+        fs.writeFileSync(path.join(uploadsDir, name), req.file.buffer);
+        return res.json({ url: `/uploads/${name}` });
+      } catch (diskErr) {
+        console.error('[STORAGE] No se pudo guardar el avatar localmente:', diskErr.message);
+        return res.status(500).json({ error: 'No se pudo guardar la foto (Supabase y almacenamiento local no disponibles).' });
+      }
     }
   })
 );
