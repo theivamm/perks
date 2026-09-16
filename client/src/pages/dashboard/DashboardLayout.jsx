@@ -115,7 +115,7 @@ export default function DashboardLayout() {
           onClick={toggleCollapsed}
           aria-label={collapsed ? 'Expandir menú' : 'Colapsar menú'}
           title={collapsed ? 'Expandir menú' : 'Colapsar menú'}
-          className="absolute -right-3.5 top-6 z-10 hidden h-8 w-8 items-center justify-center rounded-full border border-line bg-surface text-ink-muted shadow-md transition-all duration-300 hover:scale-110 hover:bg-primary hover:text-primary-contrast lg:flex"
+          className="absolute -right-3.5 top-6 z-40 hidden h-8 w-8 items-center justify-center rounded-full border border-line bg-surface text-ink-muted shadow-md transition-all duration-300 hover:scale-110 hover:bg-primary hover:text-primary-contrast lg:flex"
         >
           {collapsed ? <ChevronsRight size={16} /> : <ChevronsLeft size={16} />}
         </button>
@@ -179,7 +179,7 @@ export default function DashboardLayout() {
           >
             <Logo size="sm" showText={false} />
           </Link>
-          <div className="flex items-center gap-1.5">
+          <div className="ml-auto flex items-center gap-1.5">
             <NotificationsBell />
             <button className="btn-icon" onClick={toggleTheme} aria-label="Cambiar tema">
               {settings.theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
