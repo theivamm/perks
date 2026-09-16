@@ -23,7 +23,9 @@ async function readSettings() {
   if (error) throw error;
   const settings = { ...DEFAULTS };
   for (const row of data || []) settings[row.key] = row.value;
-  return settings;
+  const safe = {};
+  for (const key of ALLOWED) safe[key] = settings[key];
+  return safe;
 }
 
 router.get(

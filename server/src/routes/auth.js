@@ -2,10 +2,15 @@ import jwt from 'jsonwebtoken';
 import { Router } from 'express';
 import { supabase } from '../supabase.js';
 import { asyncHandler } from '../asyncHandler.js';
+import { requireAdmin } from '../middleware/auth.js';
 import { newQrCode } from '../qr.js';
+import { verifyTOTP, randomSecret, otpauthURL } from '../otp.js';
 
 const router = Router();
 const SECRET = () => process.env.JWT_SECRET || 'dev-secret';
+const LOGIN_SECRET = () => `${SECRET()}:login`;
+
+const ADMIN_USERNAME_DEFAULT = 'administracion';
 
 function signToken(userRow) {
   const payload = { id: userRow.id, email: userRow.email, name: userRow.name, role: userRow.role };
@@ -13,34 +18,185 @@ function signToken(userRow) {
   return { token, user: payload };
 }
 
+function signLoginToken(userId) {
+  return jwt.sign({ step: 'otp', id: userId }, LOGIN_SECRET(), { expiresIn: '5m' });
+}
+
 async function userByAuthId(authId) {
   const { data } = await supabase.from('users').select('*').eq('id', authId).maybeSingle();
   return data || null;
 }
 
+async function readAdminSettings() {
+  const { data, error } = await supabase.from('settings').select('key, value');
+  if (error) throw error;
+  const map = Object.fromEntries((data || []).map((r) => [r.key, r.value]));
+  return {
+    username: map.adminUsername || ADMIN_USERNAME_DEFAULT,
+    otpSecret: map.adminOtpSecret || '',
+    otpEnabled: map.adminOtpEnabled === 'true',
+  };
+}
+
+async function writeAdminSettings(partial) {
+  const rows = Object.entries(partial).map(([key, value]) => ({ key, value: String(value) }));
+  if (rows.length > 0) {
+    const { error } = await supabase.from('settings').upsert(rows, { onConflict: 'key' });
+    if (error) throw error;
+  }
+}
+
+async function singleAdmin() {
+  const { data, error } = await supabase.from('users').select('*').eq('role', 'admin');
+  if (error) throw error;
+  return (data || []).length === 1 ? data[0] : null;
+}
+
 router.post(
   '/login',
   asyncHandler(async (req, res) => {
-    const { email, password } = req.body || {};
-    if (!email || !password) {
-      return res.status(400).json({ error: 'Email y contraseña requeridos' });
+    const { username, password } = req.body || {};
+    if (!username || !password) {
+      return res.status(400).json({ error: 'Usuario y contraseña requeridos' });
+    }
+
+    const admin = await singleAdmin();
+    if (!admin) {
+      return res.status(403).json({ error: 'Hay más de un administrador configurado. Contactá soporte.' });
+    }
+    if (String(username).trim().toLowerCase() !== (await readAdminSettings()).username.toLowerCase()) {
+      return res.status(401).json({ error: 'Credenciales inválidas' });
     }
 
     const { data, error } = await supabase.auth.signInWithPassword({
-      email: String(email).trim(),
-      password,
+      email: admin.email,
+      password: String(password),
     });
 
     if (error || !data?.user) {
       return res.status(401).json({ error: 'Credenciales inválidas' });
     }
 
-    const user = await userByAuthId(data.user.id);
-    if (!user) {
-      return res.status(403).json({ error: 'Tu cuenta no tiene permisos de administrador' });
+    const settings = await readAdminSettings();
+    if (settings.otpEnabled && settings.otpSecret) {
+      return res.json({ step: 'otp', login_token: signLoginToken(admin.id) });
     }
 
-    res.json(signToken(user));
+    res.json(signToken(admin));
+  })
+);
+
+router.post(
+  '/otp',
+  asyncHandler(async (req, res) => {
+    const { login_token, code } = req.body || {};
+    if (!login_token || !code) {
+      return res.status(400).json({ error: 'Código requerido' });
+    }
+
+    let payload;
+    try {
+      payload = jwt.verify(login_token, LOGIN_SECRET());
+    } catch {
+      return res.status(401).json({ error: 'La sesión del primer paso expiró. Volvé a iniciar sesión.' });
+    }
+    if (payload.step !== 'otp' || !payload.id) {
+      return res.status(401).json({ error: 'Sesión inválida' });
+    }
+
+    const settings = await readAdminSettings();
+    if (!settings.otpEnabled || !settings.otpSecret || !verifyTOTP(settings.otpSecret, code)) {
+      return res.status(401).json({ error: 'Código incorrecto' });
+    }
+
+    const admin = await userByAuthId(payload.id);
+    if (!admin || admin.role !== 'admin') {
+      return res.status(403).json({ error: 'Cuenta sin permisos de administrador' });
+    }
+
+    res.json(signToken(admin));
+  })
+);
+
+// ===== Cuenta del administrador (solo admin) =====
+
+// Cambiar la contraseña pedida por la actual
+router.post(
+  '/admin/password',
+  requireAdmin,
+  asyncHandler(async (req, res) => {
+    const { current_password, password } = req.body || {};
+    if (!current_password || !password || String(password).length < 6) {
+      return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' });
+    }
+
+    const { error } = await supabase.auth.signInWithPassword({
+      email: req.user.email,
+      password: String(current_password),
+    });
+    if (error) return res.status(401).json({ error: 'La contraseña actual es incorrecta' });
+
+    const { error: upErr } = await supabase.auth.admin.updateUserById(req.user.id, {
+      password: String(password),
+    });
+    if (upErr) return res.status(400).json({ error: upErr.message });
+    res.json({ ok: true });
+  })
+);
+
+// Estado de la autenticación en 2 pasos
+router.get(
+  '/admin/otp/status',
+  requireAdmin,
+  asyncHandler(async (req, res) => {
+    const settings = await readAdminSettings();
+    res.json({ enabled: settings.otpEnabled && Boolean(settings.otpSecret) });
+  })
+);
+
+// Generar un secreto nuevo y mostrarlo como QR (aún no habilitado)
+router.post(
+  '/admin/otp/provision',
+  requireAdmin,
+  asyncHandler(async (_req, res) => {
+    const secret = randomSecret();
+    await writeAdminSettings({ adminOtpSecret: secret, adminOtpEnabled: 'false' });
+    res.json({ secret, otpauth_url: otpauthURL(secret) });
+  })
+);
+
+// Verificar el código del paso 1 y habilitar el 2FA
+router.post(
+  '/admin/otp/enable',
+  requireAdmin,
+  asyncHandler(async (req, res) => {
+    const { code } = req.body || {};
+    const settings = await readAdminSettings();
+    if (!settings.otpSecret) return res.status(400).json({ error: 'Primero generá el código QR' });
+    if (!verifyTOTP(settings.otpSecret, code)) {
+      return res.status(400).json({ error: 'Código incorrecto, verificá que tu app esté sincronizada' });
+    }
+    await writeAdminSettings({ adminOtpEnabled: 'true' });
+    res.json({ enabled: true });
+  })
+);
+
+// Deshabilitar el 2FA (pidiendo el código corriente)
+router.post(
+  '/admin/otp/disable',
+  requireAdmin,
+  asyncHandler(async (req, res) => {
+    const { code } = req.body || {};
+    const settings = await readAdminSettings();
+    if (!settings.otpSecret) {
+      await writeAdminSettings({ adminOtpEnabled: 'false' });
+      return res.json({ enabled: false });
+    }
+    if (!verifyTOTP(settings.otpSecret, code)) {
+      return res.status(400).json({ error: 'Código incorrecto' });
+    }
+    await writeAdminSettings({ adminOtpSecret: '', adminOtpEnabled: 'false' });
+    res.json({ enabled: false });
   })
 );
 

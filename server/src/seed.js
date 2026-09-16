@@ -9,6 +9,9 @@ const settingsDefaults = {
   primaryColor: '#2563eb',
   theme: 'light',
   currency: '$',
+  adminUsername: 'administracion',
+  adminOtpSecret: '',
+  adminOtpEnabled: 'false',
 };
 
 const sampleItems = [

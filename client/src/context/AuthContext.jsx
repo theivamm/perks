@@ -21,10 +21,21 @@ export function AuthProvider({ children }) {
     return data.user;
   };
 
-  const login = async (email, password) => {
+  const login = async (username, password) => {
     setLoading(true);
     try {
-      const data = await api('/api/auth/login', { method: 'POST', body: { email, password } });
+      const data = await api('/api/auth/login', { method: 'POST', body: { username, password } });
+      if (data.token) return finishAuth(data);
+      return data;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loginOtp = async (loginToken, code) => {
+    setLoading(true);
+    try {
+      const data = await api('/api/auth/otp', { method: 'POST', body: { login_token: loginToken, code } });
       return finishAuth(data);
     } finally {
       setLoading(false);
@@ -70,7 +81,7 @@ export function AuthProvider({ children }) {
   const isAuthed = Boolean(getToken() && user);
 
   return (
-    <AuthContext.Provider value={{ user, login, register, loginGoogle, logout, updateUser, loading, isAuthed }}>
+    <AuthContext.Provider value={{ user, login, loginOtp, register, loginGoogle, logout, updateUser, loading, isAuthed }}>
       {children}
     </AuthContext.Provider>
   );

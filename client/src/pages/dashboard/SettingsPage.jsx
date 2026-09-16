@@ -1,9 +1,10 @@
-import { useRef, useState } from 'react';
-import { Check, ImagePlus, Loader2, Moon, Palette, Save, Sun, Trash2 } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { Check, ImagePlus, KeyRound, Loader2, Moon, Palette, Save, ShieldCheck, Smartphone, Sun, Trash2 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext.jsx';
 import { api } from '../../api.js';
 import { PRESET_COLORS, hexToHsl } from '../../color.js';
 import { toast } from '../../components/ui.jsx';
+import QRCode from 'qrcode';
 
 const CURRENCIES = ['$', '€', 'Bs', 'S/', 'Q', 'L', 'C$'];
 
@@ -12,6 +13,87 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const logoInput = useRef(null);
+
+  const [pwd, setPwd] = useState({ current: '', next: '', confirm: '' });
+  const [savingPwd, setSavingPwd] = useState(false);
+  const [otp, setOtp] = useState({ enabled: null, qr: '', secret: '', code: '' });
+  const [otpBusy, setOtpBusy] = useState(false);
+
+  const loadOtpStatus = async () => {
+    try {
+      const res = await api('/api/auth/admin/otp/status');
+      setOtp((o) => ({ ...o, enabled: res.enabled }));
+    } catch {
+      /* el estado queda null y no se muestra la sección cargada */
+    }
+  };
+
+  useEffect(() => {
+    loadOtpStatus();
+  }, []);
+
+  const changePassword = async () => {
+    if (pwd.next.length < 6) return toast('La contraseña debe tener al menos 6 caracteres');
+    if (pwd.next !== pwd.confirm) return toast('Las contraseñas nuevas no coinciden');
+    setSavingPwd(true);
+    try {
+      await api('/api/auth/admin/password', {
+        method: 'POST',
+        body: { current_password: pwd.current, password: pwd.next },
+      });
+      toast('Contraseña actualizada');
+      setPwd({ current: '', next: '', confirm: '' });
+    } catch (err) {
+      toast(err.message);
+    } finally {
+      setSavingPwd(false);
+    }
+  };
+
+  const provisionOtp = async () => {
+    setOtpBusy(true);
+    try {
+      const res = await api('/api/auth/admin/otp/provision', { method: 'POST' });
+      const qr = await QRCode.toDataURL(res.otpauth_url, {
+        margin: 1,
+        width: 240,
+        color: { dark: '#1f2937', light: '#ffffff' },
+      });
+      setOtp((o) => ({ ...o, qr, secret: res.secret, code: '' }));
+    } catch (err) {
+      toast(err.message);
+    } finally {
+      setOtpBusy(false);
+    }
+  };
+
+  const enableOtp = async () => {
+    if (otp.code.length !== 6) return toast('Ingresá el código de 6 dígitos');
+    setOtpBusy(true);
+    try {
+      const res = await api('/api/auth/admin/otp/enable', { method: 'POST', body: { code: otp.code } });
+      setOtp((o) => ({ ...o, enabled: res.enabled, qr: '', secret: '', code: '' }));
+      toast('Autenticación en 2 pasos activada');
+    } catch (err) {
+      toast(err.message);
+    } finally {
+      setOtpBusy(false);
+    }
+  };
+
+  const disableOtp = async () => {
+    if (otp.code.length !== 6) return toast('Ingresá el código de 6 dígitos');
+    setOtpBusy(true);
+    try {
+      const res = await api('/api/auth/admin/otp/disable', { method: 'POST', body: { code: otp.code } });
+      setOtp((o) => ({ ...o, enabled: res.enabled, qr: '', secret: '', code: '' }));
+      toast('Autenticación en 2 pasos desactivada');
+    } catch (err) {
+      toast(err.message);
+    } finally {
+      setOtpBusy(false);
+    }
+  };
 
   const setColor = async (color) => {
     setSaving(true);
@@ -237,6 +319,171 @@ export default function SettingsPage() {
           <p className="mt-4 text-xs text-ink-muted">
             Se usa para mostrar los precios en el menú público y en el dashboard.
           </p>
+        </section>
+
+        <section className="card p-6">
+          <h2 className="mb-1 flex items-center gap-2 text-lg font-extrabold text-ink">
+            <ShieldCheck size={20} className="text-primary-strong" />
+            Cuenta del administrador
+          </h2>
+          <p className="mb-5 text-sm text-ink-muted">
+            Cambiá la contraseña del acceso único de administración y protegé la cuenta con un segundo paso.
+          </p>
+
+          <div className="grid gap-5 lg:grid-cols-2">
+            <div className="rounded-2xl border border-line bg-surface-alt p-4">
+              <h3 className="mb-3 flex items-center gap-2 font-extrabold text-ink">
+                <KeyRound size={16} className="text-primary-strong" />
+                Cambiar contraseña
+              </h3>
+              <div className="space-y-3">
+                <div>
+                  <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-ink-muted">
+                    Contraseña actual
+                  </label>
+                  <input
+                    className="input"
+                    type="password"
+                    value={pwd.current}
+                    onChange={(e) => setPwd((p) => ({ ...p, current: e.target.value }))}
+                    autoComplete="current-password"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-ink-muted">
+                    Nueva contraseña
+                  </label>
+                  <input
+                    className="input"
+                    type="password"
+                    value={pwd.next}
+                    onChange={(e) => setPwd((p) => ({ ...p, next: e.target.value }))}
+                    placeholder="Mínimo 6 caracteres"
+                    autoComplete="new-password"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-ink-muted">
+                    Confirmar nueva contraseña
+                  </label>
+                  <input
+                    className="input"
+                    type="password"
+                    value={pwd.confirm}
+                    onChange={(e) => setPwd((p) => ({ ...p, confirm: e.target.value }))}
+                    autoComplete="new-password"
+                  />
+                </div>
+                <button
+                  className="btn-primary justify-center"
+                  onClick={changePassword}
+                  disabled={savingPwd || !pwd.current || !pwd.next || !pwd.confirm}
+                >
+                  {savingPwd ? <Loader2 className="animate-spin" size={16} /> : <KeyRound size={16} />}
+                  Guardar contraseña
+                </button>
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-line bg-surface-alt p-4">
+              <h3 className="mb-1 flex items-center gap-2 font-extrabold text-ink">
+                <Smartphone size={16} className="text-primary-strong" />
+                Autenticación en 2 pasos
+              </h3>
+              <p className="mb-3 text-xs text-ink-muted">
+                Al activar, además de usuario y contraseña pedirá un código de tu app de autenticación
+                (Google Authenticator, Authy, etc.).
+              </p>
+
+              {otp.enabled === null ? (
+                otpBusy ? (
+                  <div className="flex items-center justify-center gap-2 py-6 text-sm text-ink-muted">
+                    <Loader2 className="animate-spin" size={16} /> Cargando...
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center rounded-xl bg-surface px-3 py-6 text-sm text-ink-muted">
+                    No se pudo consultar el estado del 2FA.
+                  </div>
+                )
+              ) : otp.enabled ? (
+                <div className="space-y-3">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1 text-xs font-black text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">
+                    <Check size={13} /> Activada
+                  </span>
+                  <div>
+                    <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-ink-muted">
+                      Código actual para desactivar
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        className="input font-mono text-center tracking-[0.3em]"
+                        placeholder="••••••"
+                        value={otp.code}
+                        onChange={(e) =>
+                          setOtp((o) => ({ ...o, code: e.target.value.replace(/\D/g, '').slice(0, 6) }))
+                        }
+                        inputMode="numeric"
+                      />
+                      <button
+                        className="btn-ghost shrink-0 text-red-500 hover:bg-red-500/10 hover:text-red-500"
+                        onClick={disableOtp}
+                        disabled={otpBusy || otp.code.length !== 6}
+                      >
+                        {otpBusy ? <Loader2 className="animate-spin" size={16} /> : <Trash2 size={16} />}
+                        Desactivar
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : otp.qr ? (
+                <div className="space-y-3">
+                  <div className="mx-auto w-fit rounded-2xl bg-white p-3 shadow-sm">
+                    <img src={otp.qr} alt="Código QR para configurar la app de autenticación" className="h-44 w-44" />
+                  </div>
+                  <p className="text-center text-xs leading-relaxed text-ink-muted">
+                    Escaneá el código con tu app de autenticación y luego ingresá el código de 6 dígitos
+                    que te muestra para confirmar la activación.
+                  </p>
+                  <div className="flex gap-2">
+                    <input
+                      className="input font-mono text-center tracking-[0.3em]"
+                      placeholder="••••••"
+                      value={otp.code}
+                      onChange={(e) =>
+                        setOtp((o) => ({ ...o, code: e.target.value.replace(/\D/g, '').slice(0, 6) }))
+                      }
+                      inputMode="numeric"
+                    />
+                    <button
+                      className="btn-ghost shrink-0"
+                      onClick={() => setOtp((o) => ({ ...o, qr: '', secret: '' }))}
+                      disabled={otpBusy}
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      className="btn-primary shrink-0"
+                      onClick={enableOtp}
+                      disabled={otpBusy || otp.code.length !== 6}
+                    >
+                      {otpBusy ? <Loader2 className="animate-spin" size={16} /> : <ShieldCheck size={16} />}
+                      Activar
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <p className="mb-3 text-xs text-ink-muted">
+                    Tu cuenta todavía no tiene el segundo paso de seguridad.
+                  </p>
+                  <button className="btn-primary justify-center" onClick={provisionOtp} disabled={otpBusy}>
+                    {otpBusy ? <Loader2 className="animate-spin" size={16} /> : <ShieldCheck size={16} />}
+                    Activar autenticación en 2 pasos
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
         </section>
 
         <div className="flex justify-end">
