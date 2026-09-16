@@ -1,25 +1,15 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import {
-  ArrowLeft,
-  Eye,
-  EyeOff,
-  Heart,
-  Loader2,
-  Lock,
-} from 'lucide-react';
+import { ArrowLeft, Loader2, LogIn } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useTheme } from '../context/ThemeContext.jsx';
 import { supabase } from '../lib/supabase.js';
 
 export default function Login() {
-  const { login, loginGoogle, loading } = useAuth();
+  const { loginGoogle } = useAuth();
   const { settings, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [show, setShow] = useState(false);
   const [error, setError] = useState('');
   const [googleLoading, setGoogleLoading] = useState(false);
 
@@ -31,6 +21,7 @@ export default function Login() {
         new URLSearchParams(window.location.search).has('code') ||
         window.location.hash.includes('access_token');
       if (!isOAuthReturn) return;
+      setGoogleLoading(true);
       try {
         let session = null;
         const { data, error } = await supabase.auth.getSession();
@@ -53,21 +44,12 @@ export default function Login() {
         }
       } catch (e) {
         setError(e.message);
+        setGoogleLoading(false);
       }
     };
     handleOAuthReturn();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loginGoogle]);
-
-  const submit = async (e) => {
-    e.preventDefault();
-    setError('');
-    try {
-      const u = await login(email, password);
-      go(u);
-    } catch (err) {
-      setError(err.message);
-    }
-  };
 
   const startGoogle = async () => {
     setError('');
@@ -104,7 +86,7 @@ export default function Login() {
           <div className="bg-gradient-to-br from-primary to-primary-strong p-6 text-primary-contrast">
             <div className="flex items-center justify-between">
               <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-contrast/15">
-                <Heart size={24} />
+                <LogIn size={24} />
               </div>
               <button
                 className="rounded-lg bg-primary-contrast/15 p-2 hover:bg-primary-contrast/25"
@@ -114,85 +96,37 @@ export default function Login() {
                 {settings.theme === 'dark' ? '☀️' : '🌙'}
               </button>
             </div>
-            <h1 className="mt-4 text-2xl font-extrabold">Panel de administración</h1>
+            <h1 className="mt-4 text-2xl font-extrabold">Ingresá a tu cuenta</h1>
             <p className="mt-1 text-sm text-primary-contrast/85">
-              Inicia sesión para gestionar el menú, clientes y pedidos.
+              Entrá con Google para activar cupones, sumar puntos y canjear premios.
             </p>
           </div>
 
           <div className="p-6">
-            <form onSubmit={submit} className="space-y-4">
-              <div>
-                <label className="label">Email</label>
-                <input
-                  className="input"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="admin@fidelizacion.com"
-                  required
-                />
+            {error && (
+              <div className="mb-4 rounded-xl border border-red-300 bg-red-50 px-4 py-2.5 text-sm font-medium text-red-700 dark:border-red-500/40 dark:bg-red-500/10 dark:text-red-400">
+                {error}
               </div>
-
-              <div>
-                <label className="label">Contraseña</label>
-                <div className="relative">
-                  <input
-                    className="input pr-10"
-                    type={show ? 'text' : 'password'}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    required
-                  />
-                  <button
-                    type="button"
-                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-ink-muted hover:text-ink"
-                    onClick={() => setShow((s) => !s)}
-                    aria-label="Mostrar contraseña"
-                  >
-                    {show ? <EyeOff size={16} /> : <Eye size={16} />}
-                  </button>
-                </div>
-              </div>
-
-              {error && (
-                <div className="rounded-xl border border-red-300 bg-red-50 px-4 py-2.5 text-sm font-medium text-red-700 dark:border-red-500/40 dark:bg-red-500/10 dark:text-red-400">
-                  {error}
-                </div>
-              )}
-
-              <button className="btn-primary w-full !py-2.5" disabled={loading}>
-                {loading ? <Loader2 className="animate-spin" size={16} /> : <Lock size={16} />}
-                Iniciar sesión
-              </button>
-            </form>
-
-            <div className="my-5 flex items-center gap-3">
-              <div className="h-px flex-1 bg-line" />
-              <span className="text-xs font-semibold text-ink-muted">o continúa con</span>
-              <div className="h-px flex-1 bg-line" />
-            </div>
+            )}
 
             <button
-              className="btn-ghost w-full !py-2.5"
+              className="btn-ghost w-full !py-3 text-base"
               onClick={startGoogle}
               disabled={googleLoading}
             >
               {googleLoading ? (
-                <Loader2 className="animate-spin" size={16} />
+                <Loader2 className="animate-spin" size={18} />
               ) : (
                 <GoogleIcon />
               )}
               Continuar con Google
             </button>
 
-            <div className="mt-5 text-center text-sm text-ink-muted">
-              ¿Aún no tenés cuenta?{' '}
-              <Link to="/registro" className="font-semibold text-primary-strong hover:underline">
-                Creala acá
-              </Link>
-            </div>
+            <p className="mt-4 text-center text-xs leading-relaxed text-ink-muted">
+              Al ingresar se crea tu cuenta de fidelización automáticamente.
+              <br />
+              Podés eliminar tu cuenta cuando quieras desde Configuración.
+            </p>
           </div>
         </div>
       </div>

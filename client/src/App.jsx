@@ -2,7 +2,6 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import { useAuth } from './context/AuthContext.jsx';
 import Home from './pages/Home.jsx';
 import Login from './pages/Login.jsx';
-import SignUp from './pages/SignUp.jsx';
 import Profile from './pages/Profile.jsx';
 import CouponsPage from './pages/CouponsPage.jsx';
 import UserSettings from './pages/UserSettings.jsx';
@@ -33,7 +32,7 @@ export default function App() {
     <Routes>
       <Route path="/" element={<Home />} />
       <Route path="/login" element={<Login />} />
-      <Route path="/registro" element={<SignUp />} />
+      <Route path="/registro" element={<Navigate to="/login" replace />} />
       <Route
         path="/perfil"
         element={

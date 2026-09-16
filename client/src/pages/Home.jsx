@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Check, Copy, CircleCheck, QrCode, Sparkles, Ticket, Zap } from 'lucide-react';
+import { useMemo, useRef, useState, useEffect } from 'react';
+import { Check, Copy, CircleCheck, Gift, QrCode, Sparkles, Ticket, Zap } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import QRCode from 'qrcode';
 import { api } from '../api.js';
@@ -127,8 +127,8 @@ export default function Home() {
               ✓ Tu cupón activo
             </span>
           ) : !isAuthed ? (
-            <Link to="/registro" className="btn-secondary block text-center text-sm">
-              Creá tu cuenta y activá
+            <Link to="/login" className="btn-secondary block text-center text-sm">
+              Ingresá con Google y activá
             </Link>
           ) : disabled ? (
             <span className="block rounded-full bg-surface-alt px-3 py-2 text-center text-xs font-black text-ink-muted">
@@ -281,10 +281,9 @@ export default function Home() {
                 <div className="card border-2 border-dashed border-line p-10 text-center">
                   <Ticket size={36} className="mx-auto text-ink-muted" />
                   <p className="mt-3 font-extrabold text-ink">Iniciá sesión para ver tus cupones activos</p>
-                  <div className="mt-4 flex justify-center gap-3">
-                    <Link to="/login" className="btn-primary text-sm">Ingresar</Link>
-                    <Link to="/registro" className="btn-secondary text-sm">Crear cuenta</Link>
-                  </div>
+                  <Link to="/login" className="btn-primary mx-auto mt-4 w-fit text-sm">
+                    Ingresar con Google
+                  </Link>
                 </div>
               ) : activeCoupon ? (
                 <div className="w-full">
@@ -372,9 +371,9 @@ export default function Home() {
               {user?.role === 'admin' ? '' : ' Ver mi QR y cupones'}
             </Link>
           ) : (
-            <Link to="/registro" className="btn-primary text-base">
+            <Link to="/login" className="btn-primary text-base">
               <QrCode size={18} />
-              Creá tu cuenta y empezá a sumar
+              Ingresá con Google y empezá a sumar
             </Link>
           )}
         </section>
@@ -383,6 +382,16 @@ export default function Home() {
       <footer className="border-t border-line py-8 text-center text-sm text-ink-muted">
         © {new Date().getFullYear()} Fidelización App · {currency} moneda configurable desde el panel
       </footer>
+
+      {isAuthed && (
+        <Link
+          to="/cupones"
+          className="group fixed bottom-6 right-4 z-40 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-primary to-primary-strong px-5 py-3 text-sm font-extrabold text-primary-contrast shadow-glow transition-transform hover:-translate-y-0.5 hover:shadow-xl sm:right-6"
+        >
+          <Gift size={17} className="transition-transform group-hover:-rotate-6" />
+          Ver cupones
+        </Link>
+      )}
 
       <Modal open={!!confirmCoupon} onClose={() => { if (!activating) setConfirmCoupon(null); }} title="¿Seguro querés activar este cupón?">
         {confirmCoupon && (

@@ -1,20 +1,70 @@
-import { Link } from 'react-router-dom';
+import { useRef, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   Bell,
-  KeyRound,
+  Camera,
+  Loader2,
   Moon,
   Palette,
-  RotateCcw,
   Settings as SettingsIcon,
   Sun,
+  Trash2,
   User as UserIcon,
 } from 'lucide-react';
+import { api } from '../api.js';
 import { useTheme } from '../context/ThemeContext.jsx';
+import { useAuth } from '../context/AuthContext.jsx';
+import { Modal, toast } from '../components/ui.jsx';
+import { avatarInitials } from '../components/UserMenu.jsx';
 import Navbar from '../components/Navbar.jsx';
 
 export default function UserSettings() {
   const { settings, toggleTheme } = useTheme();
+  const { user, updateUser, logout } = useAuth();
+  const navigate = useNavigate();
   const dark = settings.theme === 'dark';
+
+  const fileRef = useRef(null);
+  const [uploading, setUploading] = useState(false);
+  const [deleteModal, setDeleteModal] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState('');
+  const [deleting, setDeleting] = useState(false);
+
+  const uploadPhoto = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    const fd = new FormData();
+    fd.append('image', file);
+    try {
+      const res = await api('/api/profile/upload-image', { method: 'POST', body: fd });
+      updateUser({ ...user, image: res.url });
+      toast('Foto de perfil actualizada');
+    } catch (err) {
+      toast(err.message);
+    } finally {
+      setUploading(false);
+      e.target.value = '';
+    }
+  };
+
+  const deleteAccount = async (e) => {
+    e.preventDefault();
+    if (String(deleteConfirm || '').trim().toUpperCase() !== 'ELIMINAR') {
+      return toast('Escribí ELIMINAR para confirmar');
+    }
+    setDeleting(true);
+    try {
+      await api('/api/profile/delete-account', { method: 'POST', body: { confirm: deleteConfirm } });
+      await logout();
+      navigate('/');
+      toast('Tu cuenta fue eliminada.');
+    } catch (err) {
+      toast(err.message);
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   return (
     <div className="page-aurora min-h-screen">
@@ -31,12 +81,46 @@ export default function UserSettings() {
             </span>
             <h1 className="mt-3 text-3xl font-extrabold sm:text-4xl">Personalizá tu experiencia</h1>
             <p className="mt-2 max-w-lg text-sm text-primary-contrast/85 sm:text-base">
-              Elegí cómo se ve la app y accedé a tus opciones de cuenta.
+              Tu foto, tu tema y la gestión de tu cuenta, todo en un solo lugar.
             </p>
           </div>
         </section>
 
         <section className="mt-6 space-y-5">
+          <div className="tile tile-sky relative overflow-hidden p-6">
+            <div className="orb -right-10 -top-14 h-36 w-36 bg-white/50" />
+            <div className="relative flex flex-wrap items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <div className="relative">
+                  {user?.image ? (
+                    <img src={user.image} alt={user.name || 'Foto de perfil'} className="h-16 w-16 rounded-2xl object-cover shadow-sm" />
+                  ) : (
+                    <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-primary-strong text-xl font-extrabold text-primary-contrast shadow-sm">
+                      {avatarInitials(user)}
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => fileRef.current?.click()}
+                    className="absolute -bottom-2 -right-2 flex h-7 w-7 items-center justify-center rounded-full border border-line bg-surface text-primary-strong shadow-md transition-transform hover:scale-110"
+                    aria-label="Cambiar foto de perfil"
+                  >
+                    <Camera size={13} />
+                  </button>
+                </div>
+                <div>
+                  <h2 className="font-extrabold text-ink">Foto de perfil</h2>
+                  <p className="text-sm text-ink-muted">Subí o cambiá tu foto para que te reconozcan en el local.</p>
+                </div>
+              </div>
+              <button className="btn-ghost text-sm" onClick={() => fileRef.current?.click()} disabled={uploading}>
+                {uploading ? <Loader2 className="animate-spin" size={15} /> : <Camera size={15} />}
+                {uploading ? 'Subiendo...' : 'Cambiar foto'}
+              </button>
+              <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={uploadPhoto} />
+            </div>
+          </div>
+
           <div className="tile tile-mint relative overflow-hidden p-6">
             <div className="orb -right-10 -top-14 h-36 w-36 bg-white/50" />
             <div className="relative flex flex-wrap items-center justify-between gap-4">
@@ -89,8 +173,8 @@ export default function UserSettings() {
           </div>
 
           <div className="card p-6">
-            <h2 className="mb-3 font-extrabold text-ink">Mi cuenta</h2>
-            <div className="grid gap-2 sm:grid-cols-3">
+            <h2 className="mb-3 font-extrabold text-ink">Accesos rápidos</h2>
+            <div className="grid gap-2 sm:grid-cols-2">
               <Link
                 to="/perfil"
                 className="flex items-center gap-2.5 rounded-2xl border border-line bg-surface px-4 py-3 text-sm font-bold text-ink transition-colors hover:bg-surface-alt"
@@ -105,35 +189,58 @@ export default function UserSettings() {
                 <Bell size={16} className="text-primary-strong" />
                 Notificaciones
               </Link>
-              <Link
-                to="/perfil"
-                className="flex items-center gap-2.5 rounded-2xl border border-line bg-surface px-4 py-3 text-sm font-bold text-ink transition-colors hover:bg-surface-alt"
-              >
-                <KeyRound size={16} className="text-primary-strong" />
-                Contraseña
-              </Link>
             </div>
           </div>
 
-          <div className="card p-6">
-            <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="tile tile-rose relative overflow-hidden p-6">
+            <div className="orb -right-10 -top-14 h-36 w-36 bg-white/50" />
+            <div className="relative flex flex-wrap items-center justify-between gap-4">
               <div>
-                <h2 className="flex items-center gap-2 font-extrabold text-ink">
-                  <KeyRound size={18} className="text-primary-strong" />
-                  Seguridad
+                <h2 className="flex items-center gap-2 font-extrabold text-rose-700 dark:text-rose-200">
+                  <Trash2 size={18} />
+                  Eliminar mi cuenta
                 </h2>
-                <p className="mt-1 text-sm text-ink-muted">
-                  Cambiá tu contraseña o gestioná los datos de tu cuenta desde tu perfil.
+                <p className="mt-1 max-w-md text-sm text-ink-muted">
+                  Se borran tu perfil, cupones, puntos, compras e historial, y tu cuenta se desvincula de Google. No se puede deshacer.
                 </p>
               </div>
-              <Link to="/perfil" className="btn-primary text-sm">
-                <RotateCcw size={15} />
-                Administrar cuenta
-              </Link>
+              <button className="btn-danger text-sm" onClick={() => { setDeleteConfirm(''); setDeleteModal(true); }}>
+                <Trash2 size={15} />
+                Eliminar cuenta
+              </button>
             </div>
           </div>
         </section>
       </main>
+
+      <Modal open={deleteModal} onClose={() => setDeleteModal(false)} title="Eliminar cuenta">
+        <form onSubmit={deleteAccount} className="space-y-4">
+          <p className="text-sm leading-relaxed text-ink-muted">
+            Esta acción <strong className="text-red-500">borra todo</strong>: tu perfil, cupones, puntos, compras e
+            historial, y <strong className="text-red-500">desvincula tu cuenta de Google</strong>. No se puede deshacer.
+          </p>
+          <div>
+            <label className="label">Escribí ELIMINAR para confirmar</label>
+            <input
+              className="input"
+              value={deleteConfirm}
+              onChange={(e) => setDeleteConfirm(e.target.value)}
+              placeholder="ELIMINAR"
+              required
+              autoFocus
+            />
+          </div>
+          <div className="flex justify-end gap-2 pt-1">
+            <button type="button" className="btn-ghost" onClick={() => setDeleteModal(false)}>
+              Cancelar
+            </button>
+            <button type="submit" className="btn-danger" disabled={deleting}>
+              {deleting ? <Loader2 className="animate-spin" size={16} /> : <Trash2 size={15} />}
+              {deleting ? 'Eliminando...' : 'Eliminar mi cuenta'}
+            </button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }

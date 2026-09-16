@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import {
   Archive,
   ArrowLeft,
@@ -9,9 +9,7 @@ import {
   Coffee,
   Copy,
   Gift,
-  KeyRound,
   Loader2,
-  LogOut,
   Moon,
   Pencil,
   QrCode,
@@ -31,9 +29,8 @@ import AdminSummary from '../components/AdminSummary.jsx';
 import { formatWhen, notificationMeta } from '../lib/notifications.js';
 
 export default function Profile() {
-  const { user, updateUser, logout } = useAuth();
+  const { user, updateUser } = useAuth();
   const { settings, toggleTheme } = useTheme();
-  const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [qrImg, setQrImg] = useState('');
@@ -42,12 +39,6 @@ export default function Profile() {
   const [editModal, setEditModal] = useState(false);
   const [form, setForm] = useState({ name: '', last_name: '', phone: '', email: '', image: '' });
   const [saving, setSaving] = useState(false);
-  const [pwdModal, setPwdModal] = useState(false);
-  const [pwd, setPwd] = useState({ password: '', confirm: '' });
-  const [changingPwd, setChangingPwd] = useState(false);
-  const [deleteModal, setDeleteModal] = useState(false);
-  const [deleteConfirm, setDeleteConfirm] = useState('');
-  const [deleting, setDeleting] = useState(false);
   const [notifications, setNotifications] = useState([]);
 
   const me = data?.user;
@@ -135,41 +126,6 @@ export default function Profile() {
       toast(err.message);
     } finally {
       setSaving(false);
-    }
-  };
-
-  const changePassword = async (e) => {
-    e.preventDefault();
-    if (pwd.password.length < 6) return toast('La contraseña debe tener al menos 6 caracteres');
-    if (pwd.password !== pwd.confirm) return toast('Las contraseñas no coinciden');
-    setChangingPwd(true);
-    try {
-      await api('/api/profile/change-password', { method: 'POST', body: { password: pwd.password } });
-      toast('Contraseña actualizada');
-      setPwd({ password: '', confirm: '' });
-      setPwdModal(false);
-    } catch (err) {
-      toast(err.message);
-    } finally {
-      setChangingPwd(false);
-    }
-  };
-
-  const deleteAccount = async (e) => {
-    e.preventDefault();
-    if (String(deleteConfirm || '').trim().toUpperCase() !== 'ELIMINAR') {
-      return toast('Escribí ELIMINAR para confirmar');
-    }
-    setDeleting(true);
-    try {
-      await api('/api/profile/delete-account', { method: 'POST', body: { confirm: deleteConfirm } });
-      await logout();
-      navigate('/');
-      toast('Tu cuenta fue eliminada.');
-    } catch (err) {
-      toast(err.message);
-    } finally {
-      setDeleting(false);
     }
   };
 
@@ -358,23 +314,6 @@ export default function Profile() {
             </p>
           )}
         </section>
-
-        <section className="card p-6">
-          <h2 className="mb-4 flex items-center gap-2 text-lg font-extrabold text-ink">
-            <KeyRound size={20} className="text-primary-strong" />
-            Cuenta
-          </h2>
-          <div className="space-y-3">
-            <button className="btn-ghost w-full justify-start" onClick={() => setPwdModal(true)}>
-              <KeyRound size={15} />
-              Cambiar contraseña
-            </button>
-            <button className="btn-ghost w-full justify-start text-red-500 hover:bg-red-500/10" onClick={() => { setDeleteConfirm(''); setDeleteModal(true); }}>
-              <LogOut size={15} />
-              Eliminar mi cuenta
-            </button>
-          </div>
-        </section>
       </main>
 
       <Modal open={editModal} onClose={() => setEditModal(false)} title="Editar perfil">
@@ -446,71 +385,6 @@ export default function Profile() {
             <button type="submit" className="btn-primary" disabled={saving}>
               {saving ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
               Guardar cambios
-            </button>
-          </div>
-        </form>
-      </Modal>
-
-      <Modal open={deleteModal} onClose={() => setDeleteModal(false)} title="Eliminar cuenta">
-        <form onSubmit={deleteAccount} className="space-y-4">
-          <p className="text-sm leading-relaxed text-ink-muted">
-            Esta acción <strong className="text-red-500">borra todo</strong>: tu perfil, cupones, puntos, compras e historial. No se puede deshacer.
-          </p>
-          <div>
-            <label className="label">Escribí ELIMINAR para confirmar</label>
-            <input
-              className="input"
-              value={deleteConfirm}
-              onChange={(e) => setDeleteConfirm(e.target.value)}
-              placeholder="ELIMINAR"
-              required
-              autoFocus
-            />
-          </div>
-          <div className="flex justify-end gap-2 pt-1">
-            <button type="button" className="btn-ghost" onClick={() => setDeleteModal(false)}>
-              Cancelar
-            </button>
-            <button type="submit" className="btn-danger" disabled={deleting}>
-              {deleting ? <Loader2 className="animate-spin" size={16} /> : <LogOut size={15} />}
-              {deleting ? 'Eliminando...' : 'Eliminar mi cuenta'}
-            </button>
-          </div>
-        </form>
-      </Modal>
-
-      <Modal open={pwdModal} onClose={() => setPwdModal(false)} title="Cambiar contraseña">
-        <form onSubmit={changePassword} className="space-y-4">
-          <div>
-            <label className="label">Nueva contraseña</label>
-            <input
-              className="input"
-              type="password"
-              value={pwd.password}
-              onChange={(e) => setPwd({ ...pwd, password: e.target.value })}
-              placeholder="Mínimo 6 caracteres"
-              required
-              autoFocus
-            />
-          </div>
-          <div>
-            <label className="label">Confirmar contraseña</label>
-            <input
-              className="input"
-              type="password"
-              value={pwd.confirm}
-              onChange={(e) => setPwd({ ...pwd, confirm: e.target.value })}
-              placeholder="Repetí la contraseña"
-              required
-            />
-          </div>
-          <div className="flex justify-end gap-2 pt-1">
-            <button type="button" className="btn-ghost" onClick={() => setPwdModal(false)}>
-              Cancelar
-            </button>
-            <button type="submit" className="btn-primary" disabled={changingPwd}>
-              {changingPwd ? <Loader2 className="animate-spin" size={16} /> : <KeyRound size={15} />}
-              Actualizar contraseña
             </button>
           </div>
         </form>

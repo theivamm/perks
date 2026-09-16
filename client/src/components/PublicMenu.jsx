@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Loader2, Search, SearchX, Star, UtensilsCrossed } from 'lucide-react';
 import { api, formatMoney } from '../api.js';
 import { useTheme } from '../context/ThemeContext.jsx';
@@ -16,6 +16,8 @@ export default function PublicMenu() {
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
   const [catFilter, setCatFilter] = useState('Todas');
+  const [highlightId, setHighlightId] = useState(null);
+  const highlightTimer = useRef(null);
 
   useEffect(() => {
     let alive = true;
@@ -56,6 +58,31 @@ export default function PublicMenu() {
     return map;
   }, [filtered]);
 
+  const handleSearch = (value) => {
+    setQuery(value);
+    const q = normalize(value.trim());
+    if (!q) return;
+
+    const match = visible.find((it) => {
+      const okCat = catFilter === 'Todas' || it.category === catFilter;
+      if (!okCat) return false;
+      return (
+        normalize(it.title).includes(q) ||
+        normalize(it.description).includes(q) ||
+        normalize(it.category).includes(q)
+      );
+    });
+
+    if (!match) return;
+    requestAnimationFrame(() => {
+      const el = document.getElementById(`menu-item-${match.id}`);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+    setHighlightId(match.id);
+    clearTimeout(highlightTimer.current);
+    highlightTimer.current = setTimeout(() => setHighlightId((h) => (h === match.id ? null : h)), 2200);
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center py-12">
@@ -85,7 +112,7 @@ export default function PublicMenu() {
             className="input w-full rounded-2xl py-3 pl-11 pr-10"
             placeholder="Buscar plato, bebida, postre..."
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => handleSearch(e.target.value)}
           />
           {query && (
             <button
@@ -134,7 +161,10 @@ export default function PublicMenu() {
             {featured.map((item, i) => (
               <article
                 key={item.id}
-                className="animate-fade-up group relative overflow-hidden rounded-3xl border border-amber-300/50 bg-surface shadow-glow transition-transform hover:-translate-y-1"
+                id={`menu-item-${item.id}`}
+                className={`animate-fade-up group relative overflow-hidden rounded-3xl border border-amber-300/50 bg-surface shadow-glow transition-transform hover:-translate-y-1 ${
+                  highlightId === item.id ? 'ring-2 ring-primary ring-offset-2 ring-offset-surface-page' : ''
+                }`}
                 style={{ animationDelay: `${i * 80}ms` }}
               >
                 <div className="relative aspect-[4/3] overflow-hidden bg-gradient-to-br from-primary to-primary-strong">
@@ -195,7 +225,13 @@ export default function PublicMenu() {
                 </div>
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                   {list.map((item) => (
-                    <article key={item.id} className="card group overflow-hidden transition-transform hover:-translate-y-0.5">
+                    <article
+                    key={item.id}
+                    id={`menu-item-${item.id}`}
+                    className={`card group overflow-hidden transition-transform hover:-translate-y-0.5 ${
+                      highlightId === item.id ? 'ring-2 ring-primary ring-offset-2 ring-offset-surface-page' : ''
+                    }`}
+                  >
                       <div className="relative aspect-square bg-gradient-to-br from-primary to-primary-strong">
                         {item.image ? (
                           <img src={item.image} alt={item.title} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
