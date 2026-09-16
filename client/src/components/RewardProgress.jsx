@@ -169,7 +169,7 @@ export default function RewardProgress({ completed = 0, rules = [] }) {
               >
                 {valueLabel(r)}
               </p>
-              <span className={`mt-0.5 flex h-5 w-5 items-center justify-center ${done ? 'text-ink' : 'text-ink-muted/40'}`}>
+              <span className={`mt-0.5 flex h-5 w-5 items-center justify-center ${done ? 'text-ink' : 'text-ink-muted/40 dark:text-ink-muted/80'}`}>
                 {done ? <Sparkles size={15} /> : null}
               </span>
             </div>

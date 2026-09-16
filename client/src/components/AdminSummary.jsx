@@ -92,7 +92,7 @@ export default function AdminSummary() {
                           Código <span className="font-mono font-bold">{cp.code}</span>
                         </p>
                       </div>
-                      <span className="rounded-full bg-green-500/15 px-2 py-0.5 text-[10px] font-bold text-green-600">
+                      <span className="rounded-full bg-green-500/15 px-2 py-0.5 text-[10px] font-bold text-green-600 dark:text-green-400">
                         listo para canjear
                       </span>
                     </li>

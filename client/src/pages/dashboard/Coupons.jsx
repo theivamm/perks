@@ -199,7 +199,7 @@ export default function Coupons() {
                     </div>
                     <span
                       className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${
-                        c.active ? 'bg-green-500/15 text-green-600' : 'bg-surface-alt text-ink-muted'
+                        c.active ? 'bg-green-500/15 text-green-600 dark:text-green-400' : 'bg-surface-alt text-ink-muted'
                       }`}
                     >
                       {c.active ? 'Activo' : 'Pausado'}

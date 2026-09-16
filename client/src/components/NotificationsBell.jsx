@@ -190,7 +190,7 @@ export default function NotificationsBell() {
                             {!n.read && <span className="h-2 w-2 shrink-0 rounded-full bg-primary-strong" />}
                           </span>
                           <span className="mt-0.5 block text-xs leading-relaxed text-ink-muted">{n.body}</span>
-                          <span className="mt-1 block text-[11px] font-semibold text-ink-muted/70">
+                          <span className="mt-1 block text-[11px] font-semibold text-ink-muted/70 dark:text-ink-muted">
                             {formatWhen(n.created_at)}
                           </span>
                         </span>

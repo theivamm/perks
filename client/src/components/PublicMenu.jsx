@@ -172,7 +172,7 @@ export default function PublicMenu() {
                     )}
                   </p>
                   {item.featured_label && Number(item.discount) > 0 && (
-                    <p className="mt-2 text-sm font-bold text-amber-600">{item.featured_label}</p>
+                    <p className="mt-2 text-sm font-bold text-amber-600 dark:text-amber-400">{item.featured_label}</p>
                   )}
                 </div>
               </article>

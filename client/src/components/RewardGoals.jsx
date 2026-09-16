@@ -12,31 +12,31 @@ const GRADIENTS = [
   {
     tile: 'from-amber-400 to-orange-500 text-white shadow-glow',
     bar: 'from-amber-400 to-orange-500',
-    text: 'text-amber-600',
+    text: 'text-amber-600 dark:text-amber-300',
     soft: 'bg-amber-500/15',
   },
   {
     tile: 'from-violet-500 to-purple-600 text-white shadow-glow',
     bar: 'from-violet-500 to-purple-600',
-    text: 'text-purple-600',
+    text: 'text-purple-600 dark:text-purple-300',
     soft: 'bg-purple-500/15',
   },
   {
     tile: 'from-emerald-400 to-teal-600 text-white shadow-glow',
     bar: 'from-emerald-400 to-teal-600',
-    text: 'text-teal-600',
+    text: 'text-teal-600 dark:text-teal-300',
     soft: 'bg-teal-500/15',
   },
   {
     tile: 'from-rose-400 to-pink-600 text-white shadow-glow',
     bar: 'from-rose-400 to-pink-600',
-    text: 'text-pink-600',
+    text: 'text-pink-600 dark:text-pink-300',
     soft: 'bg-rose-500/15',
   },
   {
     tile: 'from-sky-400 to-blue-600 text-white shadow-glow',
     bar: 'from-sky-400 to-blue-600',
-    text: 'text-blue-600',
+    text: 'text-blue-600 dark:text-blue-300',
     soft: 'bg-sky-500/15',
   },
 ];
@@ -207,7 +207,7 @@ function GoalCard({ rule, completed, coupons, currency, gradient, index }) {
           <span className="font-extrabold text-ink">faltan {falta}</span>
         </p>
         {wonHere > 0 && (
-          <span className="inline-flex items-center gap-1 rounded-full bg-green-500/15 px-2.5 py-1 text-[11px] font-extrabold text-green-600">
+          <span className="inline-flex items-center gap-1 rounded-full bg-green-500/15 px-2.5 py-1 text-[11px] font-extrabold text-green-600 dark:text-green-400">
             <Trophy size={12} />
             {wonHere} premio{wonHere !== 1 && 's'} ganado{wonHere !== 1 && 's'}
           </span>

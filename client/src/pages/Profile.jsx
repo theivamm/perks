@@ -217,7 +217,7 @@ export default function Profile() {
                 Mostrá este código al pagar para que el local sume puntos a tu cupón activo.
               </p>
 
-              <div className="mx-auto mt-5 w-fit rounded-3xl border border-line bg-white p-4 shadow-sm">
+              <div className="mx-auto mt-5 w-fit rounded-3xl border border-line bg-white p-4 shadow-sm dark:bg-surface">
                 {qrImg ? (
                   <img src={qrImg} alt={`Código QR ${qrCode}`} className="h-52 w-52" />
                 ) : (
@@ -335,7 +335,7 @@ export default function Profile() {
                         {!n.read && <span className="h-2 w-2 shrink-0 rounded-full bg-primary-strong" />}
                       </div>
                       <p className="mt-0.5 text-sm leading-relaxed text-ink-muted">{n.body}</p>
-                      <p className="mt-1 text-[11px] font-semibold text-ink-muted/70">{formatWhen(n.created_at)}</p>
+                      <p className="mt-1 text-[11px] font-semibold text-ink-muted/70 dark:text-ink-muted">{formatWhen(n.created_at)}</p>
                     </div>
                     <button
                       className="btn-ghost !px-2.5 !py-1.5 text-xs"

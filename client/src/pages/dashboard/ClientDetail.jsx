@@ -151,7 +151,7 @@ export default function ClientDetail() {
         <div className="mt-5 flex flex-wrap items-center gap-4 rounded-2xl border border-line bg-surface-alt/40 p-4">
           <div className="flex items-center gap-3">
             {qrImg ? (
-              <img src={qrImg} alt={`QR ${activeCoupon?.qr_code}`} className="h-24 w-24 rounded-lg bg-white p-1" />
+              <img src={qrImg} alt={`QR ${activeCoupon?.qr_code}`} className="h-24 w-24 rounded-lg bg-white p-1 dark:bg-surface" />
             ) : (
               <div className="flex h-24 w-24 items-center justify-center rounded-lg bg-surface text-ink-muted">
                 <QrCode size={24} />
@@ -199,7 +199,7 @@ export default function ClientDetail() {
                     código <span className="font-mono font-bold">{c.code}</span>
                   </p>
                 </div>
-                <span className="rounded-full bg-green-500/15 px-2 py-0.5 text-[10px] font-bold text-green-600">
+                <span className="rounded-full bg-green-500/15 px-2 py-0.5 text-[10px] font-bold text-green-600 dark:text-green-400">
                   listo para canjear
                 </span>
               </li>
@@ -259,7 +259,7 @@ export default function ClientDetail() {
                     c.status === 'canjeado'
                       ? 'bg-surface-alt text-ink-muted'
                       : c.status === 'completado'
-                        ? 'bg-green-500/15 text-green-600'
+                        ? 'bg-green-500/15 text-green-600 dark:text-green-400'
                         : 'bg-primary-soft text-primary-strong'
                   }`}
                 >

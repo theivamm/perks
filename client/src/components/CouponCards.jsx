@@ -126,7 +126,7 @@ export function ReadyCouponCard({ coupon, currency = '$' }) {
 
         <div className="mt-4 flex flex-col items-center gap-4 sm:flex-row">
           {qrImg && (
-            <div className="shrink-0 rounded-2xl border border-emerald-400/40 bg-white p-2 shadow-sm">
+            <div className="shrink-0 rounded-2xl border border-emerald-400/40 bg-white p-2 shadow-sm dark:bg-surface">
               <img src={qrImg} alt={`Código QR ${qrCode}`} className="h-40 w-40 rounded-xl" />
             </div>
           )}
@@ -137,13 +137,13 @@ export function ReadyCouponCard({ coupon, currency = '$' }) {
                 {coupon.code}
               </p>
               <button className="btn-icon !h-8 !w-8 shrink-0" onClick={copy} aria-label="Copiar código">
-                {copied ? <Check size={15} className="text-green-600" /> : <Copy size={15} />}
+                {copied ? <Check size={15} className="text-green-600 dark:text-green-400" /> : <Copy size={15} />}
               </button>
             </div>
             <p className="mt-2 text-center text-[11px] font-semibold text-ink-muted sm:text-left">
               {qrCode ? (
                 <>
-                  <QrCode size={12} className="mr-1 inline-block text-emerald-600" />
+                  <QrCode size={12} className="mr-1 inline-block text-emerald-600 dark:text-emerald-400" />
                   Mostrá este QR (o el código) al pagar: el local lo escanea y canjea el cupón directo.
                 </>
               ) : (

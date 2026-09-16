@@ -111,7 +111,7 @@ export default function ScanPage() {
             <p className="mt-1 text-sm text-ink-muted">
               Cliente: <span className="font-bold text-ink">{redeemed.client?.name || '—'}</span>
             </p>
-            <p className="mx-auto mt-2 inline-block rounded-full bg-emerald-500/15 px-3 py-1 text-xs font-black text-emerald-700">
+            <p className="mx-auto mt-2 inline-block rounded-full bg-emerald-500/15 px-3 py-1 text-xs font-black text-emerald-700 dark:text-emerald-300">
               {redeemed.coupon?.code}
             </p>
             <p className="mt-3 text-sm text-ink-muted">

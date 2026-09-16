@@ -390,7 +390,7 @@ export default function MenuManager() {
                         )}
                       </div>
                       {generatingId === item.id && (
-                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2.5 overflow-hidden bg-ink/55 backdrop-blur-[2px]">
+                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2.5 overflow-hidden bg-black/55 backdrop-blur-[2px]">
                           <div className="animate-shimmer pointer-events-none absolute inset-0 bg-[linear-gradient(100deg,transparent,rgba(255,255,255,0.35)_42%,rgba(255,255,255,0.35)_50%,transparent_58%)] bg-[length:200%_100%]" />
                           <div className="relative h-14 w-14">
                             <div className="absolute inset-0 rounded-full border-2 border-white/25" />
@@ -424,7 +424,7 @@ export default function MenuManager() {
                           Editar
                         </button>
                         <button
-                          className={`btn-ghost !px-2.5 !py-1.5 !text-xs ${item.featured ? 'border-amber-400/60 text-amber-600' : ''}`}
+                          className={`btn-ghost !px-2.5 !py-1.5 !text-xs ${item.featured ? 'border-amber-400/60 text-amber-600 dark:text-amber-400' : ''}`}
                           onClick={(e) => toggleFeatured(item, e)}
                           title={item.featured ? 'Quitar de ofertas' : 'Marcar como oferta especial'}
                         >
@@ -579,7 +579,7 @@ export default function MenuManager() {
                     placeholder="0"
                   />
                   {Number(form.discount) > 0 && Number(form.price) > 0 && (
-                    <p className="mt-1.5 rounded-lg bg-green-500/10 px-2.5 py-1.5 text-[11px] font-bold text-green-600">
+                    <p className="mt-1.5 rounded-lg bg-green-500/10 px-2.5 py-1.5 text-[11px] font-bold text-green-600 dark:text-green-400">
                       {formatMoney(Number(form.price), settings.currency)} →{' '}
                       {formatMoney((Number(form.price) * (100 - Number(form.discount))) / 100, settings.currency)}
                     </p>

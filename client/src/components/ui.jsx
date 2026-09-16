@@ -67,7 +67,7 @@ export function ToastHost() {
   return (
     <div
       id="toast-root"
-      className="pointer-events-none fixed bottom-6 left-1/2 z-[60] -translate-x-1/2 rounded-xl bg-ink px-4 py-2.5 text-sm font-semibold text-surface-page opacity-0 shadow-soft transition-all duration-300 translate-y-2"
+      className="pointer-events-none fixed bottom-6 left-1/2 z-[60] -translate-x-1/2 rounded-xl bg-ink px-4 py-2.5 text-sm font-semibold text-surface-page opacity-0 shadow-soft transition-all duration-300 translate-y-2 dark:border dark:border-line dark:bg-surface dark:text-ink"
     />
   );
 }

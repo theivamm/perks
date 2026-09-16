@@ -123,7 +123,7 @@ export default function NotificationsPage() {
                       )}
                     </div>
                     <p className="mt-0.5 text-sm leading-relaxed text-ink-muted">{n.body}</p>
-                    <p className="mt-1 text-[11px] font-semibold text-ink-muted/70">{formatWhen(n.created_at)}</p>
+                    <p className="mt-1 text-[11px] font-semibold text-ink-muted/70 dark:text-ink-muted">{formatWhen(n.created_at)}</p>
                   </div>
                   {tab === 'activas' && (
                     <button

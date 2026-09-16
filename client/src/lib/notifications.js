@@ -13,15 +13,15 @@ import {
 
 const META = {
   new_order: { icon: ShoppingCart, style: 'bg-primary-soft text-primary-strong' },
-  order_dispatched: { icon: Truck, style: 'bg-amber-500/15 text-amber-500' },
-  order_shipped: { icon: Truck, style: 'bg-amber-500/15 text-amber-500' },
-  order_completed: { icon: CheckCircle2, style: 'bg-green-500/15 text-green-500' },
-  order_cancelled: { icon: XCircle, style: 'bg-red-500/15 text-red-500' },
-  purchase_added: { icon: ShoppingBag, style: 'bg-green-500/15 text-green-500' },
+  order_dispatched: { icon: Truck, style: 'bg-amber-500/15 text-amber-500 dark:text-amber-400' },
+  order_shipped: { icon: Truck, style: 'bg-amber-500/15 text-amber-500 dark:text-amber-400' },
+  order_completed: { icon: CheckCircle2, style: 'bg-green-500/15 text-green-500 dark:text-green-300' },
+  order_cancelled: { icon: XCircle, style: 'bg-red-500/15 text-red-500 dark:text-red-400' },
+  purchase_added: { icon: ShoppingBag, style: 'bg-green-500/15 text-green-500 dark:text-green-300' },
   coupon_won: { icon: Gift, style: 'bg-primary-soft text-primary-strong' },
-  coupon_used: { icon: BadgeCheck, style: 'bg-green-500/15 text-green-500' },
-  coupons_available: { icon: BadgePercent, style: 'bg-amber-500/15 text-amber-500' },
-  reward_progress: { icon: Sparkles, style: 'bg-purple-500/15 text-purple-500' },
+  coupon_used: { icon: BadgeCheck, style: 'bg-green-500/15 text-green-500 dark:text-green-300' },
+  coupons_available: { icon: BadgePercent, style: 'bg-amber-500/15 text-amber-500 dark:text-amber-400' },
+  reward_progress: { icon: Sparkles, style: 'bg-purple-500/15 text-purple-500 dark:text-purple-300' },
   milestone_reached: { icon: Gift, style: 'bg-primary-soft text-primary-strong' },
 };
 

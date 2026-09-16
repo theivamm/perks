@@ -46,8 +46,8 @@ export function applyPalette(primaryHex, dark, persist = true) {
   root.classList.toggle('dark', !!dark);
 
   if (dark) {
-    root.style.setProperty('--primary', `${h} ${sat}% 55%`);
-    root.style.setProperty('--primary-strong', `${h} ${clamp(sat + 5, 40, 75)}% 66%`);
+    root.style.setProperty('--primary', `${h} ${sat}% 47%`);
+    root.style.setProperty('--primary-strong', `${h} ${clamp(sat + 5, 40, 75)}% 58%`);
     root.style.setProperty('--primary-soft', `${h} ${clamp(sat + 8, 40, 80)}% 20%`);
     root.style.setProperty('--primary-softer', `${h} ${clamp(sat + 8, 40, 80)}% 14%`);
     root.style.setProperty('--primary-contrast', '0 0% 100%');

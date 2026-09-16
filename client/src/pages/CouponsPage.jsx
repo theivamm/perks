@@ -102,11 +102,11 @@ export default function CouponsPage() {
     return (
       <div className="tile flex flex-col overflow-hidden transition-transform hover:-translate-y-1">
         <div className={`flex items-center justify-between gap-3 px-5 py-4 ${band.cls}`}>
-          <span className={`inline-flex items-center gap-1.5 rounded-full bg-white/75 px-3 py-1 text-xs font-black ${band.text}`}>
+          <span className={`inline-flex items-center gap-1.5 rounded-full bg-white/75 px-3 py-1 text-xs font-black dark:bg-white/12 ${band.text}`}>
             <Ticket size={12} />
             {c.type === 'monto' ? 'Recompensa' : c.type === 'descuento' ? 'Descuento' : 'Regalo'}
           </span>
-          <span className="inline-flex items-center gap-1 rounded-full bg-white/75 px-2.5 py-1 text-xs font-black text-ink">
+          <span className="inline-flex items-center gap-1 rounded-full bg-white/75 px-2.5 py-1 text-xs font-black text-ink dark:bg-white/12">
             <Zap size={12} /> {Number(c.target_points)} pts
           </span>
         </div>

@@ -149,7 +149,7 @@ export default function CouponCard({ coupon, currency = '$', onUse, using }) {
                 </span>
                 <span
                   className={`rounded-full px-2 py-0.5 font-bold ${
-                    active ? 'bg-green-500/15 text-green-600' : 'bg-surface-alt text-ink-muted'
+                    active ? 'bg-green-500/15 text-green-600 dark:text-green-400' : 'bg-surface-alt text-ink-muted'
                   }`}
                 >
                   {STATUS_LABEL[coupon.status] || coupon.status}
@@ -161,7 +161,7 @@ export default function CouponCard({ coupon, currency = '$', onUse, using }) {
                   {coupon.code}
                 </p>
                 <button className="btn-icon !h-8 !w-8" onClick={copy} aria-label="Copiar código">
-                  {copied ? <Check size={15} className="text-green-600" /> : <Copy size={15} />}
+                  {copied ? <Check size={15} className="text-green-600 dark:text-green-400" /> : <Copy size={15} />}
                 </button>
               </div>
 
