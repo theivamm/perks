@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CameraOff, Check, Gift, Loader2, ScanLine, UserCheck } from 'lucide-react';
+import { CameraOff, Check, Eye, Gift, Loader2, PlusCircle, ScanLine, Ticket, UserCheck } from 'lucide-react';
 import { Html5Qrcode } from 'html5-qrcode';
 import { api } from '../../api.js';
 import { toast } from '../../components/ui.jsx';
@@ -15,6 +15,8 @@ export default function ScanPage() {
   const [resolving, setResolving] = useState(false);
   const [lastError, setLastError] = useState('');
   const [redeemed, setRedeemed] = useState(null);
+  const [progress, setProgress] = useState(null);
+  const [saving, setSaving] = useState(false);
   const notifyTimer = useRef(null);
 
   const stopScanner = async () => {
@@ -64,12 +66,14 @@ export default function ScanPage() {
     try {
       const res = await api('/api/clients/scan', { method: 'POST', body: { qr_code: decodedText.trim() } });
       setLastError('');
+      setProgress(null);
       if (res.redeemed) {
         setRedeemed(res);
         await stopScanner();
         return;
       }
-      navigate(`/dashboard/cliente/${res.client.id}?cupon=${res.user_coupon_id}`);
+      setProgress(res);
+      await stopScanner();
     } catch (err) {
       setLastError(err.message);
       toast(err.message);
@@ -78,11 +82,35 @@ export default function ScanPage() {
     }
   };
 
-  const resume = () => {
+  const resumeScanning = () => {
     setRedeemed(null);
+    setProgress(null);
     setPaused(false);
     setResolving(false);
     startScanner();
+  };
+
+  const addPoint = async () => {
+    if (!progress) return;
+    setSaving(true);
+    try {
+      const res = await api(`/api/clients/registered/${progress.client.id}/puntos`, {
+        method: 'POST',
+        body: { user_coupon_id: progress.user_coupon_id },
+      });
+      if (res.result?.status === 'completed') {
+        toast('¡Cupón completado! Se generó el código de canje y el cliente fue notificado.');
+        resumeScanning();
+      } else {
+        const next = res.result?.coupon;
+        setProgress((p) => ({ ...p, coupon: next || p.coupon }));
+        toast(`Punto sumado: ${next?.points ?? 0} de ${next?.target_points ?? 0} puntos`);
+      }
+    } catch (err) {
+      toast(err.message);
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -95,7 +123,49 @@ export default function ScanPage() {
         </p>
       </div>
 
-      {redeemed ? (
+      {progress ? (
+        <div className="card overflow-hidden">
+          <div className="bg-gradient-to-r from-primary to-primary-strong px-5 py-4 text-white">
+            <p className="flex items-center gap-2 text-sm font-black uppercase tracking-[0.2em]">
+              <Ticket size={18} />
+              Cupón en progreso
+            </p>
+          </div>
+          <div className="p-6 text-center">
+            <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-primary-strong text-white shadow-glow">
+              <Ticket size={26} />
+            </span>
+            <p className="mt-4 text-xl font-black text-ink">{progress.coupon?.title || 'Premio'}</p>
+            <p className="mt-1 text-sm text-ink-muted">
+              Cliente: <span className="font-bold text-ink">{progress.client?.name || '—'}</span>
+            </p>
+            <p className="mx-auto mt-2 inline-block rounded-full bg-primary-soft px-3 py-1 text-xs font-black text-primary-strong">
+              {progress.coupon?.points ?? 0} de {progress.coupon?.target_points ?? 0} puntos
+            </p>
+            <p className="mt-3 text-sm text-ink-muted">
+              Este cupón todavía no está completo. Sumale el punto y escaneá el QR de nuevo cuando esté listo para
+              canjear.
+            </p>
+            <div className="mt-5 flex flex-wrap justify-center gap-3">
+              <button className="btn-primary" onClick={addPoint} disabled={saving}>
+                {saving ? <Loader2 className="animate-spin" size={16} /> : <PlusCircle size={16} />}
+                Sumar 1 punto
+              </button>
+              <button
+                className="btn-ghost"
+                onClick={() => navigate(`/dashboard/cliente/${progress.client.id}?cupon=${progress.user_coupon_id}`)}
+              >
+                <Eye size={16} />
+                Ver perfil
+              </button>
+              <button className="btn-ghost" onClick={resumeScanning}>
+                <ScanLine size={16} />
+                Escanear otro
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : redeemed ? (
         <div className="card overflow-hidden">
           <div className="bg-gradient-to-r from-emerald-500 to-teal-600 px-5 py-4 text-white">
             <p className="flex items-center gap-2 text-sm font-black uppercase tracking-[0.2em]">
@@ -118,7 +188,7 @@ export default function ScanPage() {
               Ya pasó al historial de cupones del cliente y no puede volver a usarse.
             </p>
             <div className="mt-5 flex justify-center gap-3">
-              <button className="btn-primary" onClick={resume}>
+              <button className="btn-primary" onClick={resumeScanning}>
                 <ScanLine size={16} />
                 Escanear otro
               </button>
@@ -143,7 +213,7 @@ export default function ScanPage() {
                 )}
               </p>
               {paused && !resolving && (
-                <button className="btn-ghost" onClick={resume}>
+                <button className="btn-ghost" onClick={resumeScanning}>
                   Reanudar escaneo
                 </button>
               )}
