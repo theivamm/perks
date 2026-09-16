@@ -33,6 +33,7 @@ export default function MenuManager() {
   const [importing, setImporting] = useState(false);
   const [cropSrc, setCropSrc] = useState(null);
   const [showExcelHelp, setShowExcelHelp] = useState(false);
+  const [isNewCat, setIsNewCat] = useState(false);
   const [generatingId, setGeneratingId] = useState(null);
   const [progress, setProgress] = useState({});
   const generatingRef = useRef(null);
@@ -73,13 +74,26 @@ export default function MenuManager() {
   const openNew = () => {
     setEditing(null);
     setForm(EMPTY_FORM);
+    setIsNewCat(false);
     setModalOpen(true);
   };
 
   const openEdit = (item) => {
     setEditing(item);
     setForm({ ...EMPTY_FORM, ...item });
+    setIsNewCat(false);
     setModalOpen(true);
+  };
+
+  const onCategoryChange = (e) => {
+    const v = e.target.value;
+    if (v === '__new__') {
+      setIsNewCat(true);
+      setForm((f) => ({ ...f, category: '' }));
+    } else {
+      setIsNewCat(false);
+      setForm((f) => ({ ...f, category: v }));
+    }
   };
 
   const save = async (e) => {
@@ -256,7 +270,9 @@ export default function MenuManager() {
             {showExcelHelp && (
               <>
                 <div className="fixed inset-0 z-40" onClick={() => setShowExcelHelp(false)} />
-                <div className="absolute right-0 top-full z-50 mt-2 w-80 overflow-hidden rounded-2xl border border-line bg-surface p-5 shadow-xl">
+                <div
+                  className="fixed inset-x-4 top-1/2 z-50 max-h-[85vh] w-[calc(100vw-2rem)] max-w-sm -translate-y-1/2 overflow-hidden overflow-y-auto rounded-2xl border border-line bg-surface p-6 shadow-xl md:absolute md:inset-x-auto md:right-0 md:top-full md:mt-2 md:max-h-none md:w-80 md:max-w-none md:-translate-y-0 md:p-5"
+                >
                   <div className="mb-3 flex items-center justify-between">
                     <h4 className="text-sm font-extrabold text-ink">Formato del archivo Excel</h4>
                     <button onClick={() => setShowExcelHelp(false)} className="text-ink-muted hover:text-ink" aria-label="Cerrar">
@@ -521,12 +537,26 @@ export default function MenuManager() {
             </div>
             <div>
               <label className="label">Categoría</label>
-              <input className="input" list="cat-options" value={form.category} onChange={set('category')} placeholder="General" />
-              <datalist id="cat-options">
+              <select
+                className="input"
+                value={isNewCat ? '__new__' : form.category || ''}
+                onChange={onCategoryChange}
+              >
+                <option value="">General</option>
                 {data.categories.map((c) => (
-                  <option key={c} value={c} />
+                  <option key={c} value={c}>{c}</option>
                 ))}
-              </datalist>
+                <option value="__new__">+ Nueva categoría…</option>
+              </select>
+              {isNewCat && (
+                <input
+                  className="input mt-2"
+                  value={form.category}
+                  onChange={set('category')}
+                  placeholder="Escribí el nombre de la nueva categoría"
+                  autoFocus
+                />
+              )}
             </div>
           </div>
 

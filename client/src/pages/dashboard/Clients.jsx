@@ -192,7 +192,9 @@ export default function Clients() {
             {showExcelHelp && (
               <>
                 <div className="fixed inset-0 z-40" onClick={() => setShowExcelHelp(false)} />
-                <div className="absolute right-2 top-full z-50 mt-2 w-80 overflow-hidden rounded-2xl border border-line bg-surface p-5 shadow-xl">
+                <div
+                  className="fixed inset-x-4 top-1/2 z-50 max-h-[85vh] w-[calc(100vw-2rem)] max-w-sm -translate-y-1/2 overflow-hidden overflow-y-auto rounded-2xl border border-line bg-surface p-6 shadow-xl md:absolute md:inset-x-auto md:right-2 md:top-full md:mt-2 md:max-h-none md:w-80 md:max-w-none md:-translate-y-0 md:p-5"
+                >
                   <div className="mb-3 flex items-center justify-between">
                     <h4 className="text-sm font-extrabold text-ink">Formato del archivo Excel</h4>
                     <button onClick={() => setShowExcelHelp(false)} className="text-ink-muted hover:text-ink" aria-label="Cerrar">
