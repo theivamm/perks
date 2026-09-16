@@ -50,7 +50,7 @@ export default function Navbar() {
               className="inline-flex items-center gap-1.5 rounded-xl border border-line px-3 py-1.5 text-sm font-semibold text-ink transition-colors hover:bg-surface-alt"
             >
               <LogIn size={15} />
-              <span className="hidden sm:inline">Iniciar sesión</span>
+              Iniciar sesión
             </Link>
           )}
         </nav>

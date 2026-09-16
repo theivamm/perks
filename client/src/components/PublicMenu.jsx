@@ -109,6 +109,7 @@ export default function PublicMenu() {
         <div className="relative">
           <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-muted" />
           <input
+            id="menu-search"
             className="input w-full rounded-2xl py-3 pl-11 pr-10"
             placeholder="Buscar plato, bebida, postre..."
             value={query}

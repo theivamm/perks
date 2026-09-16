@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState, useEffect } from 'react';
-import { Check, Copy, CircleCheck, Gift, QrCode, Sparkles, Ticket, Zap } from 'lucide-react';
+import { Check, Copy, CircleCheck, Gift, QrCode, Search, Sparkles, Ticket, Zap } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import QRCode from 'qrcode';
 import { api } from '../api.js';
@@ -21,6 +21,20 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [activating, setActivating] = useState(null);
   const [confirmCoupon, setConfirmCoupon] = useState(null);
+  const [showSearchFab, setShowSearchFab] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setShowSearchFab(window.scrollY > 400);
+    window.addEventListener('scroll', onScroll);
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  const focusSearch = () => {
+    const el = document.getElementById('menu-search');
+    if (!el) return;
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    setTimeout(() => el.focus({ preventScroll: true }), 450);
+  };
 
   const loadCatalog = async () => {
     try {
@@ -391,6 +405,17 @@ export default function Home() {
           <Gift size={17} className="transition-transform group-hover:-rotate-6" />
           Ver cupones
         </Link>
+      )}
+
+      {showSearchFab && (
+        <button
+          onClick={focusSearch}
+          className="fixed bottom-6 left-4 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary-strong text-primary-contrast shadow-glow transition-all hover:scale-105 active:scale-95 sm:left-6"
+          aria-label="Buscar en el menú"
+          title="Buscar en el menú"
+        >
+          <Search size={20} />
+        </button>
       )}
 
       <Modal open={!!confirmCoupon} onClose={() => { if (!activating) setConfirmCoupon(null); }} title="¿Seguro querés activar este cupón?">
