@@ -16,6 +16,7 @@ import tenantsRoutes from './routes/tenants.js';
 import plansRoutes from './routes/plans.js';
 import paymentsRoutes from './routes/payments.js';
 import onboardingRoutes from './routes/onboarding.js';
+import supportRoutes from './routes/support.js';
 import superadminRoutes from './routes/superadmin.js';
 import { attachTenant } from './middleware/tenant.js';
 
@@ -45,6 +46,7 @@ app.use('/api/tenants', tenantsRoutes);
 app.use('/api/plans', plansRoutes);
 app.use('/api/payments', paymentsRoutes);
 app.use('/api/onboarding', onboardingRoutes);
+app.use('/api/support', supportRoutes);
 app.use('/api/superadmin', superadminRoutes);
 
 app.use((err, _req, res, _next) => {

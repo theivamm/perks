@@ -10,6 +10,7 @@ import {
   LogOut,
   Menu as MenuIcon,
   Moon,
+  LifeBuoy,
   ScanLine,
   Settings as SettingsIcon,
   Sun,
@@ -46,12 +47,14 @@ export default function DashboardLayout() {
     { to: t('/dashboard/menu'), label: 'Menú', icon: UtensilsCrossed },
     { to: t('/dashboard/clientes'), label: 'Clientes', icon: Users },
     { to: t('/dashboard/cupones'), label: 'Cupones', icon: BadgePercent },
+    { to: t('/dashboard/soporte'), label: 'Soporte', icon: LifeBuoy },
   ];
 
   const FAB_ITEMS = [
     { to: t('/dashboard/menu'), label: 'Menú', icon: UtensilsCrossed },
     { to: t('/dashboard/clientes'), label: 'Clientes', icon: Users },
     { to: t('/dashboard/cupones'), label: 'Cupones', icon: BadgePercent },
+    { to: t('/dashboard/soporte'), label: 'Soporte', icon: LifeBuoy },
     { to: t('/dashboard/configuracion'), label: 'Configuración', icon: SettingsIcon },
     { to: home(), label: 'Página pública', icon: ExternalLink },
   ];

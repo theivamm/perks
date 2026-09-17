@@ -1,14 +1,16 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   BadgeCheck,
   Check,
   DollarSign,
   ExternalLink,
+  LifeBuoy,
   Loader2,
   LogIn,
   Pencil,
   Plus,
   RefreshCw,
+  Send,
   ShoppingBag,
   Store,
   Users,
@@ -36,6 +38,13 @@ function formatDate(value) {
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return String(value);
   return d.toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: '2-digit' });
+}
+
+function formatDateTime(value) {
+  if (!value) return '';
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return String(value);
+  return d.toLocaleString('es-AR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
 }
 
 export default function SuperAdmin() {
@@ -493,9 +502,181 @@ function TenantRow({ tenant, onSaved }) {
 }
 
 function SupportTab() {
+  const [threads, setThreads] = useState([]);
+  const [selected, setSelected] = useState(null);
+  const [messages, setMessages] = useState([]);
+  const [text, setText] = useState('');
+  const [sending, setSending] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const bottomRef = useRef(null);
+
+  const loadThreads = useCallback(async () => {
+    try {
+      const data = await api('/api/superadmin/support');
+      setThreads(data.threads || []);
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const loadMessages = useCallback(async (tenantId) => {
+    try {
+      const data = await api(`/api/superadmin/support/${tenantId}`);
+      setMessages(data.messages || []);
+    } catch (e) {
+      setError(e.message);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadThreads();
+    const id = setInterval(loadThreads, 5000);
+    return () => clearInterval(id);
+  }, [loadThreads]);
+
+  useEffect(() => {
+    if (!selected) return undefined;
+    loadMessages(selected);
+    const id = setInterval(() => loadMessages(selected), 5000);
+    return () => clearInterval(id);
+  }, [selected, loadMessages]);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  const send = async (e) => {
+    e.preventDefault();
+    const body = text.trim();
+    if (!body || !selected || sending) return;
+    setSending(true);
+    setError('');
+    try {
+      const { message } = await api(`/api/superadmin/support/${selected}`, { method: 'POST', body: { body } });
+      setMessages((prev) => (prev.some((m) => m.id === message.id) ? prev : [...prev, message]));
+      setText('');
+      loadThreads();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const thread = threads.find((t) => t.tenant.id === selected);
+
   return (
-    <div className="card mt-6 p-8 text-center text-sm text-ink-muted">
-      El chat de soporte se habilita en la próxima fase.
+    <div className="mt-6">
+      {error && (
+        <div className="mb-4 rounded-xl border border-red-300 bg-red-50 px-4 py-2.5 text-sm font-medium text-red-700 dark:border-red-500/40 dark:bg-red-500/10 dark:text-red-400">
+          {error}
+        </div>
+      )}
+
+      {loading ? (
+        <div className="card flex items-center justify-center py-16 text-ink-muted">
+          <Loader2 className="animate-spin" size={22} />
+        </div>
+      ) : threads.length === 0 ? (
+        <div className="card py-16 text-center text-sm text-ink-muted">
+          Todavía no hay conversaciones de soporte.
+        </div>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-[280px,1fr]">
+          <div className="card max-h-[62vh] overflow-y-auto p-2">
+            {threads.map(({ tenant, last, unread }) => (
+              <button
+                key={tenant.id}
+                onClick={() => setSelected(tenant.id)}
+                className={`flex w-full items-start gap-3 rounded-xl px-3 py-3 text-left transition ${
+                  selected === tenant.id ? 'bg-primary-softer' : 'hover:bg-surface-alt'
+                }`}
+              >
+                <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-surface-alt text-ink-muted">
+                  <Store size={17} />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="flex items-center justify-between gap-2">
+                    <span className="truncate text-sm font-bold text-ink">{tenant.business_name}</span>
+                    {unread > 0 && (
+                      <span className="rounded-full bg-amber-400 px-1.5 text-xs font-extrabold text-[#0A0A0C]">
+                        {unread}
+                      </span>
+                    )}
+                  </span>
+                  <span className="mt-0.5 block truncate text-xs text-ink-muted">{last.body}</span>
+                </span>
+              </button>
+            ))}
+          </div>
+
+          <div className="card flex h-[62vh] flex-col overflow-hidden">
+            {!selected ? (
+              <div className="flex flex-1 flex-col items-center justify-center gap-2 text-ink-muted">
+                <LifeBuoy size={30} />
+                <p className="text-sm">Elegí una conversación.</p>
+              </div>
+            ) : (
+              <>
+                <div className="border-b border-line px-4 py-3">
+                  <a
+                    href={`/${thread?.tenant.slug}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1.5 text-sm font-extrabold text-ink hover:text-primary"
+                  >
+                    {thread?.tenant.business_name}
+                    <ExternalLink size={13} />
+                  </a>
+                </div>
+
+                <div className="flex-1 space-y-3 overflow-y-auto p-4">
+                  {messages.length === 0 ? (
+                    <p className="mt-8 text-center text-sm text-ink-muted">Sin mensajes todavía.</p>
+                  ) : (
+                    messages.map((m) => {
+                      const mine = m.sender_role === 'superadmin';
+                      return (
+                        <div key={m.id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
+                          <div
+                            className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm shadow-sm ${
+                              mine
+                                ? 'rounded-br-md bg-gradient-to-br from-primary to-primary-strong text-primary-contrast'
+                                : 'rounded-bl-md bg-surface-alt text-ink'
+                            }`}
+                          >
+                            <p className="whitespace-pre-wrap break-words">{m.body}</p>
+                            <p className={`mt-1 text-right text-[11px] ${mine ? 'text-primary-contrast/70' : 'text-ink-muted'}`}>
+                              {formatDateTime(m.created_at)}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                  <div ref={bottomRef} />
+                </div>
+
+                <form onSubmit={send} className="flex items-center gap-2 border-t border-line p-3">
+                  <input
+                    className="input flex-1"
+                    placeholder="Responder..."
+                    value={text}
+                    onChange={(e) => setText(e.target.value)}
+                    maxLength={2000}
+                  />
+                  <button className="btn-primary !px-4" disabled={sending || !text.trim()} aria-label="Enviar">
+                    {sending ? <Loader2 className="animate-spin" size={17} /> : <Send size={17} />}
+                  </button>
+                </form>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

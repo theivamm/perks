@@ -16,6 +16,7 @@ import ClientDetail from './pages/dashboard/ClientDetail.jsx';
 import ScanPage from './pages/dashboard/ScanPage.jsx';
 import Coupons from './pages/dashboard/Coupons.jsx';
 import SettingsPage from './pages/dashboard/SettingsPage.jsx';
+import SupportPage from './pages/dashboard/SupportPage.jsx';
 import SuperAdmin from './pages/superadmin/SuperAdmin.jsx';
 import Onboarding from './pages/Onboarding.jsx';
 import Landing from './pages/Landing.jsx';
@@ -103,6 +104,7 @@ function TenantApp() {
         <Route path="cliente/:id" element={<ClientDetail />} />
         <Route path="escanear" element={<ScanPage />} />
         <Route path="cupones" element={<Coupons />} />
+        <Route path="soporte" element={<SupportPage />} />
         <Route path="configuracion" element={<SettingsPage />} />
       </Route>
       <Route path="*" element={<RedirectHome />} />

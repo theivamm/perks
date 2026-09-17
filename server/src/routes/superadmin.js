@@ -207,4 +207,93 @@ router.patch(
   })
 );
 
+// ===== Soporte =====
+
+async function supportMessages(tenantId) {
+  let query = supabase.from('support_messages').select('*').order('created_at', { ascending: true }).limit(300);
+  if (tenantId) query = query.eq('tenant_id', tenantId);
+  const { data, error } = await query;
+  if (error) {
+    if (isMissingTable(error)) return [];
+    throw error;
+  }
+  return data || [];
+}
+
+// Hilos de conversación por app, con último mensaje y no leídos
+router.get(
+  '/support',
+  asyncHandler(async (_req, res) => {
+    const [messages, { data: tenants, error }] = await Promise.all([
+      supportMessages(),
+      supabase.from('tenants').select('id, slug, business_name, status'),
+    ]);
+    if (error) throw error;
+
+    const byTenant = new Map();
+    for (const m of messages) {
+      const entry = byTenant.get(m.tenant_id) || { last: null, unread: 0 };
+      entry.last = m;
+      if (m.sender_role === 'admin' && !m.read_by_superadmin) entry.unread += 1;
+      byTenant.set(m.tenant_id, entry);
+    }
+
+    const threads = (tenants || [])
+      .map((t) => {
+        const entry = byTenant.get(t.id);
+        return {
+          tenant: t,
+          last: entry?.last || null,
+          unread: entry?.unread || 0,
+        };
+      })
+      .filter((t) => t.last)
+      .sort((a, b) => new Date(b.last.created_at) - new Date(a.last.created_at));
+
+    res.json({ threads });
+  })
+);
+
+router.get(
+  '/support/:tenantId',
+  asyncHandler(async (req, res) => {
+    const messages = await supportMessages(req.params.tenantId);
+    await supabase
+      .from('support_messages')
+      .update({ read_by_superadmin: true })
+      .eq('tenant_id', req.params.tenantId)
+      .eq('sender_role', 'admin')
+      .eq('read_by_superadmin', false);
+    res.json({ messages });
+  })
+);
+
+router.post(
+  '/support/:tenantId',
+  asyncHandler(async (req, res) => {
+    const body = String(req.body?.body || '').trim();
+    if (!body) return res.status(400).json({ error: 'Escribí un mensaje' });
+    if (body.length > 2000) return res.status(400).json({ error: 'El mensaje es demasiado largo' });
+
+    const { data, error } = await supabase
+      .from('support_messages')
+      .insert({
+        tenant_id: req.params.tenantId,
+        sender_role: 'superadmin',
+        sender_id: req.user.id,
+        sender_name: req.user.name || 'Equipo PERKS',
+        body,
+      })
+      .select()
+      .single();
+    if (error) {
+      if (isMissingTable(error)) {
+        return res.status(503).json({ error: 'Corré migracion_11_soporte.sql para habilitar el soporte.' });
+      }
+      throw error;
+    }
+    res.status(201).json({ message: data });
+  })
+);
+
 export default router;
