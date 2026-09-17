@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
-import { Check, ImagePlus, KeyRound, Loader2, Moon, Palette, Save, ShieldCheck, Smartphone, Sun, Trash2 } from 'lucide-react';
+import { Check, FileImage, ImagePlus, KeyRound, Loader2, Moon, Palette, Save, ShieldCheck, Smartphone, Square, Sun, Trash2 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext.jsx';
 import { api } from '../../api.js';
 import { PRESET_COLORS, hexToHsl } from '../../color.js';
 import { toast } from '../../components/ui.jsx';
+import ImageCropper from '../../components/ImageCropper.jsx';
 import QRCode from 'qrcode';
 
 const CURRENCIES = ['$', '€', 'Bs', 'S/', 'Q', 'L', 'C$'];
@@ -13,6 +14,8 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const logoInput = useRef(null);
+  const isoInput = useRef(null);
+  const [cropFor, setCropFor] = useState(null);
 
   const [pwd, setPwd] = useState({ current: '', next: '', confirm: '' });
   const [savingPwd, setSavingPwd] = useState(false);
@@ -196,7 +199,7 @@ export default function SettingsPage() {
       <div className="space-y-6">
         <section className="card p-6">
           <h2 className="mb-1 flex items-center gap-2 text-lg font-extrabold text-ink">
-            <Image size={20} className="text-primary-strong" />
+            <FileImage size={20} className="text-primary-strong" />
             Logo de la plataforma
           </h2>
           <p className="mb-5 text-sm text-ink-muted">
