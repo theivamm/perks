@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken';
 import { Router } from 'express';
 import { supabase } from '../supabase.js';
+import { authClient } from '../authClient.js';
 import { asyncHandler } from '../asyncHandler.js';
 import { requireAdmin } from '../middleware/auth.js';
 import { newQrCode } from '../qr.js';
@@ -34,7 +35,7 @@ router.post(
       return res.status(400).json({ error: 'Email y contraseña requeridos' });
     }
 
-    const { data, error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await authClient.auth.signInWithPassword({
       email: String(email).toLowerCase().trim(),
       password: String(password),
     });
@@ -119,7 +120,7 @@ router.post(
       return res.status(401).json({ error: 'Credenciales inválidas' });
     }
 
-    const { data, error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await authClient.auth.signInWithPassword({
       email: admin.email,
       password: String(password),
     });
@@ -182,7 +183,7 @@ router.post(
       return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' });
     }
 
-    const { error } = await supabase.auth.signInWithPassword({
+    const { error } = await authClient.auth.signInWithPassword({
       email: req.user.email,
       password: String(current_password),
     });
@@ -313,7 +314,7 @@ router.post(
       return res.status(400).json({ error: 'Token requerido' });
     }
 
-    const { data, error } = await supabase.auth.getUser(access_token);
+    const { data, error } = await authClient.auth.getUser(access_token);
     if (error || !data?.user) {
       return res.status(401).json({ error: 'Sesión de Google inválida o expirada' });
     }
