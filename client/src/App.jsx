@@ -18,6 +18,7 @@ import Coupons from './pages/dashboard/Coupons.jsx';
 import SettingsPage from './pages/dashboard/SettingsPage.jsx';
 import SuperAdmin from './pages/superadmin/SuperAdmin.jsx';
 import Onboarding from './pages/Onboarding.jsx';
+import Landing from './pages/Landing.jsx';
 
 function RequireAdmin({ children }) {
   const { isAuthed, user } = useAuth();
@@ -112,10 +113,11 @@ function TenantApp() {
 export default function App() {
   return (
     <Routes>
-      <Route path="/" element={<DefaultRedirect />} />
+      <Route path="/" element={<Landing />} />
       <Route path="/perks/admin" element={<SuperAdmin />} />
       <Route path="/comenzar" element={<Onboarding />} />
       <Route path="/onboarding" element={<Onboarding />} />
+      <Route path="/demo" element={<DefaultRedirect />} />
       <Route
         path="/:slug"
         element={
