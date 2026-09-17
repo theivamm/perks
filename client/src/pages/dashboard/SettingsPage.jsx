@@ -5,6 +5,7 @@ import { api } from '../../api.js';
 import { PRESET_COLORS, hexToHsl } from '../../color.js';
 import { toast } from '../../components/ui.jsx';
 import ImageCropper from '../../components/ImageCropper.jsx';
+import { SYSTEM_ISOS } from '../../components/SystemIsos.jsx';
 import QRCode from 'qrcode';
 
 const CURRENCIES = ['$', '€', 'Bs', 'S/', 'Q', 'L', 'C$'];
@@ -234,9 +235,32 @@ export default function SettingsPage() {
             ISO (ícono cuadrado)
           </h2>
           <p className="mb-5 text-sm text-ink-muted">
-            Ícono cuadrado que se usa como imagen del logo cuando no hay un logo horizontal cargado.
+            Ícono cuadrado que se usa en el sidebar colapsado y como respaldo cuando no hay un logo horizontal cargado.
           </p>
           <LogoUploader kind="iso" label="ISO" previewBox="h-20 w-20 rounded-2xl" display="h-full w-full object-cover" />
+          <div className="mt-5 border-t border-line pt-4">
+            <p className="mb-1 text-sm font-extrabold text-ink">ISO por defecto</p>
+            <p className="mb-3 text-xs text-ink-muted">
+              Cuando no haya un ISO cargado, se muestra uno de estos íconos del sistema.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {SYSTEM_ISOS.map(({ key, label, Icon }) => (
+                <button
+                  key={key}
+                  onClick={() => updateSettings({ isoIcon: key })}
+                  title={label}
+                  aria-label={label}
+                  className={`flex h-11 w-11 items-center justify-center rounded-xl border-2 transition-all hover:scale-105 ${
+                    settings.isoIcon === key
+                      ? 'border-primary bg-primary-softer text-primary-strong shadow-glow'
+                      : 'border-line text-ink-muted hover:bg-surface-alt hover:text-ink'
+                  }`}
+                >
+                  <Icon size={20} />
+                </button>
+              ))}
+            </div>
+          </div>
         </section>
 
         <section className="card p-6">
@@ -557,6 +581,7 @@ export default function SettingsPage() {
           src={cropFor.src}
           aspect={cropFor.kind === 'iso' ? 1 : 400 / 120}
           outputSize={cropFor.kind === 'iso' ? { width: 400, height: 400 } : { width: 400, height: 120 }}
+          outputFormat="png"
           cropShape="rect"
           onSave={saveCropped}
           onCancel={() => {

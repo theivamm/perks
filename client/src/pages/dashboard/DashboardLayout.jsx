@@ -112,7 +112,7 @@ export default function DashboardLayout() {
         }`}
       >
         <div className={`mb-6 flex items-center justify-between ${collapsed ? 'lg:justify-center' : ''}`}>
-          <Logo size={collapsed ? 'sm' : 'md'} showText={false} />
+          <Logo size={collapsed ? 'sm' : 'md'} variant={collapsed ? 'iso' : 'logo'} showText={false} />
         </div>
 
         <nav className={`flex flex-1 flex-col gap-1.5 ${collapsed ? 'lg:items-center' : ''}`}>
@@ -183,7 +183,7 @@ export default function DashboardLayout() {
             aria-label="Ir al inicio del panel"
             className="lg:hidden"
           >
-            <Logo size="sm" showText={false} />
+            <Logo size="sm" variant="iso" showText={false} />
           </Link>
           <div className="ml-auto flex items-center gap-1.5">
             <NotificationsBell />

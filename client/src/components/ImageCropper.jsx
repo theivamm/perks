@@ -11,11 +11,14 @@ function createImage(src) {
   });
 }
 
-export default function ImageCropper({ src, aspect = 4 / 3, cropShape = 'rect', outputSize, onSave, onCancel }) {
+export default function ImageCropper({ src, aspect = 4 / 3, cropShape = 'rect', outputSize, outputFormat = 'jpeg', onSave, onCancel }) {
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [cropPixels, setCropPixels] = useState(null);
   const [saving, setSaving] = useState(false);
+
+  const mime = outputFormat === 'png' ? 'image/png' : 'image/jpeg';
+  const ext = outputFormat === 'png' ? 'png' : 'jpg';
 
   const handleSave = async () => {
     if (!cropPixels) return;
@@ -39,9 +42,9 @@ export default function ImageCropper({ src, aspect = 4 / 3, cropShape = 'rect', 
         canvas.height
       );
       const blob = await new Promise((resolve, reject) =>
-        canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('No se pudo procesar la imagen'))), 'image/jpeg', 0.92)
+        canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('No se pudo procesar la imagen'))), mime, 0.92)
       );
-      const file = new File([blob], `imagen-${Date.now()}.jpg`, { type: 'image/jpeg' });
+      const file = new File([blob], `imagen-${Date.now()}.${ext}`, { type: mime });
       await onSave(file);
       onCancel();
     } catch (err) {

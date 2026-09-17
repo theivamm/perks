@@ -10,6 +10,7 @@ const DEFAULT_SETTINGS = {
   currency: '$',
   logo: '',
   logoIso: '',
+  isoIcon: 'chef-hat',
 };
 
 export function ThemeProvider({ children }) {
@@ -25,6 +26,7 @@ export function ThemeProvider({ children }) {
             currency: data.currency || '$',
             logo: data.logo || '',
             logoIso: data.logoIso || '',
+            isoIcon: data.isoIcon || 'chef-hat',
           };
           setSettings(next);
           applyPalette(next.primaryColor, next.theme === 'dark');

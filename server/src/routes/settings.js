@@ -15,9 +15,10 @@ const DEFAULTS = {
   currency: '$',
   logo: '',
   logoIso: '',
+  isoIcon: 'chef-hat',
 };
 
-const ALLOWED = ['primaryColor', 'theme', 'currency', 'logo', 'logoIso'];
+const ALLOWED = ['primaryColor', 'theme', 'currency', 'logo', 'logoIso', 'isoIcon'];
 
 async function readSettings() {
   const { data, error } = await supabase.from('settings').select('key, value');
