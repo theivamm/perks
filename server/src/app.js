@@ -13,6 +13,7 @@ import couponsRoutes from './routes/coupons.js';
 import rewardsRoutes from './routes/rewards.js';
 import notificationsRoutes from './routes/notifications.js';
 import tenantsRoutes from './routes/tenants.js';
+import { attachTenant } from './middleware/tenant.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -20,6 +21,12 @@ export const app = express();
 app.use(cors());
 app.use(express.json({ limit: '2mb' }));
 app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
+
+app.get('/api/health', (_req, res) => {
+  res.json({ ok: true });
+});
+
+app.use('/api', attachTenant);
 
 app.use('/api/auth', authRoutes);
 app.use('/api/menu', menuRoutes);
@@ -31,10 +38,6 @@ app.use('/api/coupons', couponsRoutes);
 app.use('/api/rewards', rewardsRoutes);
 app.use('/api/notifications', notificationsRoutes);
 app.use('/api/tenants', tenantsRoutes);
-
-app.get('/api/health', (_req, res) => {
-  res.json({ ok: true });
-});
 
 app.use((err, _req, res, _next) => {
   console.error(err);

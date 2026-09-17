@@ -20,10 +20,11 @@ function pick(body) {
 router.get(
   '/',
   requireAdmin,
-  asyncHandler(async (_req, res) => {
+  asyncHandler(async (req, res) => {
     const { data, error } = await supabase
       .from('reward_rules')
       .select('*')
+      .eq('tenant_id', req.tenant.id)
       .order('every_orders');
     if (error) throw error;
     res.json(data || []);
@@ -36,6 +37,7 @@ router.post(
   asyncHandler(async (req, res) => {
     const row = pick(req.body || {});
     if (!row.name) return res.status(400).json({ error: 'Nombre requerido' });
+    row.tenant_id = req.tenant.id;
     const { data, error } = await supabase.from('reward_rules').insert(row).select().single();
     if (error) throw error;
     res.status(201).json(data);
@@ -51,6 +53,7 @@ router.put(
       .from('reward_rules')
       .update(row)
       .eq('id', req.params.id)
+      .eq('tenant_id', req.tenant.id)
       .select()
       .single();
     if (error) throw error;
@@ -62,7 +65,11 @@ router.delete(
   '/:id',
   requireAdmin,
   asyncHandler(async (req, res) => {
-    const { error } = await supabase.from('reward_rules').delete().eq('id', req.params.id);
+    const { error } = await supabase
+      .from('reward_rules')
+      .delete()
+      .eq('id', req.params.id)
+      .eq('tenant_id', req.tenant.id);
     if (error) throw error;
     res.json({ ok: true });
   })

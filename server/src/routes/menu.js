@@ -12,10 +12,11 @@ const router = Router();
 
 router.get(
   '/',
-  asyncHandler(async (_req, res) => {
+  asyncHandler(async (req, res) => {
     const { data: items, error } = await supabase
       .from('menu_items')
       .select('*')
+      .eq('tenant_id', req.tenant.id)
       .order('category')
       .order('title');
     if (error) throw error;
@@ -35,6 +36,7 @@ router.post(
     const { data, error } = await supabase
       .from('menu_items')
       .insert({
+        tenant_id: req.tenant.id,
         title: String(title).trim(),
         description,
         price: Number(price) || 0,
@@ -61,6 +63,7 @@ router.put(
       .from('menu_items')
       .select('*')
       .eq('id', req.params.id)
+      .eq('tenant_id', req.tenant.id)
       .maybeSingle();
     if (findErr) throw findErr;
     if (!current) return res.status(404).json({ error: 'No encontrado' });
@@ -91,7 +94,11 @@ router.delete(
   '/:id',
   requireAdmin,
   asyncHandler(async (req, res) => {
-    const { error } = await supabase.from('menu_items').delete().eq('id', req.params.id);
+    const { error } = await supabase
+      .from('menu_items')
+      .delete()
+      .eq('id', req.params.id)
+      .eq('tenant_id', req.tenant.id);
     if (error) throw error;
     res.json({ ok: true });
   })
@@ -105,6 +112,7 @@ router.post(
       .from('menu_items')
       .select('*')
       .eq('id', req.params.id)
+      .eq('tenant_id', req.tenant.id)
       .maybeSingle();
     if (findErr) throw findErr;
     if (!item) return res.status(404).json({ error: 'No encontrado' });
@@ -251,6 +259,7 @@ router.post(
       const title = String(row[0] ?? '').trim();
       if (!title) continue;
       toInsert.push({
+        tenant_id: req.tenant.id,
         title,
         price: parsePrice(row[1]),
         category: String(row[2] ?? '').trim() || 'General',

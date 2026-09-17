@@ -6,7 +6,6 @@ import { supabase, uploadImage } from '../supabase.js';
 import { requireAdmin } from '../middleware/auth.js';
 import { imageUpload, uploadsDir } from '../upload.js';
 import { asyncHandler } from '../asyncHandler.js';
-import { getDefaultTenant } from '../tenancy.js';
 
 const router = Router();
 
@@ -38,9 +37,8 @@ async function readSettings(tenantId) {
 
 router.get(
   '/',
-  asyncHandler(async (_req, res) => {
-    const tenant = await getDefaultTenant();
-    res.json(await readSettings(tenant.id));
+  asyncHandler(async (req, res) => {
+    res.json(await readSettings(req.tenant.id));
   })
 );
 
@@ -48,7 +46,7 @@ router.put(
   '/',
   requireAdmin,
   asyncHandler(async (req, res) => {
-    const tenant = await getDefaultTenant();
+    const tenant = req.tenant;
     const rows = ALLOWED.filter((key) => req.body[key] !== undefined && req.body[key] !== null).map(
       (key) => ({ tenant_id: tenant.id, key, value: String(req.body[key]) })
     );
@@ -74,7 +72,7 @@ router.post(
 
     try {
       const url = await uploadImage(name, req.file.buffer, req.file.mimetype);
-      const tenant = await getDefaultTenant();
+      const tenant = req.tenant;
       await supabase
         .from('settings')
         .upsert({ tenant_id: tenant.id, key: 'logo', value: url }, { onConflict: 'tenant_id,key' });
@@ -90,7 +88,7 @@ router.post(
         console.error('[STORAGE] No se pudo guardar el logo localmente:', diskErr.message);
         return res.status(500).json({ error: 'No se pudo guardar el logo (Supabase y almacenamiento local no disponibles).' });
       }
-      const tenant = await getDefaultTenant();
+      const tenant = req.tenant;
       await supabase
         .from('settings')
         .upsert({ tenant_id: tenant.id, key: 'logo', value: url }, { onConflict: 'tenant_id,key' });
@@ -111,7 +109,7 @@ router.post(
 
     try {
       const url = await uploadImage(name, req.file.buffer, req.file.mimetype);
-      const tenant = await getDefaultTenant();
+      const tenant = req.tenant;
       await supabase
         .from('settings')
         .upsert({ tenant_id: tenant.id, key: 'logoIso', value: url }, { onConflict: 'tenant_id,key' });
@@ -127,7 +125,7 @@ router.post(
         console.error('[STORAGE] No se pudo guardar el iso localmente:', diskErr.message);
         return res.status(500).json({ error: 'No se pudo guardar el ISO (Supabase y almacenamiento local no disponibles).' });
       }
-      const tenant = await getDefaultTenant();
+      const tenant = req.tenant;
       await supabase
         .from('settings')
         .upsert({ tenant_id: tenant.id, key: 'logoIso', value: url }, { onConflict: 'tenant_id,key' });

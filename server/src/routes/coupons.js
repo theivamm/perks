@@ -26,11 +26,12 @@ function pick(body) {
 // Catálogo público: la lista de cupones que ve el usuario
 router.get(
   '/catalog',
-  asyncHandler(async (_req, res) => {
+  asyncHandler(async (req, res) => {
     const { data, error } = await supabase
       .from('loyalty_coupons')
       .select('*')
       .eq('active', true)
+      .eq('tenant_id', req.tenant.id)
       .order('target_points');
     if (error) throw error;
     res.json({ coupons: data || [] });
@@ -41,10 +42,11 @@ router.get(
 router.get(
   '/catalog/all',
   requireAdmin,
-  asyncHandler(async (_req, res) => {
+  asyncHandler(async (req, res) => {
     const { data, error } = await supabase
       .from('loyalty_coupons')
       .select('*')
+      .eq('tenant_id', req.tenant.id)
       .order('created_at', { ascending: false });
     if (error) throw error;
     res.json({ coupons: data || [] });
@@ -60,6 +62,7 @@ router.post(
       return res.status(400).json({ error: 'Nombre requerido' });
     }
     row.title = String(row.title).trim();
+    row.tenant_id = req.tenant.id;
     const { data, error } = await supabase.from('loyalty_coupons').insert(row).select().single();
     if (error) throw error;
     res.status(201).json(data);
@@ -75,6 +78,7 @@ router.put(
       .from('loyalty_coupons')
       .update(row)
       .eq('id', req.params.id)
+      .eq('tenant_id', req.tenant.id)
       .select()
       .single();
     if (error) throw error;
@@ -90,6 +94,7 @@ router.delete(
       .from('user_coupons')
       .select('id')
       .eq('coupon_id', req.params.id)
+      .eq('tenant_id', req.tenant.id)
       .limit(1);
     if (usedErr) throw usedErr;
     if (used && used.length > 0) {
@@ -97,7 +102,11 @@ router.delete(
         .status(400)
         .json({ error: 'Este cupón ya fue activado por clientes. Mejor pausalo en lugar de eliminarlo.' });
     }
-    const { error } = await supabase.from('loyalty_coupons').delete().eq('id', req.params.id);
+    const { error } = await supabase
+      .from('loyalty_coupons')
+      .delete()
+      .eq('id', req.params.id)
+      .eq('tenant_id', req.tenant.id);
     if (error) throw error;
     res.json({ ok: true });
   })
@@ -112,6 +121,7 @@ router.get(
       .from('user_coupons')
       .select('*')
       .eq('user_id', req.user.id)
+      .eq('tenant_id', req.tenant.id)
       .order('created_at', { ascending: false });
     if (error) throw error;
     res.json({ coupons: data || [] });
@@ -131,6 +141,7 @@ router.post(
       .select('*')
       .eq('id', coupon_id)
       .eq('active', true)
+      .eq('tenant_id', req.tenant.id)
       .maybeSingle();
     if (cErr) throw cErr;
     if (!coupon) return res.status(404).json({ error: 'Cupón no encontrado' });
@@ -140,6 +151,7 @@ router.post(
       .select('id')
       .eq('user_id', req.user.id)
       .eq('status', 'activado')
+      .eq('tenant_id', req.tenant.id)
       .maybeSingle();
     if (eErr) throw eErr;
     if (existing) {
@@ -152,6 +164,7 @@ router.post(
       .from('user_coupons')
       .insert({
         user_id: req.user.id,
+        tenant_id: req.tenant.id,
         coupon_id: coupon.id,
         title: coupon.title,
         description: coupon.description,
@@ -181,11 +194,12 @@ router.post(
       .from('user_coupons')
       .select('*')
       .eq('code', code)
+      .eq('tenant_id', req.tenant.id)
       .maybeSingle();
     if (error) throw error;
     if (!data) return res.status(404).json({ error: 'Cupón no encontrado' });
 
-    const updated = await redeemReadyCouponAndNotify(data.id);
+    const updated = await redeemReadyCouponAndNotify(data.id, req.tenant.id);
     if (!updated) {
       return res.status(400).json({ error: `Este cupón no está listo para canjear (estado: ${data.status}).` });
     }

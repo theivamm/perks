@@ -23,6 +23,9 @@ export function requireAdmin(req, res, next) {
   if (user.role !== 'admin') {
     return res.status(403).json({ error: 'Se requieren permisos de administrador' });
   }
+  if (req.tenant && user.tenant_id && user.tenant_id !== req.tenant.id) {
+    return res.status(403).json({ error: 'Esta cuenta no administra este negocio' });
+  }
   req.user = user;
   next();
 }

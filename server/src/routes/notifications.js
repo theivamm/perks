@@ -18,6 +18,7 @@ router.get(
       .from('notifications')
       .select('*')
       .eq('user_id', req.user.id)
+      .eq('tenant_id', req.tenant.id)
       .eq('archived', false)
       .order('created_at', { ascending: false })
       .limit(50);
@@ -28,6 +29,7 @@ router.get(
       .from('notifications')
       .select('id', { count: 'exact', head: true })
       .eq('user_id', req.user.id)
+      .eq('tenant_id', req.tenant.id)
       .eq('read', false);
     if (isEmpty(e2)) return res.json({ items: data || [], unread: 0 });
     if (e2) throw e2;
@@ -45,6 +47,7 @@ router.get(
       .from('notifications')
       .select('*')
       .eq('user_id', req.user.id)
+      .eq('tenant_id', req.tenant.id)
       .order('created_at', { ascending: false })
       .limit(300);
     if (isEmpty(error)) return res.json({ items: [], unread: 0 });
@@ -61,6 +64,7 @@ router.post(
       .from('notifications')
       .update({ read: true })
       .eq('user_id', req.user.id)
+      .eq('tenant_id', req.tenant.id)
       .eq('read', false);
     if (isEmpty(error)) return res.json({ ok: true });
     if (error) throw error;
@@ -76,7 +80,8 @@ router.post(
       .from('notifications')
       .update({ read: true })
       .eq('id', req.params.id)
-      .eq('user_id', req.user.id);
+      .eq('user_id', req.user.id)
+      .eq('tenant_id', req.tenant.id);
     if (error) throw error;
     res.json({ ok: true });
   })
@@ -90,7 +95,8 @@ router.post(
       .from('notifications')
       .update({ archived: true })
       .eq('id', req.params.id)
-      .eq('user_id', req.user.id);
+      .eq('user_id', req.user.id)
+      .eq('tenant_id', req.tenant.id);
     if (error) throw error;
     res.json({ ok: true });
   })

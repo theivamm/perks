@@ -17,14 +17,18 @@ const PREF_KEYS = ['vegetarian', 'glutenFree', 'vegan'];
 router.get(
   '/',
   requireAdmin,
-  asyncHandler(async (_req, res) => {
+  asyncHandler(async (req, res) => {
     const { data: clients, error } = await supabase
       .from('clients')
       .select('id, name, email, phone, image, preferences, created_at')
+      .eq('tenant_id', req.tenant.id)
       .order('created_at', { ascending: false });
     if (error) throw error;
 
-    const { data: orderRows } = await supabase.from('orders').select('client_id');
+    const { data: orderRows } = await supabase
+      .from('orders')
+      .select('client_id')
+      .eq('tenant_id', req.tenant.id);
     const counts = {};
     for (const row of orderRows || []) counts[row.client_id] = (counts[row.client_id] || 0) + 1;
 
@@ -35,14 +39,15 @@ router.get(
 router.get(
   '/registered',
   requireAdmin,
-  asyncHandler(async (_req, res) => {
+  asyncHandler(async (req, res) => {
     const [usersRes, ordersRes] = await Promise.all([
       supabase
         .from('users')
         .select('id, name, email, phone, image, qr_code, created_at')
         .eq('role', 'cliente')
+        .eq('tenant_id', req.tenant.id)
         .order('created_at', { ascending: false }),
-      supabase.from('orders').select('user_id, status'),
+      supabase.from('orders').select('user_id, status').eq('tenant_id', req.tenant.id),
     ]);
     if (usersRes.error) throw usersRes.error;
     if (ordersRes.error) throw ordersRes.error;
@@ -78,6 +83,7 @@ router.get(
       .select(baseFields)
       .eq('id', req.params.id)
       .eq('role', 'cliente')
+      .eq('tenant_id', req.tenant.id)
       .maybeSingle();
     if (error) {
       const fallback = await supabase
@@ -85,6 +91,7 @@ router.get(
         .select('id, name, email, phone, qr_code, created_at')
         .eq('id', req.params.id)
         .eq('role', 'cliente')
+        .eq('tenant_id', req.tenant.id)
         .maybeSingle();
       if (fallback.error) throw fallback.error;
       user = fallback.data;
@@ -96,11 +103,13 @@ router.get(
         .from('orders')
         .select('*, clients(name, phone), order_items(*)')
         .eq('user_id', user.id)
+        .eq('tenant_id', req.tenant.id)
         .order('created_at', { ascending: false }),
       supabase
         .from('user_coupons')
         .select('*')
         .eq('user_id', user.id)
+        .eq('tenant_id', req.tenant.id)
         .order('created_at', { ascending: false }),
     ]);
     if (ordersRes.error) throw ordersRes.error;
@@ -126,17 +135,19 @@ router.get(
 router.get(
   '/summary',
   requireAdmin,
-  asyncHandler(async (_req, res) => {
+  asyncHandler(async (req, res) => {
     const [usersRes, couponsRes] = await Promise.all([
       supabase
         .from('users')
         .select('id, name, email, phone, qr_code')
         .eq('role', 'cliente')
+        .eq('tenant_id', req.tenant.id)
         .order('created_at', { ascending: false }),
       supabase
         .from('user_coupons')
         .select('id, user_id, title, description, type, value, points, target_points, code, completed_at')
         .eq('status', 'completado')
+        .eq('tenant_id', req.tenant.id)
         .order('completed_at', { ascending: false }),
     ]);
     if (usersRes.error) throw usersRes.error;
@@ -175,6 +186,7 @@ router.post(
       .select('*')
       .eq('qr_code', code)
       .eq('status', 'activado')
+      .eq('tenant_id', req.tenant.id)
       .maybeSingle();
     if (error) throw error;
 
@@ -189,6 +201,7 @@ router.post(
         .select('id, name, email, phone, qr_code, created_at')
         .eq('qr_code', code)
         .eq('role', 'cliente')
+        .eq('tenant_id', req.tenant.id)
         .maybeSingle();
       if (userByQr) {
         userId = userByQr.id;
@@ -197,6 +210,7 @@ router.post(
           .select('*')
           .eq('user_id', userByQr.id)
           .eq('status', 'activado')
+          .eq('tenant_id', req.tenant.id)
           .maybeSingle();
         if (userCoupon) {
           coupon = userCoupon;
@@ -213,6 +227,7 @@ router.post(
         .select('*')
         .eq('qr_code', code)
         .eq('status', 'completado')
+        .eq('tenant_id', req.tenant.id)
         .maybeSingle();
       if (rcErr) throw rcErr;
       if (!readyCoupon) {
@@ -223,10 +238,11 @@ router.post(
         .select('id, name, email, phone, qr_code, created_at')
         .eq('id', readyCoupon.user_id)
         .eq('role', 'cliente')
+        .eq('tenant_id', req.tenant.id)
         .maybeSingle();
       if (ruErr) throw ruErr;
 
-      const redeemed = await redeemReadyCouponAndNotify(readyCoupon.id);
+      const redeemed = await redeemReadyCouponAndNotify(readyCoupon.id, req.tenant.id);
       if (!redeemed) {
         return res.status(400).json({ error: 'El cupón ya fue canjeado o no está disponible.' });
       }
@@ -239,6 +255,7 @@ router.post(
       .select('id, name, email, phone, qr_code, created_at')
       .eq('id', userId)
       .eq('role', 'cliente')
+      .eq('tenant_id', req.tenant.id)
       .maybeSingle();
     if (uErr) throw uErr;
 
@@ -260,6 +277,7 @@ router.post(
       .select('id, name, email')
       .eq('id', userId)
       .eq('role', 'cliente')
+      .eq('tenant_id', req.tenant.id)
       .maybeSingle();
     if (userErr) throw userErr;
     if (!user) return res.status(404).json({ error: 'Cliente no encontrado' });
@@ -271,6 +289,7 @@ router.post(
         .eq('id', userCouponId)
         .eq('user_id', user.id)
         .eq('status', 'activado')
+        .eq('tenant_id', req.tenant.id)
         .maybeSingle();
       if (tErr) throw tErr;
       if (!target) {
@@ -284,6 +303,7 @@ router.post(
         .select('id')
         .eq('user_id', user.id)
         .eq('status', 'activado')
+        .eq('tenant_id', req.tenant.id)
         .maybeSingle();
       if (aErr) throw aErr;
       if (!active) {
@@ -296,7 +316,7 @@ router.post(
     const result = await addActiveCouponPoint(user.id, userCouponId);
 
     try {
-      await notifyPointAdded(user.id, result);
+      await notifyPointAdded(user.id, result, req.tenant.id);
     } catch (err) {
       console.warn('[Notificaciones] No se pudieron crear:', err.message);
     }
@@ -324,6 +344,7 @@ router.post(
         .from('clients')
         .select('*')
         .eq('email', String(email).trim().toLowerCase())
+        .eq('tenant_id', req.tenant.id)
         .maybeSingle();
       client = data;
     }
@@ -342,6 +363,7 @@ router.post(
     const { data: created, error } = await supabase
       .from('clients')
       .insert({
+        tenant_id: req.tenant.id,
         name: String(name).trim(),
         email: String(email).trim().toLowerCase(),
         phone: String(phone).trim(),
@@ -375,6 +397,7 @@ router.put(
       .from('clients')
       .update(patch)
       .eq('id', req.params.id)
+      .eq('tenant_id', req.tenant.id)
       .select()
       .single();
     if (error) throw error;
@@ -430,6 +453,7 @@ router.post(
     const { data: existing, error: fetchErr } = await supabase
       .from('clients')
       .select('email')
+      .eq('tenant_id', req.tenant.id)
       .neq('email', '');
     if (fetchErr) throw fetchErr;
 
@@ -457,7 +481,7 @@ router.post(
       }
 
       if (email) existEmails.add(email);
-      toInsert.push({ name, phone, email, image: '', preferences: {} });
+      toInsert.push({ tenant_id: req.tenant.id, name, phone, email, image: '', preferences: {} });
     }
 
     if (toInsert.length > 0) {
@@ -473,7 +497,11 @@ router.delete(
   '/:id',
   requireAdmin,
   asyncHandler(async (req, res) => {
-    const { error } = await supabase.from('clients').delete().eq('id', req.params.id);
+    const { error } = await supabase
+      .from('clients')
+      .delete()
+      .eq('id', req.params.id)
+      .eq('tenant_id', req.tenant.id);
     if (error) throw error;
     res.json({ ok: true });
   })

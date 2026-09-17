@@ -43,12 +43,14 @@ router.get(
         .from('orders')
         .select('id, status, total, created_at, order_items(*)')
         .eq('user_id', user.id)
+        .eq('tenant_id', req.tenant.id)
         .order('created_at', { ascending: false })
         .limit(100),
       supabase
         .from('user_coupons')
         .select('*')
         .eq('user_id', user.id)
+        .eq('tenant_id', req.tenant.id)
         .order('created_at', { ascending: false }),
     ]);
     if (ordersRes.error) throw ordersRes.error;
