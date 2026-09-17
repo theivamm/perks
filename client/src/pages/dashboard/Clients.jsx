@@ -2,10 +2,12 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Eye, Mail, Phone, PlusCircle, Search, ShieldCheck } from 'lucide-react';
 import { api } from '../../api.js';
+import { useTenant } from '../../context/TenantContext.jsx';
 import { Spinner, toast } from '../../components/ui.jsx';
 
 export default function Clients() {
   const navigate = useNavigate();
+  const { t } = useTenant();
   const [registered, setRegistered] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -21,7 +23,7 @@ export default function Clients() {
       .finally(() => setLoading(false));
   }, []);
 
-  const viewClient = (c) => navigate(`/dashboard/cliente/${c.id}`);
+  const viewClient = (c) => navigate(t(`/dashboard/cliente/${c.id}`));
 
   const addPoint = async (c) => {
     if (!confirm(`¿Sumar 1 punto al cupón activo de "${c.name}"?`)) return;

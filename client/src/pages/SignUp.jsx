@@ -10,11 +10,13 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useTheme } from '../context/ThemeContext.jsx';
+import { useTenant } from '../context/TenantContext.jsx';
 import { supabase } from '../lib/supabase.js';
 
 export default function SignUp() {
   const { register, loginGoogle, loading } = useAuth();
   const { settings, toggleTheme } = useTheme();
+  const { t } = useTenant();
   const navigate = useNavigate();
 
   const [form, setForm] = useState({ name: '', email: '', password: '' });
@@ -22,7 +24,7 @@ export default function SignUp() {
   const [error, setError] = useState('');
   const [googleLoading, setGoogleLoading] = useState(false);
 
-  const go = (u) => navigate(u?.role === 'admin' ? '/dashboard' : '/');
+  const go = (u) => navigate(t(u?.role === 'admin' ? '/dashboard' : '/'));
 
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
 
@@ -61,7 +63,7 @@ export default function SignUp() {
 
       <div className="relative w-full max-w-md">
         <Link
-          to="/"
+          to={t('/')}
           className="mb-6 inline-flex items-center gap-2 text-sm font-semibold text-ink-muted transition-colors hover:text-ink"
         >
           <ArrowLeft size={16} />
@@ -166,7 +168,7 @@ export default function SignUp() {
 
             <div className="mt-5 text-center text-sm text-ink-muted">
               ¿Ya tenés cuenta?{' '}
-              <Link to="/login" className="font-semibold text-primary-strong hover:underline">
+              <Link to={t('/login')} className="font-semibold text-primary-strong hover:underline">
                 Iniciá sesión
               </Link>
             </div>

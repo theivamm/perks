@@ -5,6 +5,7 @@ import QRCode from 'qrcode';
 import { api } from '../api.js';
 import { useTheme } from '../context/ThemeContext.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
+import { useTenant } from '../context/TenantContext.jsx';
 import { ActiveCouponCard, ReadyCouponCard, couponValue } from '../components/CouponCards.jsx';
 import Navbar from '../components/Navbar.jsx';
 import { EmptyState, Modal, Spinner, toast } from '../components/ui.jsx';
@@ -12,6 +13,7 @@ import { EmptyState, Modal, Spinner, toast } from '../components/ui.jsx';
 export default function CouponsPage() {
   const { isAuthed } = useAuth();
   const { settings } = useTheme();
+  const { t } = useTenant();
   const currency = settings.currency || '$';
 
   const [catalog, setCatalog] = useState([]);
@@ -171,7 +173,7 @@ export default function CouponsPage() {
               </p>
             </div>
             <Link
-              to="/"
+              to={t('/')}
               className="inline-flex items-center gap-2 rounded-2xl bg-primary-contrast/15 px-4 py-2.5 text-sm font-extrabold transition-colors hover:bg-primary-contrast/25"
             >
               Ver menú y precios

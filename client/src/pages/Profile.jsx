@@ -21,6 +21,7 @@ import QRCode from 'qrcode';
 import { api } from '../api.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useTheme } from '../context/ThemeContext.jsx';
+import { useTenant } from '../context/TenantContext.jsx';
 import { EmptyState, Modal, Spinner, toast } from '../components/ui.jsx';
 import ImageCropper from '../components/ImageCropper.jsx';
 import { ActiveCouponCard, ReadyCouponCard } from '../components/CouponCards.jsx';
@@ -33,6 +34,7 @@ import { formatWhen, notificationMeta } from '../lib/notifications.js';
 export default function Profile() {
   const { user, updateUser } = useAuth();
   const { settings, toggleTheme } = useTheme();
+  const { t } = useTenant();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [qrImg, setQrImg] = useState('');
@@ -149,7 +151,7 @@ export default function Profile() {
     <div className="min-h-screen bg-surface-page">
       <header className="sticky top-0 z-40 border-b border-line bg-surface/page px-4 py-3 backdrop-blur-md">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-3">
-          <Link to="/" className="inline-flex items-center gap-2 text-sm font-semibold text-ink-muted hover:text-ink">
+          <Link to={t('/')} className="inline-flex items-center gap-2 text-sm font-semibold text-ink-muted hover:text-ink">
             <ArrowLeft size={16} />
             Inicio
           </Link>
@@ -214,7 +216,7 @@ export default function Profile() {
               <div className="mx-auto mt-5 flex h-52 w-52 flex-col items-center justify-center gap-3 rounded-3xl border border-dashed border-line bg-surface-alt/40 p-4 text-center">
                 <QrCode size={26} className="text-ink-muted" />
                 <p className="text-sm font-bold text-ink-muted">Sin cupón activo</p>
-                <Link to="/cupones" className="btn-primary text-sm">
+                <Link to={t('/cupones')} className="btn-primary text-sm">
                   Ver cupones y activar
                 </Link>
               </div>
@@ -240,7 +242,7 @@ export default function Profile() {
                     subtitle="Elegí un premio y empezá a sumar puntos con tu QR."
                   />
                   <div className="-mt-8 mb-6 text-center">
-                    <Link to="/" className="btn-primary text-sm">Ver cupones y activar</Link>
+                    <Link to={t('/')} className="btn-primary text-sm">Ver cupones y activar</Link>
                   </div>
                 </>
               )}
@@ -277,7 +279,7 @@ export default function Profile() {
               Notificaciones
             </h2>
             <Link
-              to="/notificaciones"
+              to={t('/notificaciones')}
               className="inline-flex items-center gap-1 text-sm font-bold text-primary-strong hover:underline"
             >
               Ver historial
@@ -322,7 +324,7 @@ export default function Profile() {
           )}
           {notifications.length > 6 && (
             <p className="mt-3 text-center text-xs font-semibold text-ink-muted">
-              <Link to="/notificaciones" className="text-primary-strong hover:underline">
+              <Link to={t('/notificaciones')} className="text-primary-strong hover:underline">
                 Ver todas las notificaciones
               </Link>
             </p>

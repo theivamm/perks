@@ -3,12 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { BadgePercent, Gift, Loader2, QrCode, ScanLine, Smartphone, UserRound } from 'lucide-react';
 import { api } from '../api.js';
 import { useTheme } from '../context/ThemeContext.jsx';
+import { useTenant } from '../context/TenantContext.jsx';
 import { couponValue } from './CouponCards.jsx';
 import { EmptyState, toast } from './ui.jsx';
 
 export default function AdminSummary() {
   const navigate = useNavigate();
   const { settings } = useTheme();
+  const { t } = useTenant();
   const [clients, setClients] = useState(null);
 
   const load = () =>
@@ -32,7 +34,7 @@ export default function AdminSummary() {
 
   return (
     <div className="space-y-6">
-      <button className="card flex w-full items-center gap-4 p-5 text-left transition-all hover:-translate-y-0.5 hover:bg-surface-alt lg:hidden" onClick={() => navigate('/dashboard/escanear')}>
+      <button className="card flex w-full items-center gap-4 p-5 text-left transition-all hover:-translate-y-0.5 hover:bg-surface-alt lg:hidden" onClick={() => navigate(t('/dashboard/escanear'))}>
         <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-primary-strong text-primary-contrast shadow-glow">
           <ScanLine size={22} />
         </div>
@@ -75,7 +77,7 @@ export default function AdminSummary() {
                     <Gift size={15} className="text-primary-strong" />
                     {c.name}
                   </p>
-                  <button className="btn-ghost !px-2.5 !py-1 !text-xs" onClick={() => navigate(`/dashboard/cliente/${c.id}`)}>
+                  <button className="btn-ghost !px-2.5 !py-1 !text-xs" onClick={() => navigate(t(`/dashboard/cliente/${c.id}`))}>
                     <UserRound size={13} />
                     Ver perfil
                   </button>

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Archive, Bell, CheckCheck, History, Loader2 } from 'lucide-react';
 import { api } from '../api.js';
 import { useAuth } from '../context/AuthContext.jsx';
+import { useTenant } from '../context/TenantContext.jsx';
 import { supabase } from '../lib/supabase.js';
 import { formatWhen, notificationMeta } from '../lib/notifications.js';
 import CouponPointOverlay from './CouponPointOverlay.jsx';
@@ -12,6 +13,7 @@ const POLL_MS = 10000;
 export default function NotificationsBell() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { t } = useTenant();
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState([]);
   const [unread, setUnread] = useState(0);
@@ -108,7 +110,8 @@ export default function NotificationsBell() {
       setCelebrate(n);
       return;
     }
-    navigate(n.link || '/notificaciones');
+    const link = n.link && !/^https?:\/\//i.test(n.link) ? t(n.link) : n.link;
+    navigate(link || t('/notificaciones'));
   };
 
   return (
@@ -139,7 +142,7 @@ export default function NotificationsBell() {
                 className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-bold text-ink-muted transition-colors hover:bg-surface-alt hover:text-ink"
                 onClick={() => {
                   setOpen(false);
-                  navigate('/notificaciones');
+                  navigate(t('/notificaciones'));
                 }}
               >
                 <History size={13} />

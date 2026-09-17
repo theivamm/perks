@@ -3,12 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { CameraOff, Check, Eye, Gift, Loader2, PlusCircle, ScanLine, Ticket, UserCheck } from 'lucide-react';
 import { Html5Qrcode } from 'html5-qrcode';
 import { api } from '../../api.js';
+import { useTenant } from '../../context/TenantContext.jsx';
 import { toast } from '../../components/ui.jsx';
 
 const SCAN_ELEMENT = 'qr-reader-region';
 
 export default function ScanPage() {
   const navigate = useNavigate();
+  const { t } = useTenant();
   const scannerRef = useRef(null);
   const [scanning, setScanning] = useState(false);
   const [paused, setPaused] = useState(false);
@@ -153,7 +155,7 @@ export default function ScanPage() {
               </button>
               <button
                 className="btn-ghost"
-                onClick={() => navigate(`/dashboard/cliente/${progress.client.id}?cupon=${progress.user_coupon_id}`)}
+                onClick={() => navigate(t(`/dashboard/cliente/${progress.client.id}?cupon=${progress.user_coupon_id}`))}
               >
                 <Eye size={16} />
                 Ver perfil

@@ -1,5 +1,8 @@
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { useEffect } from 'react';
+import { Navigate, Route, Routes, useNavigate } from 'react-router-dom';
+import { api } from './api.js';
 import { useAuth } from './context/AuthContext.jsx';
+import { TenantProvider, useTenant } from './context/TenantContext.jsx';
 import Home from './pages/Home.jsx';
 import Login from './pages/Login.jsx';
 import Profile from './pages/Profile.jsx';
@@ -13,28 +16,47 @@ import ClientDetail from './pages/dashboard/ClientDetail.jsx';
 import ScanPage from './pages/dashboard/ScanPage.jsx';
 import Coupons from './pages/dashboard/Coupons.jsx';
 import SettingsPage from './pages/dashboard/SettingsPage.jsx';
+import SuperAdmin from './pages/superadmin/SuperAdmin.jsx';
 
 function RequireAdmin({ children }) {
   const { isAuthed, user } = useAuth();
-  if (!isAuthed) return <Navigate to="/login" replace />;
-  if (user?.role !== 'admin') return <Navigate to="/" replace />;
+  const { t } = useTenant();
+  if (!isAuthed) return <Navigate to={t('/login')} replace />;
+  if (user?.role !== 'admin') return <Navigate to={t('/')} replace />;
   return children;
 }
 
 function RequireAuth({ children }) {
   const { isAuthed } = useAuth();
-  if (!isAuthed) return <Navigate to="/login" replace />;
+  const { t } = useTenant();
+  if (!isAuthed) return <Navigate to={t('/login')} replace />;
   return children;
 }
 
-export default function App() {
+// Mientras la landing no está, la raíz redirige al perfil principal.
+function DefaultRedirect() {
+  const navigate = useNavigate();
+  useEffect(() => {
+    api('/api/tenants/default')
+      .then(({ slug }) => navigate(`/${slug}`, { replace: true }))
+      .catch(() => navigate('/perks/admin', { replace: true }));
+  }, [navigate]);
+  return null;
+}
+
+function RedirectHome() {
+  const { home } = useTenant();
+  return <Navigate to={home()} replace />;
+}
+
+function TenantApp() {
   return (
     <Routes>
-      <Route path="/" element={<Home />} />
-      <Route path="/login" element={<Login />} />
-      <Route path="/registro" element={<Navigate to="/login" replace />} />
+      <Route index element={<Home />} />
+      <Route path="login" element={<Login />} />
+      <Route path="registro" element={<Navigate to="login" replace />} />
       <Route
-        path="/perfil"
+        path="perfil"
         element={
           <RequireAuth>
             <Profile />
@@ -42,7 +64,7 @@ export default function App() {
         }
       />
       <Route
-        path="/notificaciones"
+        path="notificaciones"
         element={
           <RequireAuth>
             <NotificationsPage />
@@ -50,7 +72,7 @@ export default function App() {
         }
       />
       <Route
-        path="/cupones"
+        path="cupones"
         element={
           <RequireAuth>
             <CouponsPage />
@@ -58,7 +80,7 @@ export default function App() {
         }
       />
       <Route
-        path="/configuracion"
+        path="configuracion"
         element={
           <RequireAuth>
             <UserSettings />
@@ -66,7 +88,7 @@ export default function App() {
         }
       />
       <Route
-        path="/dashboard"
+        path="dashboard"
         element={
           <RequireAdmin>
             <DashboardLayout />
@@ -81,6 +103,24 @@ export default function App() {
         <Route path="cupones" element={<Coupons />} />
         <Route path="configuracion" element={<SettingsPage />} />
       </Route>
+      <Route path="*" element={<RedirectHome />} />
+    </Routes>
+  );
+}
+
+export default function App() {
+  return (
+    <Routes>
+      <Route path="/" element={<DefaultRedirect />} />
+      <Route path="/perks/admin" element={<SuperAdmin />} />
+      <Route
+        path="/:slug"
+        element={
+          <TenantProvider>
+            <TenantApp />
+          </TenantProvider>
+        }
+      />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

@@ -7,12 +7,19 @@ export function setToken(token) {
   else localStorage.removeItem('token');
 }
 
+let currentTenantSlug = '';
+
+export function setTenantSlug(slug) {
+  currentTenantSlug = slug || '';
+}
+
 export async function api(path, options = {}) {
   const headers = { ...(options.headers || {}) };
   const isForm = options.body instanceof FormData;
   if (!isForm) headers['Content-Type'] = 'application/json';
   const token = getToken();
   if (token) headers.Authorization = `Bearer ${token}`;
+  if (currentTenantSlug) headers['x-tenant-slug'] = currentTenantSlug;
 
   let res;
   try {

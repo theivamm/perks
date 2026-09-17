@@ -15,6 +15,7 @@ import {
 import QRCode from 'qrcode';
 import { api } from '../../api.js';
 import { useTheme } from '../../context/ThemeContext.jsx';
+import { useTenant } from '../../context/TenantContext.jsx';
 import { EmptyState, Spinner, toast } from '../../components/ui.jsx';
 import { ActiveCouponCard, couponValue } from '../../components/CouponCards.jsx';
 import { formatDateTime } from '../../lib/notifications.js';
@@ -24,6 +25,7 @@ export default function ClientDetail() {
   const [searchParams] = useSearchParams();
   const scannedCouponId = searchParams.get('cupon');
   const { settings } = useTheme();
+  const { t } = useTenant();
   const currency = settings.currency || '$';
   const [detail, setDetail] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -97,7 +99,7 @@ export default function ClientDetail() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <Link to="/dashboard/clientes" className="btn-ghost !px-2.5 !py-2">
+          <Link to={t('/dashboard/clientes')} className="btn-ghost !px-2.5 !py-2">
             <ArrowLeft size={16} />
           </Link>
           <div>

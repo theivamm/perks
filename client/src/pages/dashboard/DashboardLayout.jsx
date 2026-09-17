@@ -19,22 +19,9 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { useTheme } from '../../context/ThemeContext.jsx';
+import { useTenant } from '../../context/TenantContext.jsx';
 import NotificationsBell from '../../components/NotificationsBell.jsx';
 import Logo from '../../components/Logo.jsx';
-
-const NAV = [
-  { to: '/dashboard/menu', label: 'Menú', icon: UtensilsCrossed },
-  { to: '/dashboard/clientes', label: 'Clientes', icon: Users },
-  { to: '/dashboard/cupones', label: 'Cupones', icon: BadgePercent },
-];
-
-const FAB_ITEMS = [
-  { to: '/dashboard/menu', label: 'Menú', icon: UtensilsCrossed },
-  { to: '/dashboard/clientes', label: 'Clientes', icon: Users },
-  { to: '/dashboard/cupones', label: 'Cupones', icon: BadgePercent },
-  { to: '/dashboard/configuracion', label: 'Configuración', icon: SettingsIcon },
-  { to: '/', label: 'Página pública', icon: ExternalLink },
-];
 
 function initials(name = '') {
   return name
@@ -48,11 +35,26 @@ function initials(name = '') {
 export default function DashboardLayout() {
   const { user, logout } = useAuth();
   const { settings, toggleTheme } = useTheme();
+  const { t, home } = useTenant();
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
   const [fabOpen, setFabOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem('sidebar-collapsed') === '1');
   const menuRef = useRef(null);
+
+  const NAV = [
+    { to: t('/dashboard/menu'), label: 'Menú', icon: UtensilsCrossed },
+    { to: t('/dashboard/clientes'), label: 'Clientes', icon: Users },
+    { to: t('/dashboard/cupones'), label: 'Cupones', icon: BadgePercent },
+  ];
+
+  const FAB_ITEMS = [
+    { to: t('/dashboard/menu'), label: 'Menú', icon: UtensilsCrossed },
+    { to: t('/dashboard/clientes'), label: 'Clientes', icon: Users },
+    { to: t('/dashboard/cupones'), label: 'Cupones', icon: BadgePercent },
+    { to: t('/dashboard/configuracion'), label: 'Configuración', icon: SettingsIcon },
+    { to: home(), label: 'Página pública', icon: ExternalLink },
+  ];
 
   const toggleCollapsed = () => {
     setCollapsed((c) => {
@@ -72,7 +74,7 @@ export default function DashboardLayout() {
 
   const doLogout = () => {
     logout();
-    navigate('/login');
+    navigate(t('/login'));
   };
 
   const go = (path) => () => {
@@ -127,7 +129,7 @@ export default function DashboardLayout() {
 
         <div className={`mt-4 flex flex-col gap-2 border-t border-line pt-4 ${collapsed ? 'lg:items-center' : ''}`}>
           <NavLink
-            to="/dashboard/configuracion"
+            to={t('/dashboard/configuracion')}
             title={collapsed ? 'Configuración' : undefined}
             aria-label="Configuración"
             className={({ isActive }) =>
@@ -148,7 +150,7 @@ export default function DashboardLayout() {
             {!collapsed && <span>Configuración</span>}
           </NavLink>
           <a
-            href="/"
+            href={home()}
             target="_blank"
             rel="noreferrer"
             title={collapsed ? 'Ver página de inicio' : undefined}
@@ -185,7 +187,7 @@ export default function DashboardLayout() {
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-30 flex items-center justify-between gap-3 border-b border-line bg-surface/page px-5 py-3 backdrop-blur-md">
           <Link
-            to="/dashboard"
+            to={t('/dashboard')}
             aria-label="Ir al inicio del panel"
             className="lg:hidden"
           >
@@ -227,21 +229,21 @@ export default function DashboardLayout() {
                 <div className="p-1.5">
                     <button
                       className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-ink transition-colors hover:bg-surface-alt"
-                      onClick={go('/')}
+                      onClick={go(t('/'))}
                     >
                       <Home size={15} />
                       Ir a página de inicio
                     </button>
                     <button
                       className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-ink transition-colors hover:bg-surface-alt"
-                      onClick={go('/dashboard/escanear')}
+                      onClick={go(t('/dashboard/escanear'))}
                     >
                       <ScanLine size={15} />
                       Escanear QR
                     </button>
                     <button
                       className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-ink transition-colors hover:bg-surface-alt"
-                      onClick={go('/dashboard/configuracion')}
+                      onClick={go(t('/dashboard/configuracion'))}
                     >
                       <SettingsIcon size={15} />
                       Configuración
@@ -266,7 +268,7 @@ export default function DashboardLayout() {
       </div>
 
       <NavLink
-        to="/dashboard/escanear"
+        to={t('/dashboard/escanear')}
         aria-label="Escanear QR"
         className="fixed bottom-5 right-5 z-40 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary-strong text-primary-contrast shadow-glow transition-transform hover:scale-105 active:scale-95 lg:hidden"
       >

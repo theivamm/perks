@@ -14,6 +14,7 @@ import {
 import { api } from '../api.js';
 import { useTheme } from '../context/ThemeContext.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
+import { useTenant } from '../context/TenantContext.jsx';
 import { Modal, toast } from '../components/ui.jsx';
 import ImageCropper from '../components/ImageCropper.jsx';
 import { avatarInitials } from '../components/UserMenu.jsx';
@@ -22,6 +23,7 @@ import Navbar from '../components/Navbar.jsx';
 export default function UserSettings() {
   const { settings, toggleTheme } = useTheme();
   const { user, updateUser, logout } = useAuth();
+  const { t } = useTenant();
   const navigate = useNavigate();
   const dark = settings.theme === 'dark';
 
@@ -65,7 +67,7 @@ export default function UserSettings() {
     try {
       await api('/api/profile/delete-account', { method: 'POST', body: { confirm: deleteConfirm } });
       await logout();
-      navigate('/');
+      navigate(t('/'));
       toast('Tu cuenta fue eliminada.');
     } catch (err) {
       toast(err.message);
@@ -184,14 +186,14 @@ export default function UserSettings() {
             <h2 className="mb-3 font-extrabold text-ink">Accesos rápidos</h2>
             <div className="grid gap-2 sm:grid-cols-2">
               <Link
-                to="/perfil"
+                to={t('/perfil')}
                 className="flex items-center gap-2.5 rounded-2xl border border-line bg-surface px-4 py-3 text-sm font-bold text-ink transition-colors hover:bg-surface-alt"
               >
                 <UserIcon size={16} className="text-primary-strong" />
                 Mi perfil
               </Link>
               <Link
-                to="/notificaciones"
+                to={t('/notificaciones')}
                 className="flex items-center gap-2.5 rounded-2xl border border-line bg-surface px-4 py-3 text-sm font-bold text-ink transition-colors hover:bg-surface-alt"
               >
                 <Bell size={16} className="text-primary-strong" />

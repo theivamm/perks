@@ -3,6 +3,7 @@ import { LogIn, Moon, Sun } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
+import { useTenant } from '../context/TenantContext.jsx';
 import NotificationsBell from './NotificationsBell.jsx';
 import Logo from './Logo.jsx';
 import UserMenu from './UserMenu.jsx';
@@ -10,6 +11,7 @@ import UserMenu from './UserMenu.jsx';
 export default function Navbar() {
   const { settings, toggleTheme } = useTheme();
   const { user } = useAuth();
+  const { t, home } = useTenant();
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
@@ -28,7 +30,7 @@ export default function Navbar() {
     >
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
         <div className="flex items-center gap-2.5">
-          <Link to="/" className="flex items-center gap-2.5 font-extrabold text-ink">
+          <Link to={home()} className="flex items-center gap-2.5 font-extrabold text-ink">
             <Logo size="xl" showText={false} />
           </Link>
         </div>
@@ -46,7 +48,7 @@ export default function Navbar() {
 
           {!user && (
             <Link
-              to="/login"
+              to={t('/login')}
               className="inline-flex items-center gap-1.5 rounded-xl border border-line px-3 py-1.5 text-sm font-semibold text-ink transition-colors hover:bg-surface-alt"
             >
               <LogIn size={15} />

@@ -5,6 +5,7 @@ import QRCode from 'qrcode';
 import { api } from '../api.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useTheme } from '../context/ThemeContext.jsx';
+import { useTenant } from '../context/TenantContext.jsx';
 import { ActiveCouponCard, couponValue } from '../components/CouponCards.jsx';
 import Navbar from '../components/Navbar.jsx';
 import Logo from '../components/Logo.jsx';
@@ -14,6 +15,7 @@ import { toast, Modal } from '../components/ui.jsx';
 export default function Home() {
   const { user, isAuthed } = useAuth();
   const { settings } = useTheme();
+  const { t } = useTenant();
   const currency = settings.currency || '$';
 
   const [tab, setTab] = useState('catalog');
@@ -142,7 +144,7 @@ export default function Home() {
               ✓ Tu cupón activo
             </span>
           ) : !isAuthed ? (
-            <Link to="/login" className="btn-secondary block text-center text-sm">
+            <Link to={t('/login')} className="btn-secondary block text-center text-sm">
               Ingresá con Google y activá
             </Link>
           ) : disabled ? (
@@ -296,7 +298,7 @@ export default function Home() {
                 <div className="card border-2 border-dashed border-line p-10 text-center">
                   <Ticket size={36} className="mx-auto text-ink-muted" />
                   <p className="mt-3 font-extrabold text-ink">Iniciá sesión para ver tus cupones activos</p>
-                  <Link to="/login" className="btn-primary mx-auto mt-4 w-fit text-sm">
+                  <Link to={t('/login')} className="btn-primary mx-auto mt-4 w-fit text-sm">
                     Ingresar con Google
                   </Link>
                 </div>
@@ -340,7 +342,7 @@ export default function Home() {
                   {readyCount > 0 && (
                     <p className="mt-3 text-center text-sm font-semibold text-emerald-600 dark:text-emerald-400">
                       Tenés {readyCount} cupón{readyCount > 1 ? 'es' : ''} listo{readyCount > 1 ? 's' : ''} para canjear
-                      <Link to="/perfil" className="ml-1 underline">ver en tu perfil</Link>
+                      <Link to={t('/perfil')} className="ml-1 underline">ver en tu perfil</Link>
                     </p>
                   )}
                 </div>
@@ -396,7 +398,7 @@ export default function Home() {
               {user?.role === 'admin' ? '' : ' Ver mi QR y cupones'}
             </Link>
           ) : (
-            <Link to="/login" className="btn-primary text-base">
+            <Link to={t('/login')} className="btn-primary text-base">
               <QrCode size={18} />
               Ingresá con Google y empezá a sumar
             </Link>
@@ -418,7 +420,7 @@ export default function Home() {
         <div className="fixed bottom-6 left-4 z-40 flex items-center gap-2 sm:left-6">
           {isAuthed && (
             <Link
-              to="/cupones"
+              to={t('/cupones')}
               className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-primary to-primary-strong px-4 py-3 text-sm font-extrabold text-primary-contrast shadow-glow transition-transform hover:-translate-y-0.5 hover:shadow-xl"
             >
               <Gift size={17} className="transition-transform group-hover:-rotate-6" />

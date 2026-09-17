@@ -12,6 +12,7 @@ import {
   UtensilsCrossed,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
+import { useTenant } from '../context/TenantContext.jsx';
 
 export function avatarInitials(u = {}) {
   const parts = [u?.name, u?.last_name].filter((x) => x && String(x).trim());
@@ -21,6 +22,7 @@ export function avatarInitials(u = {}) {
 
 export default function UserMenu() {
   const { user, logout } = useAuth();
+  const { t, home } = useTenant();
   const navigate = useNavigate();
   const location = useLocation();
   const [open, setOpen] = useState(false);
@@ -39,23 +41,23 @@ export default function UserMenu() {
     navigate(to);
   };
 
-  const onProfile = location.pathname === '/perfil';
-  const isHome = location.pathname === '/';
+  const onProfile = location.pathname.endsWith('/perfil');
+  const isHome = location.pathname === home();
 
   const items =
     user?.role === 'admin'
       ? [
-          ...(!isHome ? [{ label: 'Ir a página de inicio', to: '/', icon: Home }] : []),
-          { label: 'Ir a dashboard', to: '/dashboard', icon: LayoutDashboard },
-          { label: 'Escanear QR', to: '/dashboard/escanear', icon: ScanLine },
-          { label: 'Configuración', to: '/dashboard/configuracion', icon: SettingsIcon },
+          ...(!isHome ? [{ label: 'Ir a página de inicio', to: t('/'), icon: Home }] : []),
+          { label: 'Ir a dashboard', to: t('/dashboard'), icon: LayoutDashboard },
+          { label: 'Escanear QR', to: t('/dashboard/escanear'), icon: ScanLine },
+          { label: 'Configuración', to: t('/dashboard/configuracion'), icon: SettingsIcon },
         ]
       : [
           onProfile
-            ? { label: 'Ver menú', to: '/', icon: UtensilsCrossed }
-            : { label: 'Ver mi perfil', to: '/perfil', icon: UserIcon },
-          { label: 'Ver cupones', to: '/cupones', icon: Ticket },
-          { label: 'Configuración', to: '/configuracion', icon: SettingsIcon },
+            ? { label: 'Ver menú', to: t('/'), icon: UtensilsCrossed }
+            : { label: 'Ver mi perfil', to: t('/perfil'), icon: UserIcon },
+          { label: 'Ver cupones', to: t('/cupones'), icon: Ticket },
+          { label: 'Configuración', to: t('/configuracion'), icon: SettingsIcon },
         ];
 
   return (
@@ -101,7 +103,7 @@ export default function UserMenu() {
               onClick={async () => {
                 setOpen(false);
                 await logout();
-                navigate('/');
+                navigate(home());
               }}
             >
               <LogOut size={15} />
@@ -116,14 +118,15 @@ export default function UserMenu() {
 
 export function UserLinksRow() {
   const { user } = useAuth();
+  const { t } = useTenant();
   const navigate = useNavigate();
   const location = useLocation();
-  const onProfile = location.pathname === '/perfil';
+  const onProfile = location.pathname.endsWith('/perfil');
   if (user?.role === 'admin') return null;
   const links = [
-    onProfile ? { label: 'Ver menú', to: '/', icon: UtensilsCrossed } : { label: 'Ver mi perfil', to: '/perfil', icon: UserIcon },
-    { label: 'Ver cupones', to: '/cupones', icon: Ticket },
-    { label: 'Configuración', to: '/configuracion', icon: SettingsIcon },
+    onProfile ? { label: 'Ver menú', to: t('/'), icon: UtensilsCrossed } : { label: 'Ver mi perfil', to: t('/perfil'), icon: UserIcon },
+    { label: 'Ver cupones', to: t('/cupones'), icon: Ticket },
+    { label: 'Configuración', to: t('/configuracion'), icon: SettingsIcon },
   ];
   return (
     <div className="flex flex-wrap gap-2">

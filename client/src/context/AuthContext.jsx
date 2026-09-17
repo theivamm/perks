@@ -62,6 +62,19 @@ export function AuthProvider({ children }) {
     }
   };
 
+  const loginSuperAdmin = async (email, password) => {
+    setLoading(true);
+    try {
+      const data = await api('/api/auth/superadmin/login', {
+        method: 'POST',
+        body: { email, password },
+      });
+      return finishAuth(data);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const logout = async () => {
     try {
       await supabase.auth.signOut();
@@ -81,7 +94,7 @@ export function AuthProvider({ children }) {
   const isAuthed = Boolean(getToken() && user);
 
   return (
-    <AuthContext.Provider value={{ user, login, loginOtp, register, loginGoogle, logout, updateUser, loading, isAuthed }}>
+    <AuthContext.Provider value={{ user, login, loginOtp, register, loginGoogle, loginSuperAdmin, logout, updateUser, loading, isAuthed }}>
       {children}
     </AuthContext.Provider>
   );

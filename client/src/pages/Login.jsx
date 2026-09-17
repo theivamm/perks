@@ -3,11 +3,13 @@ import { useNavigate, Link } from 'react-router-dom';
 import { ArrowLeft, KeyRound, Loader2, LogIn, ShieldCheck, UserRound } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useTheme } from '../context/ThemeContext.jsx';
+import { useTenant } from '../context/TenantContext.jsx';
 import { supabase } from '../lib/supabase.js';
 
 export default function Login() {
   const { login, loginOtp, loginGoogle } = useAuth();
   const { settings, toggleTheme } = useTheme();
+  const { t } = useTenant();
   const navigate = useNavigate();
 
   const [mode, setMode] = useState('client');
@@ -19,7 +21,7 @@ export default function Login() {
   const [loginToken, setLoginToken] = useState('');
   const [otpCode, setOtpCode] = useState('');
 
-  const go = (u) => navigate(u?.role === 'admin' ? '/dashboard' : '/');
+  const go = (u) => navigate(t(u?.role === 'admin' ? '/dashboard' : '/'));
 
   useEffect(() => {
     const handleOAuthReturn = async () => {
@@ -40,7 +42,7 @@ export default function Login() {
             const res = await supabase.auth.exchangeCodeForSession(code);
             if (res.error) throw res.error;
             session = res.data.session;
-            window.history.replaceState({}, document.title, '/login');
+            window.history.replaceState({}, document.title, t('/login'));
           }
         }
 
@@ -64,7 +66,7 @@ export default function Login() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/login`,
+          redirectTo: `${window.location.origin}${t('/login')}`,
         },
       });
       if (error) throw error;
@@ -130,7 +132,7 @@ export default function Login() {
 
       <div className="relative w-full max-w-md">
         <Link
-          to="/"
+          to={t('/')}
           className="mb-6 inline-flex items-center gap-2 text-sm font-semibold text-ink-muted transition-colors hover:text-ink"
         >
           <ArrowLeft size={16} />
