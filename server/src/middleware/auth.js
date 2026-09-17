@@ -27,6 +27,16 @@ export function requireAdmin(req, res, next) {
   next();
 }
 
+export function requireSuperAdmin(req, res, next) {
+  const { user, error, status } = verify(req);
+  if (!user) return res.status(status).json({ error });
+  if (user.role !== 'superadmin') {
+    return res.status(403).json({ error: 'Se requieren permisos de superadministrador' });
+  }
+  req.user = user;
+  next();
+}
+
 export function requireAuth(req, res, next) {
   const { user, error, status } = verify(req);
   if (!user) return res.status(status).json({ error });

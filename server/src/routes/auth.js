@@ -14,10 +14,49 @@ const LOGIN_SECRET = () => `${SECRET()}:login`;
 const ADMIN_USERNAME_DEFAULT = 'administracion';
 
 function signToken(userRow) {
-  const payload = { id: userRow.id, email: userRow.email, name: userRow.name, role: userRow.role };
+  const payload = {
+    id: userRow.id,
+    email: userRow.email,
+    name: userRow.name,
+    role: userRow.role,
+    tenant_id: userRow.tenant_id,
+  };
   const token = jwt.sign(payload, SECRET(), { expiresIn: '12h' });
   return { token, user: payload };
 }
+
+// Login del equipo PERKS (superadmin) con email y contraseña directos.
+// No depende del tenant ni del username configurado en cada negocio.
+router.post(
+  '/superadmin/login',
+  asyncHandler(async (req, res) => {
+    const { email, password } = req.body || {};
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email y contraseña requeridos' });
+    }
+
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: String(email).toLowerCase().trim(),
+      password: String(password),
+    });
+    if (error || !data?.user) {
+      return res.status(401).json({ error: 'Credenciales inválidas' });
+    }
+
+    const { data: userRow, error: rowErr } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', data.user.id)
+      .eq('role', 'superadmin')
+      .maybeSingle();
+    if (rowErr) throw rowErr;
+    if (!userRow) {
+      return res.status(403).json({ error: 'Esta cuenta no tiene permisos de superadministrador' });
+    }
+
+    res.json(signToken(userRow));
+  })
+);
 
 function signLoginToken(userId) {
   return jwt.sign({ step: 'otp', id: userId }, LOGIN_SECRET(), { expiresIn: '5m' });
