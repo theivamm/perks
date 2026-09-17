@@ -2,7 +2,8 @@ import { useEffect } from 'react';
 import { Navigate, Route, Routes, useNavigate } from 'react-router-dom';
 import { api } from './api.js';
 import { useAuth } from './context/AuthContext.jsx';
-import { TenantProvider, useTenant } from './context/TenantContext.jsx';
+import { useTenant } from './context/TenantContext.jsx';
+import { useTheme } from './context/ThemeContext.jsx';
 import Home from './pages/Home.jsx';
 import Login from './pages/Login.jsx';
 import Profile from './pages/Profile.jsx';
@@ -17,6 +18,7 @@ import ScanPage from './pages/dashboard/ScanPage.jsx';
 import Coupons from './pages/dashboard/Coupons.jsx';
 import SettingsPage from './pages/dashboard/SettingsPage.jsx';
 import SupportPage from './pages/dashboard/SupportPage.jsx';
+import SetupWizard from './pages/dashboard/SetupWizard.jsx';
 import SuperAdmin from './pages/superadmin/SuperAdmin.jsx';
 import Onboarding from './pages/Onboarding.jsx';
 import Landing from './pages/Landing.jsx';
@@ -50,6 +52,14 @@ function DefaultRedirect() {
 function RedirectHome() {
   const { home } = useTenant();
   return <Navigate to={home()} replace />;
+}
+
+// Si el negocio todavía no terminó sus primeros pasos, lo mandamos al asistente.
+function DashboardIndex() {
+  const { settings } = useTheme();
+  const { t } = useTenant();
+  if (settings.setupCompleted !== 'true') return <Navigate to={t('/primeros-pasos')} replace />;
+  return <MenuManager />;
 }
 
 function TenantApp() {
@@ -91,6 +101,14 @@ function TenantApp() {
         }
       />
       <Route
+        path="primeros-pasos"
+        element={
+          <RequireAdmin>
+            <SetupWizard />
+          </RequireAdmin>
+        }
+      />
+      <Route
         path="dashboard"
         element={
           <RequireAdmin>
@@ -98,7 +116,7 @@ function TenantApp() {
           </RequireAdmin>
         }
       >
-        <Route index element={<MenuManager />} />
+        <Route index element={<DashboardIndex />} />
         <Route path="menu" element={<MenuManager />} />
         <Route path="clientes" element={<Clients />} />
         <Route path="cliente/:id" element={<ClientDetail />} />
@@ -121,12 +139,8 @@ export default function App() {
       <Route path="/onboarding" element={<Onboarding />} />
       <Route path="/demo" element={<DefaultRedirect />} />
       <Route
-        path="/:slug"
-        element={
-          <TenantProvider>
-            <TenantApp />
-          </TenantProvider>
-        }
+        path="/:slug/*"
+        element={<TenantApp />}
       />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

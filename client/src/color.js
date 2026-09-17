@@ -29,17 +29,30 @@ export function hexToHsl(hex) {
 
 const clamp = (n, min, max) => Math.min(max, Math.max(min, n));
 
-const PALETTE_KEY = 'perks:palette';
+const paletteKey = (slug = '') => `perks:palette:${slug || '_perks'}`;
 
-export function persistPalette(primaryHex, dark) {
+export function persistPalette(primaryHex, dark, slug = '') {
   try {
-    localStorage.setItem(PALETTE_KEY, JSON.stringify({ primaryHex, dark: !!dark }));
+    localStorage.setItem(paletteKey(slug), JSON.stringify({ primaryHex, dark: !!dark }));
   } catch {
     /* noop */
   }
 }
 
-export function applyPalette(primaryHex, dark, persist = true) {
+export function readPalette(slug = '') {
+  try {
+    const raw = localStorage.getItem(paletteKey(slug));
+    if (!raw) return null;
+    const data = JSON.parse(raw);
+    const hex = data && /^#[0-9a-fA-F]{6}$/.test(String(data.primaryHex || '')) ? data.primaryHex : '';
+    if (!hex) return null;
+    return { primaryColor: hex, theme: data.dark ? 'dark' : 'light' };
+  } catch {
+    return null;
+  }
+}
+
+export function applyPalette(primaryHex, dark, persist = true, slug = '') {
   const { h, s } = hexToHsl(primaryHex);
   const sat = clamp(s, 40, 75);
   const root = document.documentElement;
@@ -71,25 +84,8 @@ export function applyPalette(primaryHex, dark, persist = true) {
     root.style.setProperty('--line', `${h} 25% 86%`);
   }
 
-  if (persist) persistPalette(primaryHex, dark);
+  if (persist) persistPalette(primaryHex, dark, slug);
 }
-
-export function initPalette() {
-  try {
-    const raw = localStorage.getItem(PALETTE_KEY);
-    if (!raw) return null;
-    const data = JSON.parse(raw);
-    const hex = data && /^#[0-9a-fA-F]{6}$/.test(String(data.primaryHex || '')) ? data.primaryHex : '';
-    if (!hex) return null;
-    const dark = !!data.dark;
-    applyPalette(hex, dark, false);
-    return { primaryColor: hex, theme: dark ? 'dark' : 'light' };
-  } catch (e) {
-    return null;
-  }
-}
-
-export const initialPalette = initPalette();
 
 export const PRESET_COLORS = [
   '#2563eb',

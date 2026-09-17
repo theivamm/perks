@@ -13,13 +13,14 @@ const LOGIN_SECRET = () => `${SECRET()}:login`;
 
 const ADMIN_USERNAME_DEFAULT = 'administracion';
 
-function signToken(userRow) {
+function signToken(userRow, tenantSlug) {
   const payload = {
     id: userRow.id,
     email: userRow.email,
     name: userRow.name,
     role: userRow.role,
     tenant_id: userRow.tenant_id,
+    tenant_slug: tenantSlug || null,
   };
   const token = jwt.sign(payload, SECRET(), { expiresIn: '12h' });
   return { token, user: payload };
@@ -54,7 +55,7 @@ router.post(
       return res.status(403).json({ error: 'Esta cuenta no tiene permisos de superadministrador' });
     }
 
-    res.json(signToken(userRow));
+    res.json(signToken(userRow, null));
   })
 );
 
@@ -134,7 +135,7 @@ router.post(
       return res.json({ step: 'otp', login_token: signLoginToken(admin.id) });
     }
 
-    res.json(signToken(admin));
+    res.json(signToken(admin, tenant.slug));
   })
 );
 
@@ -167,7 +168,7 @@ router.post(
       return res.status(403).json({ error: 'Cuenta sin permisos de administrador' });
     }
 
-    res.json(signToken(admin));
+    res.json(signToken(admin, tenant.slug));
   })
 );
 
@@ -302,7 +303,7 @@ router.post(
       .single();
     if (insErr) throw insErr;
 
-    res.status(201).json(signToken(userRow));
+    res.status(201).json(signToken(userRow, req.tenant.slug));
   })
 );
 
@@ -343,7 +344,7 @@ router.post(
       user = created;
     }
 
-    res.json(signToken(user));
+    res.json(signToken(user, req.tenant.slug));
   })
 );
 

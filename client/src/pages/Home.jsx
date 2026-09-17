@@ -391,7 +391,7 @@ export default function Home() {
         <section className="mt-12 text-center">
           {isAuthed ? (
             <Link
-              to={user?.role === 'admin' ? '/dashboard' : '/perfil'}
+              to={user?.role === 'admin' ? t('/dashboard') : t('/perfil')}
               className="btn-primary text-base"
             >
               {user?.role === 'admin' ? 'Ir al panel' : <QrCode size={18} className="inline-block" />}

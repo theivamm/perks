@@ -23,6 +23,7 @@ function defaultSettings(name) {
     adminUsername: 'administracion',
     adminOtpSecret: '',
     adminOtpEnabled: 'false',
+    setupCompleted: 'false',
   };
 }
 

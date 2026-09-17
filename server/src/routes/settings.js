@@ -18,9 +18,10 @@ const DEFAULTS = {
   isoIcon: 'chef-hat',
   businessName: 'Fidelización App',
   tagline: '',
+  setupCompleted: 'true',
 };
 
-const ALLOWED = ['primaryColor', 'theme', 'currency', 'logo', 'logoIso', 'isoIcon', 'businessName', 'tagline'];
+const ALLOWED = ['primaryColor', 'theme', 'currency', 'logo', 'logoIso', 'isoIcon', 'businessName', 'tagline', 'setupCompleted'];
 
 async function readSettings(tenantId) {
   const { data, error } = await supabase

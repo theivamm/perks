@@ -11,6 +11,7 @@ import {
   Menu as MenuIcon,
   Moon,
   LifeBuoy,
+  Rocket,
   ScanLine,
   Settings as SettingsIcon,
   Sun,
@@ -266,6 +267,23 @@ export default function DashboardLayout() {
         </header>
 
         <main className="flex-1 p-5 pb-24 lg:p-6 lg:pb-8">
+          {settings.setupCompleted !== 'true' && (
+            <Link
+              to={t('/primeros-pasos')}
+              className="mb-5 flex flex-wrap items-center gap-3 rounded-2xl border border-primary/30 bg-primary-softer px-4 py-3 transition-colors hover:border-primary/60"
+            >
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary-strong text-primary-contrast">
+                <Rocket size={18} />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm font-extrabold text-ink">Terminá de configurar tu app</span>
+                <span className="block text-xs text-ink-muted">
+                  Completá los primeros pasos para dejar tu negocio listo.
+                </span>
+              </span>
+              <span className="badge">Continuar</span>
+            </Link>
+          )}
           <Outlet />
         </main>
       </div>

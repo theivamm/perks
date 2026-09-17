@@ -1,6 +1,7 @@
 import { createContext, useContext, useCallback, useEffect, useState } from 'react';
 import { api } from '../api';
-import { applyPalette, initialPalette } from '../color';
+import { applyPalette, readPalette } from '../color';
+import { useTenant } from './TenantContext.jsx';
 
 const ThemeContext = createContext(null);
 
@@ -10,78 +11,87 @@ const DEFAULT_SETTINGS = {
   currency: '$',
   logo: '',
   logoIso: '',
-  isoIcon: 'chef-hat',
-  businessName: 'Fidelización App',
+  isoIcon: 'store',
+  businessName: 'Mi negocio',
   tagline: '',
+  setupCompleted: 'true',
 };
 
-const SETTINGS_KEY = 'perks:settings';
+const settingsKey = (slug = '') => `perks:settings:${slug || '_perks'}`;
 
-function loadCachedSettings() {
+function normalize(data) {
+  return {
+    primaryColor: data.primaryColor || DEFAULT_SETTINGS.primaryColor,
+    theme: data.theme || 'light',
+    currency: data.currency || DEFAULT_SETTINGS.currency,
+    logo: data.logo || '',
+    logoIso: data.logoIso || '',
+    isoIcon: data.isoIcon || DEFAULT_SETTINGS.isoIcon,
+    businessName: data.businessName || DEFAULT_SETTINGS.businessName,
+    tagline: data.tagline || '',
+    setupCompleted: String(data.setupCompleted ?? DEFAULT_SETTINGS.setupCompleted),
+  };
+}
+
+// Cache POR NEGOCIO: nunca se mezcla el branding entre apps.
+function loadCachedSettings(slug) {
   try {
-    const raw = localStorage.getItem(SETTINGS_KEY);
+    const raw = localStorage.getItem(settingsKey(slug));
     if (!raw) return null;
     const d = JSON.parse(raw);
     if (!d || typeof d !== 'object') return null;
-    return {
-      primaryColor: d.primaryColor || DEFAULT_SETTINGS.primaryColor,
-      theme: d.theme || 'light',
-      currency: d.currency || DEFAULT_SETTINGS.currency,
-      logo: d.logo || '',
-      logoIso: d.logoIso || '',
-      isoIcon: d.isoIcon || 'chef-hat',
-      businessName: d.businessName || 'Fidelización App',
-      tagline: d.tagline || '',
-    };
+    return normalize(d);
   } catch {
     return null;
   }
 }
 
-const initialSettings = loadCachedSettings();
-
-function persistSettings(next) {
+function persistSettings(next, slug) {
   try {
-    const cache = { ...DEFAULT_SETTINGS, ...(initialSettings || {}), ...next };
-    localStorage.setItem(SETTINGS_KEY, JSON.stringify(cache));
+    localStorage.setItem(settingsKey(slug), JSON.stringify(normalize(next)));
   } catch {
     /* noop */
   }
 }
 
+function initialFor(slug) {
+  const cached = loadCachedSettings(slug);
+  const palette = readPalette(slug);
+  return { ...DEFAULT_SETTINGS, ...(cached || {}), ...(palette || {}) };
+}
+
 export function ThemeProvider({ children }) {
-  const [settings, setSettings] = useState(() => ({
-    ...DEFAULT_SETTINGS,
-    ...(initialSettings || {}),
-    ...(initialPalette || {}),
-  }));
+  const { slug } = useTenant();
+  const [settings, setSettings] = useState(() => initialFor(slug));
 
   useEffect(() => {
+    const cached = initialFor(slug);
+    setSettings(cached);
+    applyPalette(cached.primaryColor, cached.theme === 'dark', true, slug);
+
+    // Sin tenant (landing, onboarding, panel PERKS): no pedimos settings de
+    // ningún negocio para no filtrar branding ajeno.
+    if (!slug) return undefined;
+
+    let alive = true;
     api('/api/settings')
       .then((data) => {
-        if (data?.primaryColor) {
-          const next = {
-            primaryColor: data.primaryColor,
-            theme: data.theme || 'light',
-            currency: data.currency || '$',
-            logo: data.logo || '',
-            logoIso: data.logoIso || '',
-            isoIcon: data.isoIcon || 'chef-hat',
-            businessName: data.businessName || 'Fidelización App',
-            tagline: data.tagline || '',
-          };
-          setSettings(next);
-          persistSettings(next);
-          applyPalette(next.primaryColor, next.theme === 'dark');
-        }
+        if (!alive || !data) return;
+        const next = normalize(data);
+        setSettings(next);
+        persistSettings(next, slug);
+        applyPalette(next.primaryColor, next.theme === 'dark', true, slug);
       })
       .catch(() => {
-        if (!initialPalette) applyPalette('#2563eb', false, false);
+        /* se mantiene el cache/default */
       });
-  }, []);
+    return () => {
+      alive = false;
+    };
+  }, [slug]);
 
   useEffect(() => {
-    const name = settings.businessName || 'Fidelización App';
+    const name = settings.businessName || 'Mi negocio';
     document.title = settings.tagline ? `${name} · ${settings.tagline}` : name;
     const meta = document.querySelector('meta[name="description"]');
     if (meta && settings.tagline) meta.setAttribute('content', settings.tagline);
@@ -107,16 +117,20 @@ export function ThemeProvider({ children }) {
     async (patch) => {
       const next = { ...settings, ...patch };
       setSettings(next);
-      persistSettings(next);
-      applyPalette(next.primaryColor, next.theme === 'dark');
+      persistSettings(next, slug);
+      applyPalette(next.primaryColor, next.theme === 'dark', true, slug);
       try {
         const data = await api('/api/settings', { method: 'PUT', body: patch });
-        if (data) setSettings((prev) => ({ ...prev, ...data }));
+        if (data) {
+          const merged = normalize({ ...next, ...data });
+          setSettings(merged);
+          persistSettings(merged, slug);
+        }
       } catch (e) {
         console.error(e);
       }
     },
-    [settings]
+    [settings, slug]
   );
 
   const toggleTheme = useCallback(

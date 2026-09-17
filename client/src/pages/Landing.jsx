@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   ArrowRight,
   BarChart3,
@@ -7,6 +7,8 @@ import {
   Check,
   Coffee,
   Gift,
+  LayoutDashboard,
+  LogOut,
   Menu as MenuIcon,
   QrCode,
   ShieldCheck,
@@ -19,6 +21,7 @@ import {
   Zap,
 } from 'lucide-react';
 import { api } from '../api.js';
+import { useAuth } from '../context/AuthContext.jsx';
 
 function formatPrice(value) {
   return `$ ${Number(value || 0).toLocaleString('es-AR')}`;
@@ -91,9 +94,32 @@ const FAQ = [
 ];
 
 export default function Landing() {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const [plans, setPlans] = useState([]);
   const [openFaq, setOpenFaq] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [slugFallback, setSlugFallback] = useState('');
+
+  const isAdmin = user?.role === 'admin';
+  const tenantSlug = user?.tenant_slug || slugFallback;
+  const panelTo = tenantSlug ? `/${tenantSlug}${isAdmin ? '/dashboard' : '/perfil'}` : '/comenzar';
+
+  // Usuarios logueados con tokens viejos pueden no traer el slug de su app.
+  useEffect(() => {
+    if (!user || user.tenant_slug) return;
+    api('/api/onboarding/status')
+      .then((s) => {
+        if (s?.slug) setSlugFallback(s.slug);
+      })
+      .catch(() => {});
+  }, [user]);
+
+  const doLogout = async () => {
+    setMenuOpen(false);
+    await logout();
+    navigate('/');
+  };
 
   useEffect(() => {
     document.title = 'PERKS · Clientes que vuelven';
@@ -130,15 +156,37 @@ export default function Landing() {
           </nav>
 
           <div className="hidden items-center gap-3 md:flex">
-            <Link to="/comenzar" className="text-sm font-semibold text-white/70 transition hover:text-white">
-              Ingresar
-            </Link>
-            <Link
-              to="/comenzar"
-              className="rounded-full bg-amber-400 px-4 py-2 text-sm font-bold text-[#0A0A0C] transition hover:bg-amber-300"
-            >
-              Quiero mi app
-            </Link>
+            {user ? (
+              <>
+                <Link
+                  to={panelTo}
+                  className="inline-flex items-center gap-2 rounded-full bg-amber-400 px-4 py-2 text-sm font-bold text-[#0A0A0C] transition hover:bg-amber-300"
+                >
+                  <LayoutDashboard size={15} />
+                  {isAdmin ? 'Panel de mi app' : 'Mi cuenta'}
+                </Link>
+                <button
+                  onClick={doLogout}
+                  className="inline-flex items-center gap-1.5 text-sm font-semibold text-white/50 transition hover:text-white"
+                  aria-label="Cerrar sesión"
+                >
+                  <LogOut size={15} />
+                  Salir
+                </button>
+              </>
+            ) : (
+              <>
+                <Link to="/comenzar" className="text-sm font-semibold text-white/70 transition hover:text-white">
+                  Ingresar
+                </Link>
+                <Link
+                  to="/comenzar"
+                  className="rounded-full bg-amber-400 px-4 py-2 text-sm font-bold text-[#0A0A0C] transition hover:bg-amber-300"
+                >
+                  Quiero mi app
+                </Link>
+              </>
+            )}
           </div>
 
           <button className="md:hidden" onClick={() => setMenuOpen((v) => !v)} aria-label="Menú">
@@ -159,12 +207,33 @@ export default function Landing() {
                   {label}
                 </a>
               ))}
-              <Link
-                to="/comenzar"
-                className="rounded-full bg-amber-400 px-4 py-2 text-center text-sm font-bold text-[#0A0A0C]"
-              >
-                Quiero mi app
-              </Link>
+              {user ? (
+                <>
+                  <Link
+                    to={panelTo}
+                    onClick={() => setMenuOpen(false)}
+                    className="inline-flex items-center justify-center gap-2 rounded-full bg-amber-400 px-4 py-2 text-center text-sm font-bold text-[#0A0A0C]"
+                  >
+                    <LayoutDashboard size={15} />
+                    {isAdmin ? 'Panel de mi app' : 'Mi cuenta'}
+                  </Link>
+                  <button
+                    onClick={doLogout}
+                    className="inline-flex items-center justify-center gap-1.5 rounded-full border border-white/15 px-4 py-2 text-sm font-semibold text-white/70"
+                  >
+                    <LogOut size={15} />
+                    Salir
+                  </button>
+                </>
+              ) : (
+                <Link
+                  to="/comenzar"
+                  onClick={() => setMenuOpen(false)}
+                  className="rounded-full bg-amber-400 px-4 py-2 text-center text-sm font-bold text-[#0A0A0C]"
+                >
+                  Quiero mi app
+                </Link>
+              )}
             </div>
           </div>
         )}
@@ -552,9 +621,11 @@ export default function Landing() {
             <Link to="/shanti-chi" className="transition hover:text-white">
               Ver demo
             </Link>
-            <Link to="/comenzar" className="transition hover:text-white">
-              Ingresar
-            </Link>
+            {!user && (
+              <Link to="/comenzar" className="transition hover:text-white">
+                Ingresar
+              </Link>
+            )}
             <Link to="/perks/admin" className="transition hover:text-white">
               Equipo PERKS
             </Link>

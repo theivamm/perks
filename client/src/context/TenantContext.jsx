@@ -1,15 +1,42 @@
-import { createContext, useContext, useEffect, useMemo } from 'react';
-import { useParams } from 'react-router-dom';
+import { createContext, useContext, useMemo } from 'react';
+import { useLocation } from 'react-router-dom';
 import { setTenantSlug } from '../api.js';
 
 const TenantContext = createContext({ slug: '', t: (p) => p, home: () => '/' });
 
-export function TenantProvider({ children }) {
-  const { slug = '' } = useParams();
+// Primer segmento de la URL que NO es una ruta propia de PERKS.
+const RESERVED = new Set([
+  'perks',
+  'comenzar',
+  'onboarding',
+  'demo',
+  'login',
+  'registro',
+  'perfil',
+  'cupones',
+  'notificaciones',
+  'configuracion',
+  'dashboard',
+  'api',
+  'admin',
+  'superadmin',
+  'www',
+  'app',
+]);
 
-  useEffect(() => {
-    setTenantSlug(slug);
-  }, [slug]);
+export function slugFromPath(pathname = '') {
+  const first = String(pathname).split('?')[0].split('/').filter(Boolean)[0] || '';
+  if (!first || RESERVED.has(first.toLowerCase())) return '';
+  return first.toLowerCase();
+}
+
+export function TenantProvider({ children }) {
+  const location = useLocation();
+  const slug = slugFromPath(location.pathname);
+
+  // Sincrónico y durante el render: garantiza que cualquier petición que
+  // dispare un componente hijo ya mande el header `x-tenant-slug` correcto.
+  setTenantSlug(slug);
 
   const value = useMemo(() => {
     const base = slug ? `/${slug}` : '';
