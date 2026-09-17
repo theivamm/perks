@@ -7,6 +7,7 @@ import { useAuth } from '../context/AuthContext.jsx';
 import { useTheme } from '../context/ThemeContext.jsx';
 import { ActiveCouponCard, couponValue } from '../components/CouponCards.jsx';
 import Navbar from '../components/Navbar.jsx';
+import Logo from '../components/Logo.jsx';
 import PublicMenu from '../components/PublicMenu.jsx';
 import { toast, Modal } from '../components/ui.jsx';
 
@@ -403,8 +404,13 @@ export default function Home() {
         </section>
       </main>
 
-      <footer className="border-t border-line py-8 text-center text-sm text-ink-muted">
-        © {new Date().getFullYear()} {settings.businessName || 'Fidelización App'} · {currency} moneda configurable desde el panel
+      <footer className="border-t border-line py-10">
+        <div className="mx-auto flex max-w-6xl flex-col items-center gap-2 px-4 text-center">
+          <Logo size="lg" showText={false} />
+          <p className="font-extrabold text-ink">{settings.businessName || 'Fidelización App'}</p>
+          {settings.tagline && <p className="text-sm text-ink-muted">{settings.tagline}</p>}
+          <p className="mt-3 text-xs text-ink-muted">© {new Date().getFullYear()}</p>
+        </div>
       </footer>
 
       {showSearchFab && (
