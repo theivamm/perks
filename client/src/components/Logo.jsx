@@ -24,6 +24,9 @@ export default function Logo({
   const DefaultIso = getSystemIso(settings.isoIcon).Icon;
   const [broken, setBroken] = useState({ logo: false, iso: false });
 
+  const whiteStyle =
+    settings.theme === 'dark' ? { filter: 'brightness(0) invert(1)' } : undefined;
+
   useEffect(() => {
     setBroken({ logo: false, iso: false });
   }, [settings.logo, settings.logoIso]);
@@ -58,6 +61,7 @@ export default function Logo({
           <img
             src={src}
             alt="ISO"
+            style={whiteStyle}
             className={isoClasses(true)}
             onError={() => setBroken((b) => ({ ...b, [src === settings.logoIso ? 'iso' : 'logo']: true }))}
           />
@@ -77,6 +81,7 @@ export default function Logo({
         <img
           src={settings.logo}
           alt="Logo"
+          style={whiteStyle}
           className={
             fullWidth ? 'h-auto w-full shrink-0 object-contain' : `${sz.logo} w-auto shrink-0 object-contain`
           }
@@ -86,6 +91,7 @@ export default function Logo({
         <img
           src={settings.logoIso}
           alt="ISO"
+          style={whiteStyle}
           className={isoClasses(true)}
           onError={() => setBroken((b) => ({ ...b, iso: true }))}
         />
