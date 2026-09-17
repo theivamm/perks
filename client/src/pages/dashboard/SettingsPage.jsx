@@ -125,6 +125,9 @@ export default function SettingsPage() {
     setUploading(true);
     const field = kind === 'iso' ? 'iso' : 'logo';
     try {
+      if (kind === 'logo') {
+        await checkLogoSize(file);
+      }
       const fd = new FormData();
       fd.append(field, file);
       const res = await api(`/api/settings/upload-${field}`, { method: 'POST', body: fd });
@@ -138,6 +141,22 @@ export default function SettingsPage() {
       setCropFor(null);
     }
   };
+
+  const checkLogoSize = (file) =>
+    new Promise((resolve, reject) => {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        if (img.naturalWidth === 400 && img.naturalHeight === 120) resolve();
+        else reject(new Error('El logo debe ser de 400 x 120 px'));
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(url);
+        reject(new Error('Imagen inválida'));
+      };
+      img.src = url;
+    });
 
   const removeImage = async (kind) => {
     await updateSettings(kind === 'iso' ? { logoIso: '' } : { logo: '' });
@@ -203,9 +222,10 @@ export default function SettingsPage() {
             Logo de la plataforma
           </h2>
           <p className="mb-5 text-sm text-ink-muted">
-            Imagen horizontal, se muestra completa en la barra de navegación. Podés recortar los bordes a tu gusto.
+            Imagen horizontal de <span className="font-bold text-ink">400 x 120 px</span> (medida recomendada). Se
+            muestra completa en la barra de navegación; el recorte se ajusta automáticamente a ese tamaño.
           </p>
-          <LogoUploader kind="logo" label="Logo" previewBox="h-20 w-44 rounded-2xl" display="h-full w-full object-contain" />
+          <LogoUploader kind="logo" label="Logo" previewBox="h-12 w-40 rounded-xl" display="h-full w-full object-contain" />
         </section>
 
         <section className="card p-6">
@@ -535,7 +555,8 @@ export default function SettingsPage() {
       {cropFor && (
         <ImageCropper
           src={cropFor.src}
-          aspect={cropFor.kind === 'iso' ? 1 : undefined}
+          aspect={cropFor.kind === 'iso' ? 1 : 400 / 120}
+          outputSize={cropFor.kind === 'iso' ? { width: 400, height: 400 } : { width: 400, height: 120 }}
           cropShape="rect"
           onSave={saveCropped}
           onCancel={() => {

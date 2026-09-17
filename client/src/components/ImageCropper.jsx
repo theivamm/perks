@@ -11,7 +11,7 @@ function createImage(src) {
   });
 }
 
-export default function ImageCropper({ src, aspect = 4 / 3, cropShape = 'rect', onSave, onCancel }) {
+export default function ImageCropper({ src, aspect = 4 / 3, cropShape = 'rect', outputSize, onSave, onCancel }) {
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [cropPixels, setCropPixels] = useState(null);
@@ -22,9 +22,10 @@ export default function ImageCropper({ src, aspect = 4 / 3, cropShape = 'rect', 
     setSaving(true);
     try {
       const image = await createImage(src);
+      const out = outputSize || { width: cropPixels.width, height: cropPixels.height };
       const canvas = document.createElement('canvas');
-      canvas.width = Math.round(cropPixels.width);
-      canvas.height = Math.round(cropPixels.height);
+      canvas.width = Math.round(out.width);
+      canvas.height = Math.round(out.height);
       const ctx = canvas.getContext('2d');
       ctx.drawImage(
         image,
