@@ -91,10 +91,13 @@ export function AuthProvider({ children }) {
     localStorage.setItem('user', JSON.stringify(next));
   };
 
+  // Adopta una sesión ya emitida por el servidor (p. ej. al crear la app).
+  const adoptSession = (data) => finishAuth(data);
+
   const isAuthed = Boolean(getToken() && user);
 
   return (
-    <AuthContext.Provider value={{ user, login, loginOtp, register, loginGoogle, loginSuperAdmin, logout, updateUser, loading, isAuthed }}>
+    <AuthContext.Provider value={{ user, login, loginOtp, register, loginGoogle, loginSuperAdmin, logout, updateUser, adoptSession, loading, isAuthed }}>
       {children}
     </AuthContext.Provider>
   );

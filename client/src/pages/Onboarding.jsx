@@ -29,7 +29,7 @@ function formatPrice(value) {
 }
 
 export default function Onboarding() {
-  const { isAuthed, user, loginGoogle } = useAuth();
+  const { isAuthed, user, loginGoogle, adoptSession } = useAuth();
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const desiredPlan = params.get('plan') === 'vitalicia' ? 'vitalicia' : 'mensual';
@@ -161,6 +161,7 @@ export default function Onboarding() {
         method: 'POST',
         body: { businessName, slug, plan: desiredPlan },
       });
+      if (res.token) adoptSession(res);
       navigate(`/${res.slug}/dashboard`, { replace: true });
     } catch (err) {
       setError(err.message);

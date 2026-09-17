@@ -25,10 +25,10 @@ export default function Login() {
 
   useEffect(() => {
     const handleOAuthReturn = async () => {
-      const isOAuthReturn =
-        new URLSearchParams(window.location.search).has('code') ||
-        window.location.hash.includes('access_token');
+      const search = new URLSearchParams(window.location.search);
+      const isOAuthReturn = search.has('code') || window.location.hash.includes('access_token');
       if (!isOAuthReturn) return;
+      const adminIntent = search.get('admin') === '1';
       setGoogleLoading(true);
       try {
         let session = null;
@@ -48,6 +48,12 @@ export default function Login() {
 
         if (session) {
           const u = await loginGoogle(session.access_token);
+          if (adminIntent && u?.role !== 'admin') {
+            setMode('admin');
+            setError('Esta cuenta de Google no administra este negocio. Entrá con la cuenta con la que creaste la app.');
+            setGoogleLoading(false);
+            return;
+          }
           go(u);
         }
       } catch (e) {
@@ -59,14 +65,14 @@ export default function Login() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loginGoogle]);
 
-  const startGoogle = async () => {
+  const startGoogle = async (admin = false) => {
     setError('');
     setGoogleLoading(true);
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}${t('/login')}`,
+          redirectTo: `${window.location.origin}${t('/login')}${admin ? '?admin=1' : ''}`,
         },
       });
       if (error) throw error;
@@ -200,7 +206,7 @@ export default function Login() {
               <>
                 <button
                   className="btn-ghost w-full !py-3 text-base"
-                  onClick={startGoogle}
+                  onClick={() => startGoogle()}
                   disabled={googleLoading}
                 >
                   {googleLoading ? (
@@ -249,29 +255,49 @@ export default function Login() {
                 </button>
               </form>
             ) : (
-              <form onSubmit={submitAdmin} className="space-y-4">
-                <div>
-                  <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-ink-muted">
-                    Contraseña de administración
-                  </label>
-                  <div className="relative">
-                    <KeyRound size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted" />
-                    <input
-                      className="input !pl-9"
-                      type="password"
-                      placeholder="••••••••"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      autoFocus
-                      required
-                    />
+              <>
+                <form onSubmit={submitAdmin} className="space-y-4">
+                  <div>
+                    <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-ink-muted">
+                      Contraseña de administración
+                    </label>
+                    <div className="relative">
+                      <KeyRound size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted" />
+                      <input
+                        className="input !pl-9"
+                        type="password"
+                        placeholder="••••••••"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        autoFocus
+                        required
+                      />
+                    </div>
                   </div>
+                  <button className="btn-primary w-full justify-center" disabled={busy || !password}>
+                    {busy ? <Loader2 className="animate-spin" size={17} /> : <LogIn size={17} />}
+                    Iniciar sesión
+                  </button>
+                </form>
+
+                <div className="my-5 flex items-center gap-3 text-xs font-bold uppercase tracking-wide text-ink-muted">
+                  <span className="h-px flex-1 bg-line" />
+                  o
+                  <span className="h-px flex-1 bg-line" />
                 </div>
-                <button className="btn-primary w-full justify-center" disabled={busy || !password}>
-                  {busy ? <Loader2 className="animate-spin" size={17} /> : <LogIn size={17} />}
-                  Iniciar sesión
+
+                <button
+                  className="btn-ghost w-full !py-3 text-base"
+                  onClick={() => startGoogle(true)}
+                  disabled={googleLoading}
+                >
+                  {googleLoading ? <Loader2 className="animate-spin" size={18} /> : <GoogleIcon />}
+                  Ingresar con Google
                 </button>
-              </form>
+                <p className="mt-2 text-center text-xs leading-relaxed text-ink-muted">
+                  Si creaste tu app con Google, entrá con esa misma cuenta.
+                </p>
+              </>
             )}
           </div>
         </div>

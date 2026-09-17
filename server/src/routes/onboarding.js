@@ -4,6 +4,7 @@ import { asyncHandler } from '../asyncHandler.js';
 import { requireAuth } from '../middleware/auth.js';
 import { DEFAULT_PLAN, isValidPlan } from '../plans.js';
 import { slugify, slugError, slugTaken } from '../slug.js';
+import { signToken } from './auth.js';
 
 const router = Router();
 
@@ -160,7 +161,11 @@ router.post(
       await supabase.from('payments').update({ tenant_id: tenant.id }).eq('id', payment.id);
     }
 
-    res.status(201).json({ slug: tenant.slug, tenant });
+    // Devolvemos una sesión nueva ya como admin de la app recién creada: si
+    // no, el cliente queda con el token viejo (rol cliente) y lo expulsa del
+    // panel apenas entra.
+    const updatedUser = { ...user, role: 'admin', tenant_id: tenant.id };
+    res.status(201).json({ slug: tenant.slug, tenant, ...signToken(updatedUser, tenant.slug) });
   })
 );
 

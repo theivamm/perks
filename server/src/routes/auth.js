@@ -13,7 +13,7 @@ const LOGIN_SECRET = () => `${SECRET()}:login`;
 
 const ADMIN_USERNAME_DEFAULT = 'administracion';
 
-function signToken(userRow, tenantSlug) {
+export function signToken(userRow, tenantSlug) {
   const payload = {
     id: userRow.id,
     email: userRow.email,
@@ -344,7 +344,21 @@ router.post(
       user = created;
     }
 
-    res.json(signToken(user, req.tenant.slug));
+    // El slug del JWT sale de la app a la que pertenece la cuenta (no del
+    // header). Así un dueño que entra con Google desde cualquier página cae
+    // en SU app y con su rol real, en vez de terminar como cliente del
+    // negocio por defecto.
+    let slug = req.tenant?.slug || null;
+    if (user.tenant_id) {
+      const { data: tenant } = await supabase
+        .from('tenants')
+        .select('slug')
+        .eq('id', user.tenant_id)
+        .maybeSingle();
+      if (tenant?.slug) slug = tenant.slug;
+    }
+
+    res.json(signToken(user, slug));
   })
 );
 
