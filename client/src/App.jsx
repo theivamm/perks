@@ -17,6 +17,7 @@ import ScanPage from './pages/dashboard/ScanPage.jsx';
 import Coupons from './pages/dashboard/Coupons.jsx';
 import SettingsPage from './pages/dashboard/SettingsPage.jsx';
 import SuperAdmin from './pages/superadmin/SuperAdmin.jsx';
+import Onboarding from './pages/Onboarding.jsx';
 
 function RequireAdmin({ children }) {
   const { isAuthed, user } = useAuth();
@@ -113,6 +114,8 @@ export default function App() {
     <Routes>
       <Route path="/" element={<DefaultRedirect />} />
       <Route path="/perks/admin" element={<SuperAdmin />} />
+      <Route path="/comenzar" element={<Onboarding />} />
+      <Route path="/onboarding" element={<Onboarding />} />
       <Route
         path="/:slug"
         element={

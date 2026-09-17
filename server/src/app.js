@@ -13,6 +13,9 @@ import couponsRoutes from './routes/coupons.js';
 import rewardsRoutes from './routes/rewards.js';
 import notificationsRoutes from './routes/notifications.js';
 import tenantsRoutes from './routes/tenants.js';
+import plansRoutes from './routes/plans.js';
+import paymentsRoutes from './routes/payments.js';
+import onboardingRoutes from './routes/onboarding.js';
 import { attachTenant } from './middleware/tenant.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -38,6 +41,9 @@ app.use('/api/coupons', couponsRoutes);
 app.use('/api/rewards', rewardsRoutes);
 app.use('/api/notifications', notificationsRoutes);
 app.use('/api/tenants', tenantsRoutes);
+app.use('/api/plans', plansRoutes);
+app.use('/api/payments', paymentsRoutes);
+app.use('/api/onboarding', onboardingRoutes);
 
 app.use((err, _req, res, _next) => {
   console.error(err);
