@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import { pathToFileURL } from 'url';
 import { supabase } from './supabase.js';
+import { getDefaultTenant } from './tenancy.js';
 
 const adminEmail = (process.env.ADMIN_EMAIL || 'admin@fidelizacion.com').toLowerCase().trim();
 const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
@@ -46,6 +47,7 @@ function log(text) {
 }
 
 export async function runSeed() {
+  const tenant = await getDefaultTenant();
   const authAdmin = await getOrCreateAuthAdmin();
 
   const { error: upErr } = await supabase
@@ -53,6 +55,7 @@ export async function runSeed() {
     .upsert(
       {
         id: authAdmin.id,
+        tenant_id: tenant.id,
         name: 'Administrador',
         email: adminEmail,
         password_hash: '',
@@ -63,28 +66,38 @@ export async function runSeed() {
   if (upErr) throw upErr;
   log(`admin de Supabase Auth listo (${adminEmail}).`);
 
-  const { data: existingSettings } = await supabase.from('settings').select('key');
+  const { data: existingSettings } = await supabase
+    .from('settings')
+    .select('key')
+    .eq('tenant_id', tenant.id);
   const keys = new Set((existingSettings || []).map((s) => s.key));
   const missing = Object.entries(settingsDefaults)
     .filter(([key]) => !keys.has(key))
-    .map(([key, value]) => ({ key, value }));
+    .map(([key, value]) => ({ tenant_id: tenant.id, key, value }));
   if (missing.length) {
     await supabase.from('settings').insert(missing);
     log('configuración por defecto creada.');
   }
 
-  const { count } = await supabase.from('menu_items').select('id', { count: 'exact', head: true });
+  const { count } = await supabase
+    .from('menu_items')
+    .select('id', { count: 'exact', head: true })
+    .eq('tenant_id', tenant.id);
   if (!count) {
-    await supabase.from('menu_items').insert(sampleItems);
+    await supabase
+      .from('menu_items')
+      .insert(sampleItems.map((item) => ({ ...item, tenant_id: tenant.id })));
     log('productos de ejemplo creados.');
   }
 
   const { count: catalogCount } = await supabase
     .from('loyalty_coupons')
-    .select('id', { count: 'exact', head: true });
+    .select('id', { count: 'exact', head: true })
+    .eq('tenant_id', tenant.id);
   if (!catalogCount) {
     const defaults = [
       {
+        tenant_id: tenant.id,
         title: '25% OFF en tu compra',
         description: '25% de descuento en tu próxima compra',
         type: 'descuento',
@@ -93,6 +106,7 @@ export async function runSeed() {
         active: true,
       },
       {
+        tenant_id: tenant.id,
         title: 'Café de regalo',
         description: 'Un café de especialidad para vos',
         type: 'regalo',
@@ -101,6 +115,7 @@ export async function runSeed() {
         active: true,
       },
       {
+        tenant_id: tenant.id,
         title: 'Crédito de compra',
         description: 'Crédito para gastar en el local',
         type: 'monto',

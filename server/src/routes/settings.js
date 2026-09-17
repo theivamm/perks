@@ -6,6 +6,7 @@ import { supabase, uploadImage } from '../supabase.js';
 import { requireAdmin } from '../middleware/auth.js';
 import { imageUpload, uploadsDir } from '../upload.js';
 import { asyncHandler } from '../asyncHandler.js';
+import { getDefaultTenant } from '../tenancy.js';
 
 const router = Router();
 
@@ -22,8 +23,11 @@ const DEFAULTS = {
 
 const ALLOWED = ['primaryColor', 'theme', 'currency', 'logo', 'logoIso', 'isoIcon', 'businessName', 'tagline'];
 
-async function readSettings() {
-  const { data, error } = await supabase.from('settings').select('key, value');
+async function readSettings(tenantId) {
+  const { data, error } = await supabase
+    .from('settings')
+    .select('key, value')
+    .eq('tenant_id', tenantId);
   if (error) throw error;
   const settings = { ...DEFAULTS };
   for (const row of data || []) settings[row.key] = row.value;
@@ -35,7 +39,8 @@ async function readSettings() {
 router.get(
   '/',
   asyncHandler(async (_req, res) => {
-    res.json(await readSettings());
+    const tenant = await getDefaultTenant();
+    res.json(await readSettings(tenant.id));
   })
 );
 
@@ -43,14 +48,17 @@ router.put(
   '/',
   requireAdmin,
   asyncHandler(async (req, res) => {
+    const tenant = await getDefaultTenant();
     const rows = ALLOWED.filter((key) => req.body[key] !== undefined && req.body[key] !== null).map(
-      (key) => ({ key, value: String(req.body[key]) })
+      (key) => ({ tenant_id: tenant.id, key, value: String(req.body[key]) })
     );
     if (rows.length > 0) {
-      const { error } = await supabase.from('settings').upsert(rows, { onConflict: 'key' });
+      const { error } = await supabase
+        .from('settings')
+        .upsert(rows, { onConflict: 'tenant_id,key' });
       if (error) throw error;
     }
-    res.json(await readSettings());
+    res.json(await readSettings(tenant.id));
   })
 );
 
@@ -66,7 +74,10 @@ router.post(
 
     try {
       const url = await uploadImage(name, req.file.buffer, req.file.mimetype);
-      await supabase.from('settings').upsert({ key: 'logo', value: url }, { onConflict: 'key' });
+      const tenant = await getDefaultTenant();
+      await supabase
+        .from('settings')
+        .upsert({ tenant_id: tenant.id, key: 'logo', value: url }, { onConflict: 'tenant_id,key' });
       return res.json({ url });
     } catch (err) {
       console.warn('[SUPABASE] Fallback logo local:', err.message);
@@ -79,7 +90,10 @@ router.post(
         console.error('[STORAGE] No se pudo guardar el logo localmente:', diskErr.message);
         return res.status(500).json({ error: 'No se pudo guardar el logo (Supabase y almacenamiento local no disponibles).' });
       }
-      await supabase.from('settings').upsert({ key: 'logo', value: url }, { onConflict: 'key' });
+      const tenant = await getDefaultTenant();
+      await supabase
+        .from('settings')
+        .upsert({ tenant_id: tenant.id, key: 'logo', value: url }, { onConflict: 'tenant_id,key' });
       return res.json({ url });
     }
   })
@@ -97,7 +111,10 @@ router.post(
 
     try {
       const url = await uploadImage(name, req.file.buffer, req.file.mimetype);
-      await supabase.from('settings').upsert({ key: 'logoIso', value: url }, { onConflict: 'key' });
+      const tenant = await getDefaultTenant();
+      await supabase
+        .from('settings')
+        .upsert({ tenant_id: tenant.id, key: 'logoIso', value: url }, { onConflict: 'tenant_id,key' });
       return res.json({ url });
     } catch (err) {
       console.warn('[SUPABASE] Fallback iso local:', err.message);
@@ -110,7 +127,10 @@ router.post(
         console.error('[STORAGE] No se pudo guardar el iso localmente:', diskErr.message);
         return res.status(500).json({ error: 'No se pudo guardar el ISO (Supabase y almacenamiento local no disponibles).' });
       }
-      await supabase.from('settings').upsert({ key: 'logoIso', value: url }, { onConflict: 'key' });
+      const tenant = await getDefaultTenant();
+      await supabase
+        .from('settings')
+        .upsert({ tenant_id: tenant.id, key: 'logoIso', value: url }, { onConflict: 'tenant_id,key' });
       return res.json({ url });
     }
   })

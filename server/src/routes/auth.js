@@ -5,6 +5,7 @@ import { asyncHandler } from '../asyncHandler.js';
 import { requireAdmin } from '../middleware/auth.js';
 import { newQrCode } from '../qr.js';
 import { verifyTOTP, randomSecret, otpauthURL } from '../otp.js';
+import { getDefaultTenant } from '../tenancy.js';
 
 const router = Router();
 const SECRET = () => process.env.JWT_SECRET || 'dev-secret';
@@ -27,8 +28,11 @@ async function userByAuthId(authId) {
   return data || null;
 }
 
-async function readAdminSettings() {
-  const { data, error } = await supabase.from('settings').select('key, value');
+async function readAdminSettings(tenantId) {
+  const { data, error } = await supabase
+    .from('settings')
+    .select('key, value')
+    .eq('tenant_id', tenantId);
   if (error) throw error;
   const map = Object.fromEntries((data || []).map((r) => [r.key, r.value]));
   return {
@@ -38,10 +42,14 @@ async function readAdminSettings() {
   };
 }
 
-async function writeAdminSettings(partial) {
-  const rows = Object.entries(partial).map(([key, value]) => ({ key, value: String(value) }));
+async function writeAdminSettings(tenantId, partial) {
+  const rows = Object.entries(partial).map(([key, value]) => ({
+    tenant_id: tenantId,
+    key,
+    value: String(value),
+  }));
   if (rows.length > 0) {
-    const { error } = await supabase.from('settings').upsert(rows, { onConflict: 'key' });
+    const { error } = await supabase.from('settings').upsert(rows, { onConflict: 'tenant_id,key' });
     if (error) throw error;
   }
 }
@@ -64,7 +72,8 @@ router.post(
     if (!admin) {
       return res.status(403).json({ error: 'Hay más de un administrador configurado. Contactá soporte.' });
     }
-    if (String(username).trim().toLowerCase() !== (await readAdminSettings()).username.toLowerCase()) {
+    const tenant = await getDefaultTenant();
+    if (String(username).trim().toLowerCase() !== (await readAdminSettings(tenant.id)).username.toLowerCase()) {
       return res.status(401).json({ error: 'Credenciales inválidas' });
     }
 
@@ -77,7 +86,7 @@ router.post(
       return res.status(401).json({ error: 'Credenciales inválidas' });
     }
 
-    const settings = await readAdminSettings();
+    const settings = await readAdminSettings(tenant.id);
     if (settings.otpEnabled && settings.otpSecret) {
       return res.json({ step: 'otp', login_token: signLoginToken(admin.id) });
     }
@@ -104,7 +113,8 @@ router.post(
       return res.status(401).json({ error: 'Sesión inválida' });
     }
 
-    const settings = await readAdminSettings();
+    const tenant = await getDefaultTenant();
+    const settings = await readAdminSettings(tenant.id);
     if (!settings.otpEnabled || !settings.otpSecret || !verifyTOTP(settings.otpSecret, code)) {
       return res.status(401).json({ error: 'Código incorrecto' });
     }
@@ -149,7 +159,7 @@ router.get(
   '/admin/otp/status',
   requireAdmin,
   asyncHandler(async (req, res) => {
-    const settings = await readAdminSettings();
+    const settings = await readAdminSettings(tenant.id);
     res.json({ enabled: settings.otpEnabled && Boolean(settings.otpSecret) });
   })
 );
@@ -159,8 +169,9 @@ router.post(
   '/admin/otp/provision',
   requireAdmin,
   asyncHandler(async (_req, res) => {
+    const tenant = await getDefaultTenant();
     const secret = randomSecret();
-    await writeAdminSettings({ adminOtpSecret: secret, adminOtpEnabled: 'false' });
+    await writeAdminSettings(tenant.id, { adminOtpSecret: secret, adminOtpEnabled: 'false' });
     res.json({ secret, otpauth_url: otpauthURL(secret) });
   })
 );
@@ -171,12 +182,13 @@ router.post(
   requireAdmin,
   asyncHandler(async (req, res) => {
     const { code } = req.body || {};
-    const settings = await readAdminSettings();
+    const tenant = await getDefaultTenant();
+    const settings = await readAdminSettings(tenant.id);
     if (!settings.otpSecret) return res.status(400).json({ error: 'Primero generá el código QR' });
     if (!verifyTOTP(settings.otpSecret, code)) {
       return res.status(400).json({ error: 'Código incorrecto, verificá que tu app esté sincronizada' });
     }
-    await writeAdminSettings({ adminOtpEnabled: 'true' });
+    await writeAdminSettings(tenant.id, { adminOtpEnabled: 'true' });
     res.json({ enabled: true });
   })
 );
@@ -187,15 +199,16 @@ router.post(
   requireAdmin,
   asyncHandler(async (req, res) => {
     const { code } = req.body || {};
-    const settings = await readAdminSettings();
+    const tenant = await getDefaultTenant();
+    const settings = await readAdminSettings(tenant.id);
     if (!settings.otpSecret) {
-      await writeAdminSettings({ adminOtpEnabled: 'false' });
+      await writeAdminSettings(tenant.id, { adminOtpEnabled: 'false' });
       return res.json({ enabled: false });
     }
     if (!verifyTOTP(settings.otpSecret, code)) {
       return res.status(400).json({ error: 'Código incorrecto' });
     }
-    await writeAdminSettings({ adminOtpSecret: '', adminOtpEnabled: 'false' });
+    await writeAdminSettings(tenant.id, { adminOtpSecret: '', adminOtpEnabled: 'false' });
     res.json({ enabled: false });
   })
 );
@@ -233,6 +246,7 @@ router.post(
       .upsert(
         {
           id: data.user.id,
+          tenant_id: (await getDefaultTenant()).id,
           name: cleanName,
           email: cleanEmail,
           password_hash: '',
@@ -271,6 +285,7 @@ router.post(
         .upsert(
           {
             id: authUser.id,
+            tenant_id: (await getDefaultTenant()).id,
             name: authUser.user_metadata?.name || 'Cliente',
             email: authUser.email,
             password_hash: '',
