@@ -404,12 +404,13 @@ export default function Home() {
         </section>
       </main>
 
-      <footer className="border-t border-line py-10">
-        <div className="mx-auto flex max-w-6xl flex-col items-center gap-2 px-4 text-center">
-          <Logo size="lg" showText={false} />
-          <p className="font-extrabold text-ink">{settings.businessName || 'Fidelización App'}</p>
-          {settings.tagline && <p className="text-sm text-ink-muted">{settings.tagline}</p>}
-          <p className="mt-3 text-xs text-ink-muted">© {new Date().getFullYear()}</p>
+      <footer className="border-t border-line py-6">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4">
+          <Logo size="md" showText={false} />
+          <p className="min-w-0 truncate text-sm text-ink-muted">
+            <span className="font-extrabold text-ink">{settings.businessName || 'Fidelización App'}</span>
+            {settings.tagline && <span> · {settings.tagline}</span>}
+          </p>
         </div>
       </footer>
 
