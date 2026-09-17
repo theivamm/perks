@@ -29,7 +29,7 @@ export default function Navbar() {
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
         <div className="flex items-center gap-2.5">
           <Link to="/" className="flex items-center gap-2.5 font-extrabold text-ink">
-            <Logo />
+            <Logo showText={false} />
           </Link>
         </div>
 

@@ -111,8 +111,14 @@ export default function DashboardLayout() {
           collapsed ? 'lg:w-[76px]' : 'lg:w-64'
         }`}
       >
-        <div className={`mb-6 flex items-center justify-between ${collapsed ? 'lg:justify-center' : ''}`}>
-          <Logo size={collapsed ? 'sm' : 'md'} variant={collapsed ? 'iso' : 'logo'} showText={false} />
+        <div className={`mb-6 ${collapsed ? 'flex items-center justify-center' : ''}`}>
+          <Logo
+            size={collapsed ? 'sm' : 'md'}
+            variant={collapsed ? 'iso' : 'logo'}
+            fullWidth={!collapsed}
+            className={collapsed ? '' : 'w-full justify-center'}
+            showText={false}
+          />
         </div>
 
         <nav className={`flex flex-1 flex-col gap-1.5 ${collapsed ? 'lg:items-center' : ''}`}>

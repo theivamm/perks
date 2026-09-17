@@ -8,7 +8,15 @@ const SIZES = {
   lg: { logo: 'h-12 max-w-[240px]', iso: 'h-12 w-12', icon: 26 },
 };
 
-export default function Logo({ text = 'Fidelización App', size = 'md', showText = true, light = false, variant = 'logo' }) {
+export default function Logo({
+  text = 'Fidelización App',
+  size = 'md',
+  showText = true,
+  light = false,
+  variant = 'logo',
+  fullWidth = false,
+  className = '',
+}) {
   const { settings } = useTheme();
   const sz = SIZES[size] || SIZES.md;
   const DefaultIso = getSystemIso(settings.isoIcon).Icon;
@@ -18,7 +26,7 @@ export default function Logo({ text = 'Fidelización App', size = 'md', showText
     setBroken({ logo: false, iso: false });
   }, [settings.logo, settings.logoIso]);
 
-  const isoClasses = ({ rounded = true } = {}) =>
+  const isoClasses = (rounded) =>
     `${sz.iso} shrink-0 ${rounded ? 'rounded-xl' : ''} object-cover ${size === 'lg' ? 'shadow-glow' : 'shadow-sm'}`;
 
   const fallbackIso = (
@@ -33,18 +41,22 @@ export default function Logo({ text = 'Fidelización App', size = 'md', showText
     <span className={`hidden text-sm font-extrabold sm:block ${light ? 'text-white' : 'text-ink'}`}>{text}</span>
   );
 
+  const wrapper = `flex items-center gap-2.5 font-extrabold ${
+    fullWidth && variant === 'logo' ? 'w-full justify-center' : ''
+  } ${className}`;
+
   if (variant === 'iso') {
     const src =
       (settings.logoIso && !broken.iso && settings.logoIso) ||
       (settings.logo && !broken.logo && settings.logo) ||
       '';
     return (
-      <span className="flex items-center gap-2.5 font-extrabold">
+      <span className={wrapper}>
         {src ? (
           <img
             src={src}
             alt="ISO"
-            className={isoClasses()}
+            className={isoClasses(true)}
             onError={() => setBroken((b) => ({ ...b, [src === settings.logoIso ? 'iso' : 'logo']: true }))}
           />
         ) : (
@@ -58,19 +70,21 @@ export default function Logo({ text = 'Fidelización App', size = 'md', showText
   const logoOk = settings.logo && !broken.logo;
   const isoOk = settings.logoIso && !broken.iso;
   return (
-    <span className="flex items-center gap-2.5 font-extrabold">
+    <span className={wrapper}>
       {logoOk ? (
         <img
           src={settings.logo}
           alt="Logo"
-          className={`${sz.logo} w-auto shrink-0 object-contain`}
+          className={
+            fullWidth ? 'h-auto w-full shrink-0 object-contain' : `${sz.logo} w-auto shrink-0 object-contain`
+          }
           onError={() => setBroken((b) => ({ ...b, logo: true }))}
         />
       ) : isoOk ? (
         <img
           src={settings.logoIso}
           alt="ISO"
-          className={isoClasses()}
+          className={isoClasses(true)}
           onError={() => setBroken((b) => ({ ...b, iso: true }))}
         />
       ) : (
