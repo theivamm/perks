@@ -15,8 +15,46 @@ const DEFAULT_SETTINGS = {
   tagline: '',
 };
 
+const SETTINGS_KEY = 'perks:settings';
+
+function loadCachedSettings() {
+  try {
+    const raw = localStorage.getItem(SETTINGS_KEY);
+    if (!raw) return null;
+    const d = JSON.parse(raw);
+    if (!d || typeof d !== 'object') return null;
+    return {
+      primaryColor: d.primaryColor || DEFAULT_SETTINGS.primaryColor,
+      theme: d.theme || 'light',
+      currency: d.currency || DEFAULT_SETTINGS.currency,
+      logo: d.logo || '',
+      logoIso: d.logoIso || '',
+      isoIcon: d.isoIcon || 'chef-hat',
+      businessName: d.businessName || 'Fidelización App',
+      tagline: d.tagline || '',
+    };
+  } catch {
+    return null;
+  }
+}
+
+const initialSettings = loadCachedSettings();
+
+function persistSettings(next) {
+  try {
+    const cache = { ...DEFAULT_SETTINGS, ...(initialSettings || {}), ...next };
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(cache));
+  } catch {
+    /* noop */
+  }
+}
+
 export function ThemeProvider({ children }) {
-  const [settings, setSettings] = useState(() => ({ ...DEFAULT_SETTINGS, ...(initialPalette || {}) }));
+  const [settings, setSettings] = useState(() => ({
+    ...DEFAULT_SETTINGS,
+    ...(initialSettings || {}),
+    ...(initialPalette || {}),
+  }));
 
   useEffect(() => {
     api('/api/settings')
@@ -33,6 +71,7 @@ export function ThemeProvider({ children }) {
             tagline: data.tagline || '',
           };
           setSettings(next);
+          persistSettings(next);
           applyPalette(next.primaryColor, next.theme === 'dark');
         }
       })
@@ -68,6 +107,7 @@ export function ThemeProvider({ children }) {
     async (patch) => {
       const next = { ...settings, ...patch };
       setSettings(next);
+      persistSettings(next);
       applyPalette(next.primaryColor, next.theme === 'dark');
       try {
         const data = await api('/api/settings', { method: 'PUT', body: patch });

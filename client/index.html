@@ -82,6 +82,34 @@
         }
       })();
     </script>
+  <script>
+      (function () {
+        try {
+          var raw = localStorage.getItem('perks:settings');
+          if (!raw) return;
+          var s = JSON.parse(raw) || {};
+          var name = s.businessName || 'Fidelización App';
+          var tag = s.tagline ? ' · ' + s.tagline : '';
+          document.title = name + tag;
+          var meta = document.querySelector('meta[name="description"]');
+          if (meta && s.tagline) meta.setAttribute('content', s.tagline);
+          if (s.logoIso || s.logo) {
+            var icon = document.querySelector('link[rel="icon"]');
+            var href = s.logoIso || s.logo;
+            if (icon) {
+              icon.href = href;
+            } else {
+              var link = document.createElement('link');
+              link.rel = 'icon';
+              link.href = href;
+              document.head.appendChild(link);
+            }
+          }
+        } catch (e) {
+          /* noop */
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

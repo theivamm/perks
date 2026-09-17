@@ -6,6 +6,7 @@ const SIZES = {
   sm: { logo: 'h-8 max-w-[130px]', iso: 'h-8 w-8', icon: 17 },
   md: { logo: 'h-9 max-w-[200px]', iso: 'h-9 w-9', icon: 20 },
   lg: { logo: 'h-12 max-w-[240px]', iso: 'h-12 w-12', icon: 26 },
+  xl: { logo: 'h-14 max-w-[320px]', iso: 'h-12 w-12', icon: 28 },
 };
 
 export default function Logo({
