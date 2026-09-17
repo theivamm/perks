@@ -9,7 +9,7 @@ const SIZES = {
 };
 
 export default function Logo({
-  text = 'Fidelización App',
+  text,
   size = 'md',
   showText = true,
   light = false,
@@ -19,6 +19,7 @@ export default function Logo({
 }) {
   const { settings } = useTheme();
   const sz = SIZES[size] || SIZES.md;
+  const brandText = text || settings.businessName || 'Fidelización App';
   const DefaultIso = getSystemIso(settings.isoIcon).Icon;
   const [broken, setBroken] = useState({ logo: false, iso: false });
 
@@ -38,7 +39,7 @@ export default function Logo({
   );
 
   const textNode = showText && (
-    <span className={`hidden text-sm font-extrabold sm:block ${light ? 'text-white' : 'text-ink'}`}>{text}</span>
+    <span className={`hidden text-sm font-extrabold sm:block ${light ? 'text-white' : 'text-ink'}`}>{brandText}</span>
   );
 
   const wrapper = `flex items-center gap-2.5 font-extrabold ${

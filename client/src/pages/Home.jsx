@@ -404,7 +404,7 @@ export default function Home() {
       </main>
 
       <footer className="border-t border-line py-8 text-center text-sm text-ink-muted">
-        © {new Date().getFullYear()} Fidelización App · {currency} moneda configurable desde el panel
+        © {new Date().getFullYear()} {settings.businessName || 'Fidelización App'} · {currency} moneda configurable desde el panel
       </footer>
 
       {showSearchFab && (

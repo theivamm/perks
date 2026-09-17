@@ -16,9 +16,11 @@ const DEFAULTS = {
   logo: '',
   logoIso: '',
   isoIcon: 'chef-hat',
+  businessName: 'Fidelización App',
+  tagline: '',
 };
 
-const ALLOWED = ['primaryColor', 'theme', 'currency', 'logo', 'logoIso', 'isoIcon'];
+const ALLOWED = ['primaryColor', 'theme', 'currency', 'logo', 'logoIso', 'isoIcon', 'businessName', 'tagline'];
 
 async function readSettings() {
   const { data, error } = await supabase.from('settings').select('key, value');

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Check, FileImage, ImagePlus, KeyRound, Loader2, Moon, Palette, Save, ShieldCheck, Smartphone, Square, Sun, Trash2 } from 'lucide-react';
+import { Check, FileImage, ImagePlus, KeyRound, Loader2, Moon, Palette, Save, ShieldCheck, Smartphone, Square, Store, Sun, Trash2 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext.jsx';
 import { api } from '../../api.js';
 import { PRESET_COLORS, hexToHsl } from '../../color.js';
@@ -17,6 +17,8 @@ export default function SettingsPage() {
   const logoInput = useRef(null);
   const isoInput = useRef(null);
   const [cropFor, setCropFor] = useState(null);
+  const [biz, setBiz] = useState({ name: settings.businessName || 'Fidelización App', tagline: settings.tagline || '' });
+  const [savingBiz, setSavingBiz] = useState(false);
 
   const [pwd, setPwd] = useState({ current: '', next: '', confirm: '' });
   const [savingPwd, setSavingPwd] = useState(false);
@@ -110,6 +112,19 @@ export default function SettingsPage() {
     setSaving(true);
     await updateSettings({ theme });
     setSaving(false);
+  };
+
+  const saveBiz = async () => {
+    setSavingBiz(true);
+    try {
+      await updateSettings({
+        businessName: biz.name.trim() || 'Fidelización App',
+        tagline: biz.tagline.trim(),
+      });
+      toast('Información del negocio guardada');
+    } finally {
+      setSavingBiz(false);
+    }
   };
 
   const pickImage = (e, kind) => {
@@ -217,6 +232,50 @@ export default function SettingsPage() {
       </div>
 
       <div className="space-y-6">
+        <section className="card p-6">
+          <h2 className="mb-1 flex items-center gap-2 text-lg font-extrabold text-ink">
+            <Store size={20} className="text-primary-strong" />
+            Información del negocio
+          </h2>
+          <p className="mb-5 text-sm text-ink-muted">
+            Se usa en la pestaña del navegador y en el SEO de la página pública.
+          </p>
+          <div className="space-y-3">
+            <label className="block">
+              <span className="mb-1 block text-xs font-bold uppercase tracking-wide text-ink-muted">
+                Nombre del negocio
+              </span>
+              <input
+                className="input w-full"
+                value={biz.name}
+                onChange={(e) => setBiz((b) => ({ ...b, name: e.target.value }))}
+                maxLength={60}
+                placeholder="Nombre del negocio"
+              />
+            </label>
+            <label className="block">
+              <span className="mb-1 block text-xs font-bold uppercase tracking-wide text-ink-muted">Tagline</span>
+              <input
+                className="input w-full"
+                value={biz.tagline}
+                onChange={(e) => setBiz((b) => ({ ...b, tagline: e.target.value }))}
+                maxLength={80}
+                placeholder="Una frase corta, por ej. “Sumá compras, ganá premios”"
+              />
+            </label>
+            <div className="flex flex-wrap items-center gap-3">
+              <button className="btn-primary" onClick={saveBiz} disabled={savingBiz}>
+                {savingBiz ? <Loader2 className="animate-spin" size={15} /> : <Save size={15} />}
+                Guardar
+              </button>
+              <p className="text-xs text-ink-muted">
+                La pestaña mostrará: “{biz.name.trim() || 'Fidelización App'}
+                {biz.tagline.trim() ? ` · ${biz.tagline.trim()}` : ''}”
+              </p>
+            </div>
+          </div>
+        </section>
+
         <section className="card p-6">
           <h2 className="mb-1 flex items-center gap-2 text-lg font-extrabold text-ink">
             <FileImage size={20} className="text-primary-strong" />
