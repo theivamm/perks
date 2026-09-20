@@ -65,6 +65,7 @@ function CredentialsForm({ tenantId, userId, onDone }) {
           placeholder="Nuevo email (opcional)"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
+          autoComplete="off"
         />
       </div>
       <div className="relative">
@@ -76,6 +77,7 @@ function CredentialsForm({ tenantId, userId, onDone }) {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           minLength={6}
+          autoComplete="new-password"
         />
         {password && (
           <button
@@ -144,6 +146,7 @@ function AddAdminForm({ tenantId, onDone }) {
             onChange={(e) => setEmail(e.target.value)}
             required
             autoFocus
+            autoComplete="off"
           />
         </div>
         <div className="relative">
@@ -155,6 +158,7 @@ function AddAdminForm({ tenantId, onDone }) {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             minLength={6}
+            autoComplete="new-password"
           />
           {password && (
             <button
