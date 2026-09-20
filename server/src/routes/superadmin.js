@@ -247,6 +247,19 @@ router.delete(
       del('support_messages'),
     ]);
 
+    // `users.tenant_id` es una referencia legacy. La identidad y sus demás
+    // membresías se conservan; solo se limpia el tenant que se está borrando.
+    const { error: legacyUserError } = await supabase
+      .from('users')
+      .update({ tenant_id: null })
+      .eq('tenant_id', req.params.id);
+    if (legacyUserError) {
+      if (legacyUserError.code === '23502') {
+        return res.status(503).json({ error: 'Corré migracion_17_fk_users_tenant.sql antes de eliminar apps.' });
+      }
+      throw legacyUserError;
+    }
+
     const { error } = await supabase.from('tenants').delete().eq('id', req.params.id);
     if (error) throw error;
 
