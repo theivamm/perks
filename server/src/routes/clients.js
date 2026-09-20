@@ -9,11 +9,49 @@ import { asyncHandler } from '../asyncHandler.js';
 import { imageUpload, excelUpload, uploadsDir } from '../upload.js';
 import { addActiveCouponPoint, countCompletedOrders } from '../rewards.js';
 import { notifyPointAdded, notifyUser, redeemReadyCouponAndNotify } from '../notify.js';
-import { getMembership, membershipUserIds } from '../memberships.js';
+import { getMembership } from '../memberships.js';
 
 const router = Router();
 
 const PREF_KEYS = ['vegetarian', 'glutenFree', 'vegan'];
+
+async function registeredProfiles(tenantId, fields) {
+  let { data: memberships = [], error } = await supabase
+    .from('tenant_memberships')
+    .select('user_id, phone, image, preferences, created_at')
+    .eq('tenant_id', tenantId)
+    .eq('role', 'cliente')
+    .order('created_at', { ascending: false });
+  if (error?.code === '42703' || error?.code === 'PGRST204') {
+    const fallback = await supabase
+      .from('tenant_memberships')
+      .select('user_id, created_at')
+      .eq('tenant_id', tenantId)
+      .eq('role', 'cliente')
+      .order('created_at', { ascending: false });
+    if (fallback.error) throw fallback.error;
+    memberships = fallback.data || [];
+    error = null;
+  }
+  if (error) throw error;
+  if (memberships.length === 0) return [];
+
+  const { data: users = [], error: userError } = await supabase
+    .from('users')
+    .select(fields)
+    .in('id', memberships.map((membership) => membership.user_id));
+  if (userError) throw userError;
+  const usersById = Object.fromEntries(users.map((user) => [user.id, user]));
+  return memberships
+    .map((membership) => ({
+      ...usersById[membership.user_id],
+      phone: membership.phone || '',
+      image: membership.image || '',
+      preferences: membership.preferences || {},
+      membership_created_at: membership.created_at,
+    }))
+    .filter((user) => user.id);
+}
 
 router.get(
   '/',
@@ -41,18 +79,10 @@ router.get(
   '/registered',
   requireAdmin,
   asyncHandler(async (req, res) => {
-    const userIds = await membershipUserIds(req.tenant.id, 'cliente');
     const [usersRes, ordersRes] = await Promise.all([
-      userIds.length > 0
-        ? supabase
-            .from('users')
-            .select('id, name, email, phone, image, qr_code, created_at')
-            .in('id', userIds)
-            .order('created_at', { ascending: false })
-        : Promise.resolve({ data: [], error: null }),
+      registeredProfiles(req.tenant.id, 'id, name, email, qr_code, created_at'),
       supabase.from('orders').select('user_id, status').eq('tenant_id', req.tenant.id),
     ]);
-    if (usersRes.error) throw usersRes.error;
     if (ordersRes.error) throw ordersRes.error;
 
     const counts = {};
@@ -66,7 +96,7 @@ router.get(
     }
 
     res.json(
-      (usersRes.data || []).map((u) => ({
+      usersRes.map((u) => ({
         ...u,
         orders: counts[u.id] || 0,
         completed: done[u.id] || 0,
@@ -98,6 +128,9 @@ router.get(
       user = fallback.data;
     }
     if (!user) return res.status(404).json({ error: 'Cliente no encontrado' });
+    user.phone = membership.phone || '';
+    user.image = membership.image || '';
+    user.preferences = membership.preferences || {};
 
     const [ordersRes, couponsRes] = await Promise.all([
       supabase
@@ -137,15 +170,8 @@ router.get(
   '/summary',
   requireAdmin,
   asyncHandler(async (req, res) => {
-    const userIds = await membershipUserIds(req.tenant.id, 'cliente');
     const [usersRes, couponsRes] = await Promise.all([
-      userIds.length > 0
-        ? supabase
-            .from('users')
-            .select('id, name, email, phone, qr_code')
-            .in('id', userIds)
-            .order('created_at', { ascending: false })
-        : Promise.resolve({ data: [], error: null }),
+      registeredProfiles(req.tenant.id, 'id, name, email, qr_code'),
       supabase
         .from('user_coupons')
         .select('id, user_id, title, description, type, value, points, target_points, code, completed_at')
@@ -153,7 +179,6 @@ router.get(
         .eq('tenant_id', req.tenant.id)
         .order('completed_at', { ascending: false }),
     ]);
-    if (usersRes.error) throw usersRes.error;
     if (couponsRes.error) throw couponsRes.error;
 
     const couponsByUser = {};
@@ -162,7 +187,7 @@ router.get(
     }
 
     res.json(
-      (usersRes.data || []).map((u) => ({
+      usersRes.map((u) => ({
         id: u.id,
         name: u.name,
         email: u.email,
@@ -206,6 +231,7 @@ router.post(
         .maybeSingle();
       const membership = userByQr ? await getMembership(userByQr.id, req.tenant.id) : null;
       if (userByQr && membership?.role === 'cliente') {
+        userByQr.phone = membership.phone || '';
         userId = userByQr.id;
         const { data: userCoupon } = await supabase
           .from('user_coupons')
@@ -243,6 +269,7 @@ router.post(
       if (ruErr) throw ruErr;
       const readyMembership = readyUser ? await getMembership(readyUser.id, req.tenant.id) : null;
       if (!readyUser || readyMembership?.role !== 'cliente') return res.status(404).json({ error: 'Cliente no encontrado' });
+      readyUser.phone = readyMembership.phone || '';
 
       const redeemed = await redeemReadyCouponAndNotify(readyCoupon.id, req.tenant.id);
       if (!redeemed) {
@@ -260,6 +287,7 @@ router.post(
     if (uErr) throw uErr;
     const userMembership = user ? await getMembership(user.id, req.tenant.id) : null;
     if (!user || userMembership?.role !== 'cliente') return res.status(404).json({ error: 'Cliente no encontrado' });
+    user.phone = userMembership.phone || '';
 
     res.json({ client: user, coupon, user_coupon_id: userCouponId });
   })

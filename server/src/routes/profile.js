@@ -33,6 +33,9 @@ router.get(
     if (!user) return res.status(404).json({ error: 'Usuario no encontrado. Volvé a iniciar sesión.' });
     user.role = req.membership.role;
     user.tenant_id = req.membership.tenant_id;
+    user.phone = req.membership.phone || '';
+    user.image = req.membership.image || '';
+    user.preferences = req.membership.preferences || {};
     if (user.role === 'cliente' && !user.qr_code) {
       user.qr_code = await ensureQrCode(user.id);
       if (!user.qr_code) {
@@ -90,14 +93,15 @@ router.put(
   requireAuth,
   asyncHandler(async (req, res) => {
     const { name, last_name, phone, email, image, preferences } = req.body || {};
-    const patch = {};
-    if (name !== undefined && String(name).trim()) patch.name = String(name).trim();
-    if (last_name !== undefined) patch.last_name = String(last_name).trim();
-    if (phone !== undefined) patch.phone = String(phone).trim();
-    if (image !== undefined) patch.image = String(image).trim();
+    const userPatch = {};
+    const membershipPatch = {};
+    if (name !== undefined && String(name).trim()) userPatch.name = String(name).trim();
+    if (last_name !== undefined) userPatch.last_name = String(last_name).trim();
+    if (phone !== undefined) membershipPatch.phone = String(phone).trim();
+    if (image !== undefined) membershipPatch.image = String(image).trim();
     if (preferences !== undefined) {
       if (preferences && typeof preferences === 'object' && !Array.isArray(preferences)) {
-        patch.preferences = preferences;
+        membershipPatch.preferences = preferences;
       }
     }
 
@@ -108,37 +112,56 @@ router.put(
         if (authErr) {
           return res.status(400).json({ error: `No se pudo cambiar el email: ${authErr.message}` });
         }
-        patch.email = newEmail;
+        userPatch.email = newEmail;
       }
     }
 
-    const { data: updated, error } = await supabase
-      .from('users')
-      .update(patch)
-      .eq('id', req.user.id)
-      .select(USER_FIELDS)
-      .single();
-    if (error) {
-      const safe = { ...patch };
-      let hadNewCols = false;
-      for (const key of ['last_name', 'image']) {
-        if (key in safe) {
-          delete safe[key];
-          hadNewCols = true;
+    let updated = await selectUser(req.user.id);
+    if (Object.keys(userPatch).length > 0) {
+      const result = await supabase
+        .from('users')
+        .update(userPatch)
+        .eq('id', req.user.id)
+        .select(USER_FIELDS)
+        .single();
+      if (result.error) {
+        const safe = { ...userPatch };
+        if ('last_name' in safe) {
+          delete safe.last_name;
+          const retry = await supabase.from('users').update(safe).eq('id', req.user.id).select(BASE_FIELDS).single();
+          if (retry.error) throw retry.error;
+          updated = retry.data;
+        } else {
+          throw result.error;
         }
+      } else {
+        updated = result.data;
       }
-      if (hadNewCols) {
-        const retrySafe = await supabase
-          .from('users')
-          .update(safe)
-          .eq('id', req.user.id)
-          .select(BASE_FIELDS)
-          .single();
-        if (!retrySafe.error) return res.json({ user: retrySafe.data });
-      }
-      throw error;
     }
-    res.json({ user: updated });
+
+    let membership = req.membership;
+    if (Object.keys(membershipPatch).length > 0) {
+      const { data, error } = await supabase
+        .from('tenant_memberships')
+        .update(membershipPatch)
+        .eq('tenant_id', req.tenant.id)
+        .eq('user_id', req.user.id)
+        .select()
+        .single();
+      if (error) throw error;
+      membership = data;
+    }
+
+    res.json({
+      user: {
+        ...updated,
+        role: membership.role,
+        tenant_id: membership.tenant_id,
+        phone: membership.phone || '',
+        image: membership.image || '',
+        preferences: membership.preferences || {},
+      },
+    });
   })
 );
 

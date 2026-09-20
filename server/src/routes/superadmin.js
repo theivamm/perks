@@ -177,6 +177,10 @@ router.patch(
   '/tenants/:id',
   asyncHandler(async (req, res) => {
     const { slug, business_name, plan, status, tagline } = req.body || {};
+    const { data: currentTenant } = await supabase.from('tenants').select('slug').eq('id', req.params.id).maybeSingle();
+    if (currentTenant?.slug === 'perks') {
+      return res.status(403).json({ error: 'La app central PERKS no se puede modificar' });
+    }
     const patch = {};
 
     if (slug !== undefined) {
@@ -221,6 +225,7 @@ router.delete(
       .eq('id', req.params.id)
       .maybeSingle();
     if (!tenant) return res.status(404).json({ error: 'App no encontrada' });
+    if (tenant.slug === 'perks') return res.status(403).json({ error: 'La app central PERKS no se puede eliminar' });
 
     const ignoreMissing = (e) => /relation .* does not exist/i.test(String(e?.message || ''));
     const del = async (table) => {

@@ -470,7 +470,7 @@ function TenantRow({ tenant, onSaved }) {
             tenant.status === 'activo' ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'
           }`}
           value={tenant.status}
-          disabled={busy}
+          disabled={busy || tenant.slug === 'perks'}
           onChange={(e) => patch({ status: e.target.value })}
         >
           <option value="activo">Activo</option>
@@ -478,10 +478,12 @@ function TenantRow({ tenant, onSaved }) {
           <option value="pendiente">Pendiente</option>
         </select>
 
-        <button className="btn-ghost !py-1.5" onClick={() => setEditing((v) => !v)} disabled={busy || deleting}>
-          {editing ? <X size={15} /> : <Pencil size={15} />}
-          Editar
-        </button>
+        {tenant.slug !== 'perks' && (
+          <button className="btn-ghost !py-1.5" onClick={() => setEditing((v) => !v)} disabled={busy || deleting}>
+            {editing ? <X size={15} /> : <Pencil size={15} />}
+            Editar
+          </button>
+        )}
 
         <button
           className="btn-ghost !py-1.5"
@@ -492,14 +494,16 @@ function TenantRow({ tenant, onSaved }) {
           {showUsers ? 'Ocultar' : 'Usuarios'}
         </button>
 
-        <button
-          className="inline-flex items-center gap-1.5 rounded-xl px-3 !py-1.5 text-xs font-bold text-red-600 transition hover:bg-red-50 disabled:opacity-50 dark:text-red-400 dark:hover:bg-red-500/10"
-          onClick={remove}
-          disabled={busy || deleting}
-        >
-          {deleting ? <Loader2 className="animate-spin" size={15} /> : <Trash2 size={15} />}
-          Eliminar
-        </button>
+        {tenant.slug !== 'perks' && (
+          <button
+            className="inline-flex items-center gap-1.5 rounded-xl px-3 !py-1.5 text-xs font-bold text-red-600 transition hover:bg-red-50 disabled:opacity-50 dark:text-red-400 dark:hover:bg-red-500/10"
+            onClick={remove}
+            disabled={busy || deleting}
+          >
+            {deleting ? <Loader2 className="animate-spin" size={15} /> : <Trash2 size={15} />}
+            Eliminar
+          </button>
+        )}
       </div>
 
       {showUsers && <TenantUsers tenantId={tenant.id} />}

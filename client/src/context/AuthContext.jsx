@@ -25,6 +25,27 @@ export function AuthProvider({ children }) {
     }
   }, [userKey]);
 
+  useEffect(() => {
+    if (!slug || !getToken(slug)) return;
+    let active = true;
+    api('/api/auth/session')
+      .then(({ user: current }) => {
+        if (!active) return;
+        setUser(current);
+        localStorage.setItem(userKey, JSON.stringify(current));
+      })
+      .catch((err) => {
+        if (!active) return;
+        if (!/sesión|no autorizado|no pertenece/i.test(String(err?.message || ''))) return;
+        setToken(null, slug);
+        localStorage.removeItem(userKey);
+        setUser(null);
+      });
+    return () => {
+      active = false;
+    };
+  }, [slug, userKey]);
+
   const [loading, setLoading] = useState(false);
 
   const finishAuth = (data, targetSlug) => {

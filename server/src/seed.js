@@ -59,7 +59,7 @@ export async function runSeed() {
         name: 'Administrador',
         email: adminEmail,
         password_hash: '',
-        role: 'admin',
+        role: 'cliente',
       },
       { onConflict: 'email' }
     );

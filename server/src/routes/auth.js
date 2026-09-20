@@ -3,7 +3,7 @@ import { Router } from 'express';
 import { supabase } from '../supabase.js';
 import { authClient } from '../authClient.js';
 import { asyncHandler } from '../asyncHandler.js';
-import { requireAdmin } from '../middleware/auth.js';
+import { requireAdmin, requireAuth } from '../middleware/auth.js';
 import { newQrCode } from '../qr.js';
 import { verifyTOTP, randomSecret, otpauthURL } from '../otp.js';
 import { ensureMembership, getMembership, membershipUserIds } from '../memberships.js';
@@ -57,6 +57,26 @@ router.post(
     }
 
     res.json(signToken(userRow, null));
+  })
+);
+
+// Refresca el rol de la sesión usando la membresía real de la app actual.
+router.get(
+  '/session',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const user = await userByAuthId(req.user.id);
+    if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
+    res.json({
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: req.membership.role,
+        tenant_id: req.membership.tenant_id,
+        tenant_slug: req.tenant.slug,
+      },
+    });
   })
 );
 
