@@ -93,31 +93,46 @@ const FAQ = [
   ],
 ];
 
+function storedAdminApp() {
+  for (let i = 0; i < localStorage.length; i += 1) {
+    const key = localStorage.key(i) || '';
+    if (!key.startsWith('perks:user:') || key.endsWith(':_global')) continue;
+    try {
+      const saved = JSON.parse(localStorage.getItem(key) || 'null');
+      if (saved?.role === 'admin' && saved?.tenant_slug) return { slug: saved.tenant_slug, user: saved };
+    } catch {
+      // Ignora sesiones locales inválidas.
+    }
+  }
+  return null;
+}
+
 export default function Landing() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [plans, setPlans] = useState([]);
   const [openFaq, setOpenFaq] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [slugFallback, setSlugFallback] = useState('');
+  const [adminApp, setAdminApp] = useState(() => storedAdminApp());
 
-  const isAdmin = user?.role === 'admin';
-  const tenantSlug = user?.tenant_slug || slugFallback;
-  const panelTo = tenantSlug ? `/${tenantSlug}${isAdmin ? '/dashboard' : '/perfil'}` : '/comenzar';
+  const tenantSlug = adminApp?.slug || (user?.role === 'admin' ? user.tenant_slug : '');
+  const isLoggedIn = Boolean(user || adminApp);
+  const panelTo = tenantSlug ? `/${tenantSlug}/dashboard` : '/comenzar';
 
   // Usuarios logueados con tokens viejos pueden no traer el slug de su app.
   useEffect(() => {
-    if (!user || user.tenant_slug) return;
+    if (!user) return;
     api('/api/onboarding/status')
       .then((s) => {
-        if (s?.slug) setSlugFallback(s.slug);
+        if (s?.slug) setAdminApp({ slug: s.slug, user });
       })
       .catch(() => {});
   }, [user]);
 
   const doLogout = async () => {
     setMenuOpen(false);
-    await logout();
+    await logout(tenantSlug || undefined);
+    setAdminApp(null);
     navigate('/');
   };
 
@@ -156,14 +171,14 @@ export default function Landing() {
           </nav>
 
           <div className="hidden items-center gap-3 md:flex">
-            {user ? (
+            {isLoggedIn ? (
               <>
                 <Link
                   to={panelTo}
                   className="inline-flex items-center gap-2 rounded-full bg-amber-400 px-4 py-2 text-sm font-bold text-[#0A0A0C] transition hover:bg-amber-300"
                 >
                   <LayoutDashboard size={15} />
-                  {isAdmin ? 'Panel de mi app' : 'Mi cuenta'}
+                  {tenantSlug ? 'Ir al dashboard de mi app' : 'Quiero mi app'}
                 </Link>
                 <button
                   onClick={doLogout}
@@ -207,7 +222,7 @@ export default function Landing() {
                   {label}
                 </a>
               ))}
-              {user ? (
+              {isLoggedIn ? (
                 <>
                   <Link
                     to={panelTo}
@@ -215,7 +230,7 @@ export default function Landing() {
                     className="inline-flex items-center justify-center gap-2 rounded-full bg-amber-400 px-4 py-2 text-center text-sm font-bold text-[#0A0A0C]"
                   >
                     <LayoutDashboard size={15} />
-                    {isAdmin ? 'Panel de mi app' : 'Mi cuenta'}
+                    {tenantSlug ? 'Ir al dashboard de mi app' : 'Quiero mi app'}
                   </Link>
                   <button
                     onClick={doLogout}
@@ -621,7 +636,7 @@ export default function Landing() {
             <Link to="/shanti-chi" className="transition hover:text-white">
               Ver demo
             </Link>
-            {!user && (
+            {!isLoggedIn && (
               <Link to="/comenzar" className="transition hover:text-white">
                 Ingresar
               </Link>

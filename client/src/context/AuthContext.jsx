@@ -92,15 +92,17 @@ export function AuthProvider({ children }) {
     }
   };
 
-  const logout = async () => {
+  const logout = async (targetSlug) => {
     try {
       await supabase.auth.signOut();
     } catch {
       /* noop */
     }
     setToken(null);
+    if (targetSlug) setToken(null, targetSlug);
     setUser(null);
     localStorage.removeItem(userKey);
+    if (targetSlug) localStorage.removeItem(`perks:user:${targetSlug}`);
   };
 
   const updateUser = (next) => {

@@ -143,7 +143,7 @@ router.post(
       });
     }
 
-    const chosenPlan = isValidPlan(String(plan)) ? String(plan) : payment?.plan || DEFAULT_PLAN;
+    const chosenPlan = payment?.plan || (isValidPlan(String(plan)) ? String(plan) : DEFAULT_PLAN);
 
     const { data: tenant, error: tErr } = await supabase
       .from('tenants')

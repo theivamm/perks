@@ -1,5 +1,4 @@
-// Planes de PERKS. Los links de pago se configuran desde el panel de MercadoPago
-// (MercadoPago > Link de pago) y se pegan en el .env del servidor.
+// Planes de PERKS usados para crear preferencias de Mercado Pago Checkout Pro.
 export function getPlans() {
   return [
     {
@@ -8,7 +7,6 @@ export function getPlans() {
       period: 'por mes',
       price: Number(process.env.PLAN_MONTHLY_PRICE || 30000),
       currency: 'ARS',
-      link: process.env.MERCADOPAGO_LINK_MENSUAL || '',
     },
     {
       id: 'vitalicia',
@@ -16,7 +14,6 @@ export function getPlans() {
       period: 'pago único',
       price: Number(process.env.PLAN_LIFETIME_PRICE || 300000),
       currency: 'ARS',
-      link: process.env.MERCADOPAGO_LINK_VITALICIA || '',
     },
   ];
 }

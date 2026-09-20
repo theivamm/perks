@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -45,6 +45,7 @@ export default function Onboarding() {
   const [slugTouched, setSlugTouched] = useState(false);
   const [slugInfo, setSlugInfo] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  const [paymentLoading, setPaymentLoading] = useState(false);
 
   const selectedPlan = useMemo(
     () => plans.find((p) => p.id === desiredPlan) || null,
@@ -91,24 +92,45 @@ export default function Onboarding() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loginGoogle]);
 
+  const loadStatus = useCallback(async () => {
+    setLoading(true);
+    try {
+      setStatus(await api('/api/onboarding/status'));
+    } catch (err) {
+      setStatus({ hasTenant: false, canStart: false, error: err.message });
+    } finally {
+      setLoading(false);
+    }
+  }, [isAuthed, user?.id]);
+
   // Estado del onboarding
   useEffect(() => {
-    let alive = true;
-    setLoading(true);
-    api('/api/onboarding/status')
-      .then((s) => {
-        if (alive) setStatus(s);
+    loadStatus();
+  }, [loadStatus]);
+
+  // Confirma inmediatamente el pago al volver de Mercado Pago; el webhook
+  // queda como respaldo si el usuario cierra la pestaña antes del retorno.
+  useEffect(() => {
+    const paymentId = params.get('payment_id') || params.get('collection_id');
+    if (!isAuthed || !paymentId || params.get('payment') !== 'success') return;
+    let active = true;
+    setPaymentLoading(true);
+    api('/api/payments/mercadopago/confirm', { method: 'POST', body: { paymentId } })
+      .then(async (result) => {
+        if (!active) return;
+        if (!result.approved) setError('El pago todavía está pendiente de aprobación.');
+        await loadStatus();
       })
-      .catch((e) => {
-        if (alive) setStatus({ hasTenant: false, canStart: false, error: e.message });
+      .catch((err) => {
+        if (active) setError(err.message);
       })
       .finally(() => {
-        if (alive) setLoading(false);
+        if (active) setPaymentLoading(false);
       });
     return () => {
-      alive = false;
+      active = false;
     };
-  }, [isAuthed, user?.id]);
+  }, [isAuthed, loadStatus, params]);
 
   useEffect(() => {
     if (status?.hasTenant && status.slug) navigate(`/${status.slug}/dashboard`, { replace: true });
@@ -147,6 +169,21 @@ export default function Onboarding() {
     }
   };
 
+  const startPayment = async () => {
+    setPaymentLoading(true);
+    setError('');
+    try {
+      const data = await api('/api/payments/mercadopago/preference', {
+        method: 'POST',
+        body: { plan: desiredPlan },
+      });
+      window.location.assign(data.checkoutUrl);
+    } catch (err) {
+      setError(err.message);
+      setPaymentLoading(false);
+    }
+  };
+
   const submit = async (e) => {
     e.preventDefault();
     if (submitting) return;
@@ -162,7 +199,7 @@ export default function Onboarding() {
         body: { businessName, slug, plan: desiredPlan },
       });
       if (res.token) adoptSession(res, res.slug);
-      navigate(`/${res.slug}/dashboard`, { replace: true });
+      navigate(`/${res.slug}/primeros-pasos`, { replace: true });
     } catch (err) {
       setError(err.message);
       setSubmitting(false);
@@ -300,25 +337,20 @@ export default function Onboarding() {
                     </p>
                   </div>
                 </div>
-                <div className="grid gap-2">
-                  {plans.map((p) => (
-                    <a
-                      key={p.id}
-                      href={p.link || undefined}
-                      target="_blank"
-                      rel="noreferrer"
-                      className={`card flex items-center justify-between p-4 ${
-                        p.link ? 'hover:border-primary' : 'cursor-not-allowed opacity-60'
-                      }`}
-                    >
-                      <div>
-                        <p className="font-extrabold text-ink">Plan {p.name}</p>
-                        <p className="text-xs text-ink-muted">{p.period}</p>
-                      </div>
-                      <p className="text-lg font-extrabold text-primary">{formatPrice(p.price)}</p>
-                    </a>
-                  ))}
-                </div>
+                {selectedPlan && (
+                  <div className="card flex items-center justify-between p-4">
+                    <div>
+                      <p className="font-extrabold text-ink">Plan {selectedPlan.name}</p>
+                      <p className="text-xs text-ink-muted">{selectedPlan.period}</p>
+                    </div>
+                    <p className="text-lg font-extrabold text-primary">{formatPrice(selectedPlan.price)}</p>
+                  </div>
+                )}
+                <button className="btn-primary w-full justify-center !py-3" onClick={startPayment} disabled={paymentLoading}>
+                  {paymentLoading ? <Loader2 className="animate-spin" size={18} /> : <ShieldCheck size={18} />}
+                  Pagar de forma segura con Mercado Pago
+                </button>
+                <p className="text-center text-xs text-ink-muted">Volvés automáticamente a PERKS cuando se confirme el pago.</p>
                 <button className="btn-ghost w-full justify-center" onClick={startGoogle}>
                   Cambiar de cuenta
                 </button>
