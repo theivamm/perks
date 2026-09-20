@@ -9,9 +9,9 @@ import { ensureMembership } from '../memberships.js';
 
 const router = Router();
 
-// Sin credenciales de MercadoPago el onboarding queda abierto (modo prueba).
+// El pago solo se omite cuando se habilita explícitamente para desarrollo.
 function onboardingOpen() {
-  return process.env.ONBOARDING_OPEN === 'true' || !process.env.MERCADOPAGO_ACCESS_TOKEN;
+  return process.env.ONBOARDING_OPEN === 'true';
 }
 
 async function approvedPayment(email) {
