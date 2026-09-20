@@ -6,6 +6,7 @@ import {
   Check,
   CreditCard,
   Gift,
+  Infinity,
   Link2,
   Loader2,
   Rocket,
@@ -13,7 +14,9 @@ import {
   Sparkles,
   Star,
   Store,
+  TrendingDown,
   Users,
+  Zap,
 } from 'lucide-react';
 import { api } from '../api.js';
 import { useAuth } from '../context/AuthContext.jsx';
@@ -87,6 +90,7 @@ export default function Onboarding() {
   const [oauthLoading, setOauthLoading] = useState(false);
   const [error, setError] = useState('');
 
+  const [activePlanId, setActivePlanId] = useState(desiredPlan);
   const [businessName, setBusinessName] = useState('');
   const [slug, setSlug] = useState('');
   const [slugTouched, setSlugTouched] = useState(false);
@@ -95,9 +99,12 @@ export default function Onboarding() {
   const [paymentLoading, setPaymentLoading] = useState(false);
 
   const selectedPlan = useMemo(
-    () => plans.find((p) => p.id === desiredPlan) || null,
-    [plans, desiredPlan]
+    () => plans.find((p) => p.id === activePlanId) || null,
+    [plans, activePlanId]
   );
+
+  const monthlyPlan = useMemo(() => plans.find((p) => p.id === 'mensual') || null, [plans]);
+  const lifetimePlan = useMemo(() => plans.find((p) => p.id === 'vitalicia') || null, [plans]);
 
   useEffect(() => {
     api('/api/plans')
@@ -223,7 +230,7 @@ export default function Onboarding() {
     try {
       const data = await api('/api/payments/mercadopago/preference', {
         method: 'POST',
-        body: { plan: desiredPlan },
+        body: { plan: activePlanId },
       });
       if (data.approved) { await loadStatus(); setPaymentLoading(false); return; }
       window.location.assign(data.checkoutUrl);
@@ -242,7 +249,7 @@ export default function Onboarding() {
     try {
       const res = await api('/api/onboarding/create', {
         method: 'POST',
-        body: { businessName, slug, plan: desiredPlan },
+        body: { businessName, slug, plan: activePlanId },
       });
       if (res.token) adoptSession(res, res.slug);
       navigate(`/${res.slug}/primeros-pasos`, { replace: true });
@@ -328,31 +335,102 @@ export default function Onboarding() {
           ) : !status?.canStart ? (
             /* PASO 2 — Pago */
             <div className="space-y-4">
-              <div className="rounded-2xl bg-black/[0.04] p-4">
-                <p className="text-sm font-bold text-[#151515]">Confirmá tu plan</p>
-                <p className="mt-1 text-sm text-black/55">
-                  Tu app estará activa en segundos después del pago.
-                  MercadoPago nos notifica automáticamente.
-                </p>
-              </div>
 
-              {selectedPlan && (
-                <div className="flex items-center justify-between rounded-2xl border border-black/10 bg-white px-5 py-4">
+              {/* Nudge contextual según plan elegido */}
+              {desiredPlan === 'mensual' ? (
+                <div className="flex items-start gap-3 rounded-2xl bg-amber-50 border border-amber-200 p-4">
+                  <Zap size={18} className="mt-0.5 shrink-0 text-amber-500" />
                   <div>
-                    <p className="font-extrabold text-[#151515]">Plan {selectedPlan.name}</p>
-                    <p className="text-xs text-black/45">{selectedPlan.period} · Sin comisiones</p>
+                    <p className="text-sm font-extrabold text-[#151515]">Tip: el plan de por vida conviene más</p>
+                    <p className="mt-0.5 text-xs text-black/55">
+                      Con 10 meses de plan mensual ya igualás el precio único. A partir del mes 11, todo es ganancia.
+                    </p>
                   </div>
-                  <p className="text-xl font-black text-amber-500">{formatPrice(selectedPlan.price)}</p>
+                </div>
+              ) : (
+                <div className="flex items-start gap-3 rounded-2xl bg-emerald-50 border border-emerald-200 p-4">
+                  <Check size={18} className="mt-0.5 shrink-0 text-emerald-500" />
+                  <div>
+                    <p className="text-sm font-extrabold text-[#151515]">Excelente elección</p>
+                    <p className="mt-0.5 text-xs text-black/55">
+                      Pagás una sola vez y tu app funciona para siempre. Sin renovaciones, sin sorpresas.
+                    </p>
+                  </div>
                 </div>
               )}
 
+              {/* Cards de planes */}
+              <div className="grid gap-3 sm:grid-cols-2">
+                {/* Plan Mensual */}
+                <button
+                  type="button"
+                  onClick={() => setActivePlanId('mensual')}
+                  className={`relative flex flex-col items-start rounded-2xl border-2 p-4 text-left transition ${
+                    activePlanId === 'mensual'
+                      ? 'border-[#151515] bg-white shadow-md'
+                      : 'border-black/10 bg-white/60 hover:border-black/25'
+                  }`}
+                >
+                  {activePlanId === 'mensual' && (
+                    <span className="absolute right-3 top-3 flex h-5 w-5 items-center justify-center rounded-full bg-[#151515]">
+                      <Check size={11} className="text-white" strokeWidth={3} />
+                    </span>
+                  )}
+                  <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-black/[0.06]">
+                    <TrendingDown size={16} className="text-black/50" />
+                  </span>
+                  <p className="mt-2.5 font-extrabold text-[#151515]">Mensual</p>
+                  {monthlyPlan && (
+                    <p className="mt-0.5 text-xl font-black text-[#151515]">{formatPrice(monthlyPlan.price)}<span className="text-xs font-bold text-black/40">/mes</span></p>
+                  )}
+                  <p className="mt-2 text-[11px] leading-relaxed text-black/45">Renovación automática. Cancelás cuando querés.</p>
+                </button>
+
+                {/* Plan Vitalicio — destacado */}
+                <button
+                  type="button"
+                  onClick={() => setActivePlanId('vitalicia')}
+                  className={`relative flex flex-col items-start rounded-2xl border-2 p-4 text-left transition ${
+                    activePlanId === 'vitalicia'
+                      ? 'border-amber-400 bg-amber-50 shadow-md'
+                      : 'border-amber-300/60 bg-amber-50/40 hover:border-amber-400/80'
+                  }`}
+                >
+                  <span className="absolute -top-2.5 left-3 rounded-full bg-amber-400 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wide text-[#0A0A0C]">
+                    Recomendado
+                  </span>
+                  {activePlanId === 'vitalicia' && (
+                    <span className="absolute right-3 top-3 flex h-5 w-5 items-center justify-center rounded-full bg-amber-400">
+                      <Check size={11} className="text-[#0A0A0C]" strokeWidth={3} />
+                    </span>
+                  )}
+                  <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-400/20">
+                    <Infinity size={16} className="text-amber-600" />
+                  </span>
+                  <p className="mt-2.5 font-extrabold text-[#151515]">De por vida</p>
+                  {lifetimePlan && (
+                    <p className="mt-0.5 text-xl font-black text-[#151515]">{formatPrice(lifetimePlan.price)}<span className="text-xs font-bold text-black/40"> único</span></p>
+                  )}
+                  {monthlyPlan && lifetimePlan && (
+                    <p className="mt-1 text-[11px] font-bold text-amber-600">
+                      = {Math.round(lifetimePlan.price / monthlyPlan.price)} meses — después $0/mes para siempre
+                    </p>
+                  )}
+                  <ul className="mt-2 space-y-0.5 text-[11px] text-black/50">
+                    <li className="flex items-center gap-1"><Check size={10} className="text-amber-500" /> Sin renovaciones automáticas</li>
+                    <li className="flex items-center gap-1"><Check size={10} className="text-amber-500" /> Funciona para siempre</li>
+                  </ul>
+                </button>
+              </div>
+
+              {/* Botón de pago */}
               <button
                 className="flex w-full items-center justify-center gap-3 rounded-2xl bg-[#151515] px-5 py-3.5 font-extrabold text-white transition hover:bg-black/80 disabled:opacity-50"
                 onClick={startPayment}
-                disabled={paymentLoading}
+                disabled={paymentLoading || !selectedPlan}
               >
                 {paymentLoading ? <Loader2 className="animate-spin" size={19} /> : <CreditCard size={19} />}
-                Pagar con Mercado Pago
+                {selectedPlan ? `Pagar ${formatPrice(selectedPlan.price)} con Mercado Pago` : 'Pagar con Mercado Pago'}
               </button>
               <p className="text-center text-xs text-black/35">
                 Pago 100% seguro. Volvés acá automáticamente al confirmarse.
