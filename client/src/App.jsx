@@ -22,6 +22,7 @@ import SetupWizard from './pages/dashboard/SetupWizard.jsx';
 import SuperAdmin from './pages/superadmin/SuperAdmin.jsx';
 import Onboarding from './pages/Onboarding.jsx';
 import Landing from './pages/Landing.jsx';
+import Checkout from './pages/Checkout.jsx';
 
 function RequireAdmin({ children }) {
   const { isAuthed, user } = useAuth();
@@ -134,6 +135,7 @@ export default function App() {
   return (
     <Routes>
       <Route path="/" element={<Landing />} />
+      <Route path="/checkout" element={<Checkout />} />
       <Route path="/perks/admin" element={<SuperAdmin />} />
       <Route path="/comenzar" element={<Onboarding />} />
       <Route path="/onboarding" element={<Onboarding />} />

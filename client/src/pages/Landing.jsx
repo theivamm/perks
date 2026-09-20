@@ -117,7 +117,7 @@ export default function Landing() {
 
   const tenantSlug = adminApp?.slug || (user?.role === 'admin' ? user.tenant_slug : '');
   const isLoggedIn = Boolean(user || adminApp);
-  const panelTo = tenantSlug ? `/${tenantSlug}/dashboard` : '/comenzar';
+  const panelTo = tenantSlug ? `/${tenantSlug}/dashboard` : '/checkout';
 
   // Usuarios logueados con tokens viejos pueden no traer el slug de su app.
   useEffect(() => {
@@ -191,11 +191,11 @@ export default function Landing() {
               </>
             ) : (
               <>
-                <Link to="/comenzar" className="text-sm font-semibold text-white/70 transition hover:text-white">
+                <Link to="/checkout" className="text-sm font-semibold text-white/70 transition hover:text-white">
                   Ingresar
                 </Link>
                 <Link
-                  to="/comenzar"
+                  to="/checkout"
                   className="rounded-full bg-amber-400 px-4 py-2 text-sm font-bold text-[#0A0A0C] transition hover:bg-amber-300"
                 >
                   Quiero mi app
@@ -242,7 +242,7 @@ export default function Landing() {
                 </>
               ) : (
                 <Link
-                  to="/comenzar"
+                  to="/checkout"
                   onClick={() => setMenuOpen(false)}
                   className="rounded-full bg-amber-400 px-4 py-2 text-center text-sm font-bold text-[#0A0A0C]"
                 >
@@ -271,7 +271,7 @@ export default function Landing() {
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <Link
-                to="/comenzar"
+                to="/checkout"
                 className="inline-flex items-center justify-center gap-2 rounded-full bg-amber-400 px-6 py-3 font-bold text-[#0A0A0C] transition hover:bg-amber-300"
               >
                 Quiero fidelizar clientes <ArrowRight size={18} />
@@ -535,7 +535,7 @@ export default function Landing() {
                     ))}
                   </ul>
                   <Link
-                    to={`/comenzar?plan=${p.id}`}
+                    to={`/checkout?plan=${p.id}`}
                     className={`mt-7 flex w-full items-center justify-center gap-2 rounded-full px-6 py-3 font-bold transition ${
                       highlight
                         ? 'bg-amber-400 text-[#0A0A0C] hover:bg-amber-300'
@@ -615,7 +615,7 @@ export default function Landing() {
             En minutos tenés tu app lista, con tu nombre y tu link para compartir. Después la hacés crecer a tu ritmo.
           </p>
           <Link
-            to="/comenzar"
+            to="/checkout"
             className="mt-8 inline-flex items-center justify-center gap-2 rounded-full bg-amber-400 px-8 py-4 text-lg font-bold text-[#0A0A0C] transition hover:bg-amber-300"
           >
             Crear mi app ahora <ArrowRight size={20} />
@@ -637,7 +637,7 @@ export default function Landing() {
               Ver demo
             </Link>
             {!isLoggedIn && (
-              <Link to="/comenzar" className="transition hover:text-white">
+              <Link to="/checkout" className="transition hover:text-white">
                 Ingresar
               </Link>
             )}

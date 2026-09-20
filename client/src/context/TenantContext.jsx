@@ -8,6 +8,7 @@ const TenantContext = createContext({ slug: '', t: (p) => p, home: () => '/' });
 const RESERVED = new Set([
   'perks',
   'comenzar',
+  'checkout',
   'onboarding',
   'demo',
   'login',
