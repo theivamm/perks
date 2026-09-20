@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Check, KeyRound, Loader2, Mail, Pencil, Plus, ShieldCheck, Trash2, User, X } from 'lucide-react';
+import { Check, Eye, EyeOff, KeyRound, Loader2, Mail, Pencil, Plus, ShieldCheck, Trash2, User, X } from 'lucide-react';
 import { api } from '../../api.js';
 
 function initials(name) {
@@ -31,6 +31,7 @@ function RoleBadge({ role }) {
 function CredentialsForm({ tenantId, userId, onDone }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPwd, setShowPwd] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [ok, setOk] = useState(false);
@@ -69,13 +70,23 @@ function CredentialsForm({ tenantId, userId, onDone }) {
       <div className="relative">
         <KeyRound size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted" />
         <input
-          className="input !py-2 !pl-8 text-xs"
-          type="password"
+          className="input !py-2 !pl-8 !pr-9 text-xs"
+          type={showPwd ? 'text' : 'password'}
           placeholder="Nueva contraseña (opcional)"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           minLength={6}
         />
+        {password && (
+          <button
+            type="button"
+            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-muted hover:text-ink"
+            onClick={() => setShowPwd((v) => !v)}
+            tabIndex={-1}
+          >
+            {showPwd ? <EyeOff size={14} /> : <Eye size={14} />}
+          </button>
+        )}
       </div>
       <div className="flex items-center gap-2">
         <button
@@ -83,7 +94,7 @@ function CredentialsForm({ tenantId, userId, onDone }) {
           className="btn-primary !py-2 text-xs"
           disabled={busy || (!email && !password)}
         >
-          {busy ? <Loader2 className="animate-spin" size={13} /> : ok ? <Check size={13} /> : <Check size={13} />}
+          {busy ? <Loader2 className="animate-spin" size={13} /> : <Check size={13} />}
           Guardar
         </button>
         <button type="button" className="btn-ghost !py-2 text-xs" onClick={onDone}>
@@ -98,6 +109,7 @@ function CredentialsForm({ tenantId, userId, onDone }) {
 function AddAdminForm({ tenantId, onDone }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPwd, setShowPwd] = useState(false);
   const [name, setName] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -137,13 +149,23 @@ function AddAdminForm({ tenantId, onDone }) {
         <div className="relative">
           <KeyRound size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted" />
           <input
-            className="input !py-2 !pl-8 text-xs"
-            type="password"
+            className="input !py-2 !pl-8 !pr-9 text-xs"
+            type={showPwd ? 'text' : 'password'}
             placeholder="Contraseña (si es nuevo)"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             minLength={6}
           />
+          {password && (
+            <button
+              type="button"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-muted hover:text-ink"
+              onClick={() => setShowPwd((v) => !v)}
+              tabIndex={-1}
+            >
+              {showPwd ? <EyeOff size={14} /> : <Eye size={14} />}
+            </button>
+          )}
         </div>
         <input
           className="input !py-2 text-xs"

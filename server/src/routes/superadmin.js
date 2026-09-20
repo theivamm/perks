@@ -331,18 +331,32 @@ router.patch(
     const { email, password } = req.body || {};
     if (!email && !password) return res.status(400).json({ error: 'Nada para actualizar' });
 
+    const userId = req.params.userId;
+
+    // Verificar que el usuario existe en auth.users antes de intentar actualizar
+    const { data: authUser, error: lookupErr } = await supabase.auth.admin.getUserById(userId);
+    if (lookupErr || !authUser?.user) {
+      return res.status(404).json({ error: 'Usuario no encontrado en Supabase Auth. Solo se pueden cambiar credenciales de usuarios creados con email/contraseña o Google.' });
+    }
+
     const patch = {};
-    if (email) patch.email = String(email).toLowerCase().trim();
+    if (email) {
+      patch.email = String(email).toLowerCase().trim();
+      patch.email_confirm = true;
+    }
     if (password) {
       if (String(password).length < 6) return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' });
       patch.password = String(password);
     }
 
-    const { error: authErr } = await supabase.auth.admin.updateUserById(req.params.userId, patch);
-    if (authErr) throw authErr;
+    const { error: authErr } = await supabase.auth.admin.updateUserById(userId, patch);
+    if (authErr) {
+      const detail = authErr.message || String(authErr);
+      return res.status(authErr.status || 422).json({ error: `Supabase: ${detail}` });
+    }
 
     if (patch.email) {
-      await supabase.from('users').update({ email: patch.email }).eq('id', req.params.userId);
+      await supabase.from('users').update({ email: patch.email }).eq('id', userId);
     }
 
     res.json({ ok: true });
