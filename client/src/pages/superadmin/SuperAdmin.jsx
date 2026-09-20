@@ -4,14 +4,18 @@ import {
   Check,
   DollarSign,
   ExternalLink,
+  KeyRound,
   LifeBuoy,
   Loader2,
   LogIn,
+  Mail,
   Pencil,
   Plus,
   RefreshCw,
   Send,
+  ShieldAlert,
   ShoppingBag,
+  Sparkles,
   Store,
   Trash2,
   Users,
@@ -71,53 +75,85 @@ export default function SuperAdmin() {
     }
   };
 
+  const BG = 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1600&q=80';
+
   if (!isSuper) {
     return (
-      <div className="page-aurora flex min-h-screen items-center justify-center px-4">
-        <div className="w-full max-w-md">
-          <div className="card p-8">
-            <div className="text-center">
-              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-glow">
-                <Store size={26} />
-              </div>
-              <h1 className="mt-4 text-2xl font-extrabold text-ink">Panel de control PERKS</h1>
-              <p className="mt-2 text-sm text-ink-muted">Gestión de todas las plataformas del SaaS.</p>
+      <div className="relative min-h-screen bg-cover bg-center lg:grid lg:grid-cols-2" style={{ backgroundImage: `url(${BG})` }}>
+        <div className="absolute inset-0 bg-[#0A0A0C]/80 backdrop-blur-[2px] lg:hidden" />
+
+        <section className="relative flex min-h-screen items-center justify-center px-5 py-10 lg:bg-[#0D0D10] lg:text-white">
+          <div className="w-full max-w-lg rounded-3xl border border-white/10 bg-[#0D0D10]/95 p-6 text-white shadow-2xl backdrop-blur sm:p-8">
+            <div className="flex items-center justify-between">
+              <span className="inline-flex items-center gap-2 text-sm font-bold text-white/40">Zona restringida</span>
+              <span className="inline-flex items-center gap-2 font-black">
+                <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-400">
+                  <Sparkles size={16} className="text-[#0A0A0C]" />
+                </span>
+                <span className="text-white">PERKS</span>
+              </span>
             </div>
 
-            <form onSubmit={submit} className="mt-6 space-y-4">
-              {error && (
-                <div className="rounded-xl border border-red-300 bg-red-50 px-4 py-2.5 text-sm font-medium text-red-700 dark:border-red-500/40 dark:bg-red-500/10 dark:text-red-400">
-                  {error}
-                </div>
-              )}
+            <div className="mt-8 flex items-center gap-3">
+              <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-400/15 text-amber-400">
+                <ShieldAlert size={22} />
+              </span>
               <div>
-                <label className="label">Email</label>
+                <h1 className="text-2xl font-black tracking-tight">Superadmin</h1>
+                <p className="text-sm text-white/45">Acceso exclusivo al panel de control de PERKS.</p>
+              </div>
+            </div>
+
+            {error && (
+              <div className="mt-5 rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm font-semibold text-red-400">
+                {error}
+              </div>
+            )}
+
+            <form onSubmit={submit} className="mt-6 space-y-3">
+              <div className="relative">
+                <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/30" />
                 <input
-                  className="input"
+                  className="w-full rounded-2xl border border-white/10 bg-white/5 py-3 pl-10 pr-4 text-sm font-semibold text-white outline-none placeholder:text-white/25 focus:border-amber-400/50 focus:ring-2 focus:ring-amber-400/15"
                   type="email"
+                  placeholder="superadmin@perks.app"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   autoFocus
                 />
               </div>
-              <div>
-                <label className="label">Contraseña</label>
+              <div className="relative">
+                <KeyRound size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/30" />
                 <input
-                  className="input"
+                  className="w-full rounded-2xl border border-white/10 bg-white/5 py-3 pl-10 pr-4 text-sm font-semibold text-white outline-none placeholder:text-white/25 focus:border-amber-400/50 focus:ring-2 focus:ring-amber-400/15"
                   type="password"
+                  placeholder="Contraseña"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
                 />
               </div>
-              <button className="btn-primary w-full justify-center" disabled={busy}>
-                {busy ? <Loader2 className="animate-spin" size={17} /> : <LogIn size={17} />}
-                Ingresar
+              <button
+                type="submit"
+                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-amber-400 px-5 py-3.5 font-extrabold text-[#0A0A0C] transition hover:bg-amber-300 disabled:opacity-50"
+                disabled={busy || !email || !password}
+              >
+                {busy ? <Loader2 className="animate-spin" size={18} /> : <LogIn size={18} />}
+                Ingresar al panel
               </button>
             </form>
           </div>
-        </div>
+        </section>
+
+        <aside className="relative hidden min-h-screen overflow-hidden bg-cover bg-center lg:block" style={{ backgroundImage: `url(${BG})` }}>
+          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
+          <div className="absolute bottom-0 left-0 max-w-xl p-12 text-white">
+            <p className="text-xs font-bold uppercase tracking-[0.22em] text-amber-400">Solo acceso autorizado</p>
+            <p className="mt-3 text-4xl font-black leading-tight">Panel de control de todas las apps PERKS.</p>
+            <p className="mt-4 text-white/55">Gestión de negocios, usuarios, pagos y soporte desde un único lugar.</p>
+          </div>
+        </aside>
       </div>
     );
   }

@@ -272,6 +272,83 @@ router.delete(
 
 const USER_FIELDS = 'id, name, email, phone, created_at, qr_code';
 
+// Agregar un admin a una app (crea usuario si no existe)
+router.post(
+  '/tenants/:tenantId/admins',
+  asyncHandler(async (req, res) => {
+    const { email, password, name } = req.body || {};
+    const cleanEmail = String(email || '').toLowerCase().trim();
+    if (!cleanEmail) return res.status(400).json({ error: 'Email requerido' });
+
+    let user;
+    const { data: existing } = await supabase.from('users').select('*').eq('email', cleanEmail).maybeSingle();
+
+    if (existing) {
+      user = existing;
+    } else {
+      if (!password || String(password).length < 6) {
+        return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' });
+      }
+      const cleanName = String(name || '').trim() || cleanEmail.split('@')[0];
+      const { data: authData, error: authErr } = await supabase.auth.admin.createUser({
+        email: cleanEmail,
+        password: String(password),
+        email_confirm: true,
+        user_metadata: { name: cleanName },
+      });
+      if (authErr) {
+        if (/already|registered|exist/i.test(authErr.message)) {
+          return res.status(409).json({ error: 'Ese email ya está registrado en Supabase pero no en la base de datos.' });
+        }
+        throw authErr;
+      }
+      const { data: newUser, error: insErr } = await supabase
+        .from('users')
+        .insert({ id: authData.user.id, name: cleanName, email: cleanEmail, password_hash: '', role: 'cliente' })
+        .select()
+        .single();
+      if (insErr) throw insErr;
+      user = newUser;
+    }
+
+    const { data: mem } = await supabase
+      .from('tenant_memberships')
+      .select('id')
+      .eq('tenant_id', req.params.tenantId)
+      .eq('user_id', user.id)
+      .maybeSingle();
+    if (mem) return res.status(409).json({ error: 'Este usuario ya pertenece a la app' });
+
+    await ensureMembership(user.id, req.params.tenantId, 'admin');
+    res.status(201).json({ user: { ...user, role: 'admin' } });
+  })
+);
+
+// Actualizar email o contraseña de un usuario
+router.patch(
+  '/tenants/:tenantId/users/:userId/credentials',
+  asyncHandler(async (req, res) => {
+    const { email, password } = req.body || {};
+    if (!email && !password) return res.status(400).json({ error: 'Nada para actualizar' });
+
+    const patch = {};
+    if (email) patch.email = String(email).toLowerCase().trim();
+    if (password) {
+      if (String(password).length < 6) return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' });
+      patch.password = String(password);
+    }
+
+    const { error: authErr } = await supabase.auth.admin.updateUserById(req.params.userId, patch);
+    if (authErr) throw authErr;
+
+    if (patch.email) {
+      await supabase.from('users').update({ email: patch.email }).eq('id', req.params.userId);
+    }
+
+    res.json({ ok: true });
+  })
+);
+
 // Lista todos los usuarios (admin + clientes) de una app
 router.get(
   '/tenants/:id/users',
