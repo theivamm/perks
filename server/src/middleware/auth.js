@@ -29,6 +29,11 @@ export async function requireAdmin(req, res, next) {
     if (membership?.role !== 'admin') {
       return res.status(403).json({ error: 'Esta cuenta no administra este negocio' });
     }
+    const billingRoute = req.originalUrl.startsWith('/api/payments/subscription');
+    const supportRoute = req.originalUrl.startsWith('/api/support');
+    if (req.tenant?.status === 'suspendido' && !billingRoute && !supportRoute) {
+      return res.status(402).json({ error: 'La app está suspendida por falta de pago. Revisá Plan y facturación.' });
+    }
     req.user = { ...user, role: membership.role, tenant_id: membership.tenant_id };
     req.membership = membership;
     next();

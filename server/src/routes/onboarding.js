@@ -28,6 +28,20 @@ async function approvedPayment(email) {
   return (data && data[0]) || null;
 }
 
+async function approvedSubscription(userId) {
+  if (!userId) return null;
+  const { data, error } = await supabase
+    .from('subscriptions')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('status', 'authorized')
+    .is('tenant_id', null)
+    .order('created_at', { ascending: false })
+    .limit(1);
+  if (error) throw error;
+  return data?.[0] || null;
+}
+
 function defaultSettings(name) {
   return {
     primaryColor: '#2563eb',
@@ -74,13 +88,18 @@ router.get(
       return res.json({ hasTenant: true, slug: tenant?.slug || null, status: tenant?.status || null, canStart: false });
     }
 
-    const payment = await approvedPayment(user?.email);
+    const [payment, subscription] = await Promise.all([
+      approvedPayment(user?.email),
+      approvedSubscription(user?.id),
+    ]);
+    const entitlement = subscription || payment;
     const open = onboardingOpen();
     res.json({
       hasTenant: false,
-      canStart: Boolean(payment) || open,
+      canStart: Boolean(entitlement) || open,
       paymentApproved: Boolean(payment),
-      plan: payment?.plan || null,
+      subscriptionApproved: Boolean(subscription),
+      plan: entitlement?.plan || null,
       paymentRequired: !open,
     });
   })
@@ -136,14 +155,17 @@ router.post(
       return res.status(409).json({ error: 'Ese link ya está en uso' });
     }
 
-    const payment = await approvedPayment(user.email);
-    if (!payment && !onboardingOpen()) {
+    const [payment, subscription] = await Promise.all([
+      approvedPayment(user.email),
+      approvedSubscription(user.id),
+    ]);
+    if (!payment && !subscription && !onboardingOpen()) {
       return res.status(402).json({
         error: 'Todavía no registramos tu pago. Si ya pagaste, esperá unos minutos y volvé a intentar.',
       });
     }
 
-    const chosenPlan = payment?.plan || (isValidPlan(String(plan)) ? String(plan) : DEFAULT_PLAN);
+    const chosenPlan = subscription?.plan || payment?.plan || (isValidPlan(String(plan)) ? String(plan) : DEFAULT_PLAN);
 
     const { data: tenant, error: tErr } = await supabase
       .from('tenants')
@@ -171,6 +193,9 @@ router.post(
 
     if (payment) {
       await supabase.from('payments').update({ tenant_id: tenant.id }).eq('id', payment.id);
+    }
+    if (subscription) {
+      await supabase.from('subscriptions').update({ tenant_id: tenant.id }).eq('id', subscription.id);
     }
 
     // Devolvemos una sesión nueva ya como admin de la app recién creada: si

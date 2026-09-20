@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Check, FileImage, ImagePlus, KeyRound, Loader2, Moon, Palette, Save, ShieldCheck, Smartphone, Square, Store, Sun, Trash2 } from 'lucide-react';
+import { CalendarClock, Check, CreditCard, FileImage, ImagePlus, KeyRound, Loader2, Moon, Palette, Save, ShieldCheck, Smartphone, Square, Store, Sun, Trash2 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext.jsx';
 import { api } from '../../api.js';
 import { PRESET_COLORS, hexToHsl } from '../../color.js';
@@ -9,6 +9,22 @@ import { SYSTEM_ISOS } from '../../components/SystemIsos.jsx';
 import QRCode from 'qrcode';
 
 const CURRENCIES = ['$', '€', 'Bs', 'S/', 'Q', 'L', 'C$'];
+
+function billingDate(value) {
+  if (!value) return 'Sin fecha informada';
+  return new Date(value).toLocaleDateString('es-AR', { day: '2-digit', month: 'long', year: 'numeric' });
+}
+
+function billingStatus(status) {
+  const labels = {
+    authorized: 'Activa',
+    pending: 'Pendiente',
+    past_due: 'Pago vencido',
+    paused: 'Pausada',
+    cancelled: 'Cancelada',
+  };
+  return labels[status] || status || 'Sin suscripción';
+}
 
 export default function SettingsPage() {
   const { settings, updateSettings } = useTheme();
@@ -24,6 +40,18 @@ export default function SettingsPage() {
   const [savingPwd, setSavingPwd] = useState(false);
   const [otp, setOtp] = useState({ enabled: null, qr: '', secret: '', code: '' });
   const [otpBusy, setOtpBusy] = useState(false);
+  const [billing, setBilling] = useState(null);
+  const [billingBusy, setBillingBusy] = useState(true);
+
+  const loadBilling = async () => {
+    try {
+      setBilling(await api('/api/payments/subscription'));
+    } catch {
+      setBilling(null);
+    } finally {
+      setBillingBusy(false);
+    }
+  };
 
   const loadOtpStatus = async () => {
     try {
@@ -36,7 +64,45 @@ export default function SettingsPage() {
 
   useEffect(() => {
     loadOtpStatus();
+    const returned = new URLSearchParams(window.location.search).get('subscription') === 'success';
+    if (returned) {
+      api('/api/payments/subscription/confirm', { method: 'POST' })
+        .then(() => toast('Suscripción actualizada'))
+        .catch((err) => toast(err.message))
+        .finally(loadBilling);
+    } else {
+      loadBilling();
+    }
   }, []);
+
+  const startSubscription = async () => {
+    setBillingBusy(true);
+    try {
+      const data = await api('/api/payments/subscription/start', { method: 'POST' });
+      if (data.active) {
+        await loadBilling();
+        return;
+      }
+      window.location.assign(data.checkoutUrl);
+    } catch (err) {
+      toast(err.message);
+      setBillingBusy(false);
+    }
+  };
+
+  const cancelSubscription = async () => {
+    if (!confirm('¿Cancelar la renovación automática? La app seguirá activa hasta el final del período abonado.')) return;
+    setBillingBusy(true);
+    try {
+      const data = await api('/api/payments/subscription/cancel', { method: 'POST' });
+      setBilling((current) => ({ ...current, subscription: data.subscription }));
+      toast('Renovación automática cancelada');
+    } catch (err) {
+      toast(err.message);
+    } finally {
+      setBillingBusy(false);
+    }
+  };
 
   const changePassword = async () => {
     if (pwd.next.length < 6) return toast('La contraseña debe tener al menos 6 caracteres');
@@ -232,6 +298,77 @@ export default function SettingsPage() {
       </div>
 
       <div className="space-y-6">
+        <section className="card p-6">
+          <h2 className="mb-1 flex items-center gap-2 text-lg font-extrabold text-ink">
+            <CreditCard size={20} className="text-primary-strong" />
+            Plan y facturación
+          </h2>
+          <p className="mb-5 text-sm text-ink-muted">Estado del servicio, próxima renovación e historial de cobros.</p>
+          {billingBusy ? (
+            <div className="flex items-center gap-2 py-5 text-sm text-ink-muted"><Loader2 className="animate-spin" size={17} /> Cargando facturación...</div>
+          ) : !billing ? (
+            <p className="text-sm text-ink-muted">No se pudo cargar la información de facturación.</p>
+          ) : (
+            <div className="space-y-5">
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="rounded-2xl bg-surface-alt p-4">
+                  <p className="text-xs font-bold uppercase tracking-wide text-ink-muted">Plan</p>
+                  <p className="mt-1 font-extrabold capitalize text-ink">{billing.plan}</p>
+                </div>
+                <div className="rounded-2xl bg-surface-alt p-4">
+                  <p className="text-xs font-bold uppercase tracking-wide text-ink-muted">Estado</p>
+                  <p className="mt-1 font-extrabold text-ink">{billing.subscription ? billingStatus(billing.subscription.status) : billing.tenantStatus}</p>
+                </div>
+                <div className="rounded-2xl bg-surface-alt p-4">
+                  <p className="text-xs font-bold uppercase tracking-wide text-ink-muted">Importe</p>
+                  <p className="mt-1 font-extrabold text-ink">{billing.subscription ? `$ ${Number(billing.subscription.amount || 0).toLocaleString('es-AR')}` : 'Pago único'}</p>
+                </div>
+                <div className="rounded-2xl bg-surface-alt p-4">
+                  <p className="text-xs font-bold uppercase tracking-wide text-ink-muted">Próxima renovación</p>
+                  <p className="mt-1 text-sm font-extrabold text-ink">{billing.subscription ? billingDate(billing.subscription.next_payment_date) : 'No corresponde'}</p>
+                </div>
+              </div>
+
+              {billing.subscription?.grace_until && billing.subscription.status === 'past_due' && (
+                <div className="flex items-start gap-3 rounded-2xl border border-amber-400/40 bg-amber-500/10 p-4 text-sm text-ink">
+                  <CalendarClock size={18} className="mt-0.5 shrink-0 text-amber-500" />
+                  <p>El cobro no pudo completarse. El período de gracia finaliza el <strong>{billingDate(billing.subscription.grace_until)}</strong>; luego la app se suspenderá automáticamente.</p>
+                </div>
+              )}
+
+              {billing.subscription?.status === 'authorized' && (
+                <button className="btn-ghost text-red-500 hover:bg-red-500/10" onClick={cancelSubscription} disabled={billingBusy}>
+                  Cancelar renovación automática
+                </button>
+              )}
+
+              {billing.plan === 'mensual' && !billing.subscription && (
+                <div className="rounded-2xl border border-primary/30 bg-primary-softer p-4">
+                  <p className="text-sm font-bold text-ink">La renovación automática todavía no está vinculada.</p>
+                  <p className="mt-1 text-xs text-ink-muted">Autorizá Mercado Pago para evitar interrupciones mensuales del servicio.</p>
+                  <button className="btn-primary mt-3" onClick={startSubscription} disabled={billingBusy}>
+                    Activar renovación automática
+                  </button>
+                </div>
+              )}
+
+              {billing.payments?.length > 0 && (
+                <div>
+                  <p className="mb-2 text-xs font-bold uppercase tracking-wide text-ink-muted">Últimos pagos</p>
+                  <div className="divide-y divide-line overflow-hidden rounded-2xl border border-line">
+                    {billing.payments.slice(0, 6).map((payment) => (
+                      <div key={payment.id} className="flex items-center justify-between gap-3 px-4 py-3 text-sm">
+                        <div><p className="font-bold text-ink">$ {Number(payment.amount || 0).toLocaleString('es-AR')}</p><p className="text-xs text-ink-muted">{billingDate(payment.created_at)}</p></div>
+                        <span className={`rounded-full px-2 py-1 text-xs font-bold ${payment.status === 'approved' ? 'bg-emerald-500/10 text-emerald-600' : 'bg-amber-500/10 text-amber-600'}`}>{payment.status}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </section>
+
         <section className="card p-6">
           <h2 className="mb-1 flex items-center gap-2 text-lg font-extrabold text-ink">
             <Store size={20} className="text-primary-strong" />

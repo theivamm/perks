@@ -133,6 +133,27 @@ export default function Onboarding() {
   }, [isAuthed, loadStatus, params]);
 
   useEffect(() => {
+    if (!isAuthed || params.get('subscription') !== 'success') return;
+    let active = true;
+    setPaymentLoading(true);
+    api('/api/payments/mercadopago/subscription/confirm', { method: 'POST' })
+      .then(async (result) => {
+        if (!active) return;
+        if (!result.approved) setError('La suscripción todavía está pendiente de autorización.');
+        await loadStatus();
+      })
+      .catch((err) => {
+        if (active) setError(err.message);
+      })
+      .finally(() => {
+        if (active) setPaymentLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [isAuthed, loadStatus, params]);
+
+  useEffect(() => {
     if (status?.hasTenant && status.slug) navigate(`/${status.slug}/dashboard`, { replace: true });
   }, [status, navigate]);
 
@@ -177,6 +198,11 @@ export default function Onboarding() {
         method: 'POST',
         body: { plan: desiredPlan },
       });
+      if (data.approved) {
+        await loadStatus();
+        setPaymentLoading(false);
+        return;
+      }
       window.location.assign(data.checkoutUrl);
     } catch (err) {
       setError(err.message);
