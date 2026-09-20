@@ -82,7 +82,6 @@ router.post(
           currency_id: plan.currency,
           unit_price: plan.price,
         }],
-        payer: { email: req.user.email },
         metadata: { plan: plan.id, user_id: req.user.id },
         external_reference: plan.id,
         notification_url: `${origin}/api/payments/mercadopago/webhook`,
