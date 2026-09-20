@@ -161,7 +161,7 @@ export default function Onboarding() {
         method: 'POST',
         body: { businessName, slug, plan: desiredPlan },
       });
-      if (res.token) adoptSession(res);
+      if (res.token) adoptSession(res, res.slug);
       navigate(`/${res.slug}/dashboard`, { replace: true });
     } catch (err) {
       setError(err.message);

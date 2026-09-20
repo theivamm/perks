@@ -1,23 +1,40 @@
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
 import { api, getToken, setToken } from '../api.js';
 import { supabase } from '../lib/supabase.js';
+import { useTenant } from './TenantContext.jsx';
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
+  const { slug } = useTenant();
+  const userKey = slug ? `perks:user:${slug}` : 'perks:user:_global';
+
   const [user, setUser] = useState(() => {
     try {
-      return JSON.parse(localStorage.getItem('user') || 'null');
+      return JSON.parse(localStorage.getItem(userKey) || 'null');
     } catch {
       return null;
     }
   });
+
+  useEffect(() => {
+    try {
+      setUser(JSON.parse(localStorage.getItem(userKey) || 'null'));
+    } catch {
+      setUser(null);
+    }
+  }, [userKey]);
+
   const [loading, setLoading] = useState(false);
 
-  const finishAuth = (data) => {
-    setToken(data.token);
+  const finishAuth = (data, targetSlug) => {
+    // El backend nos puede avisar explícitamente a qué app pertenece la sesión
+    const slugToUse = data.user?.tenant_slug !== undefined ? data.user.tenant_slug : (targetSlug !== undefined ? targetSlug : slug);
+    const finalUserKey = slugToUse ? `perks:user:${slugToUse}` : 'perks:user:_global';
+    
+    setToken(data.token, slugToUse);
     setUser(data.user);
-    localStorage.setItem('user', JSON.stringify(data.user));
+    localStorage.setItem(finalUserKey, JSON.stringify(data.user));
     return data.user;
   };
 
@@ -56,7 +73,7 @@ export function AuthProvider({ children }) {
     setLoading(true);
     try {
       const data = await api('/api/auth/google', { method: 'POST', body: { access_token: accessToken } });
-      return finishAuth(data);
+      return finishAuth(data, data.user?.tenant_slug || undefined);
     } finally {
       setLoading(false);
     }
@@ -83,16 +100,16 @@ export function AuthProvider({ children }) {
     }
     setToken(null);
     setUser(null);
-    localStorage.removeItem('user');
+    localStorage.removeItem(userKey);
   };
 
   const updateUser = (next) => {
     setUser(next);
-    localStorage.setItem('user', JSON.stringify(next));
+    localStorage.setItem(userKey, JSON.stringify(next));
   };
 
   // Adopta una sesión ya emitida por el servidor (p. ej. al crear la app).
-  const adoptSession = (data) => finishAuth(data);
+  const adoptSession = (data, targetSlug) => finishAuth(data, targetSlug);
 
   const isAuthed = Boolean(getToken() && user);
 

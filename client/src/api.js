@@ -1,10 +1,16 @@
-export function getToken() {
-  return localStorage.getItem('token');
+function getTokenKey(targetSlug) {
+  const slug = targetSlug !== undefined ? targetSlug : currentTenantSlug;
+  return slug ? `perks:token:${slug}` : 'perks:token:_global';
 }
 
-export function setToken(token) {
-  if (token) localStorage.setItem('token', token);
-  else localStorage.removeItem('token');
+export function getToken(targetSlug) {
+  return localStorage.getItem(getTokenKey(targetSlug));
+}
+
+export function setToken(token, targetSlug) {
+  const key = getTokenKey(targetSlug);
+  if (token) localStorage.setItem(key, token);
+  else localStorage.removeItem(key);
 }
 
 let currentTenantSlug = '';
