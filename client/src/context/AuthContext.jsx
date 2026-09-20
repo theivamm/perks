@@ -81,6 +81,16 @@ export function AuthProvider({ children }) {
     }
   };
 
+  const loginEmailGlobal = async (email, password) => {
+    setLoading(true);
+    try {
+      const data = await api('/api/auth/global-login', { method: 'POST', body: { email, password } });
+      return finishAuth(data, null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const loginOtp = async (loginToken, code) => {
     setLoading(true);
     try {
@@ -158,7 +168,7 @@ export function AuthProvider({ children }) {
   const isAuthed = Boolean(getToken() && user);
 
   return (
-    <AuthContext.Provider value={{ user, login, loginAdminEmail, loginOtp, register, loginGoogle, loginSuperAdmin, switchApp, logout, updateUser, adoptSession, loading, isAuthed }}>
+    <AuthContext.Provider value={{ user, login, loginAdminEmail, loginEmailGlobal, loginOtp, register, loginGoogle, loginSuperAdmin, switchApp, logout, updateUser, adoptSession, loading, isAuthed }}>
       {children}
     </AuthContext.Provider>
   );

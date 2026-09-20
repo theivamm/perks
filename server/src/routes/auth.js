@@ -27,6 +27,31 @@ export function signToken(userRow, tenantSlug, membership = null) {
   return { token, user: payload };
 }
 
+// Login global con email/contraseña para el portal /ingresar (sin tenant).
+// Devuelve identidad global; el portal luego lista las apps disponibles.
+router.post(
+  '/global-login',
+  asyncHandler(async (req, res) => {
+    const { email, password } = req.body || {};
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email y contraseña requeridos' });
+    }
+
+    const { data, error } = await authClient.auth.signInWithPassword({
+      email: String(email).toLowerCase().trim(),
+      password: String(password),
+    });
+    if (error || !data?.user) {
+      return res.status(401).json({ error: 'Credenciales inválidas' });
+    }
+
+    const user = await userByAuthId(data.user.id);
+    if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
+
+    res.json(signToken({ ...user, role: 'cliente', tenant_id: null }, null));
+  })
+);
+
 // Login del equipo PERKS (superadmin) con email y contraseña directos.
 // No depende del tenant ni del username configurado en cada negocio.
 router.post(
