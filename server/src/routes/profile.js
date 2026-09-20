@@ -31,6 +31,8 @@ router.get(
   asyncHandler(async (req, res) => {
     const user = await selectUser(req.user.id);
     if (!user) return res.status(404).json({ error: 'Usuario no encontrado. Volvé a iniciar sesión.' });
+    user.role = req.membership.role;
+    user.tenant_id = req.membership.tenant_id;
     if (user.role === 'cliente' && !user.qr_code) {
       user.qr_code = await ensureQrCode(user.id);
       if (!user.qr_code) {
@@ -56,7 +58,7 @@ router.get(
     if (ordersRes.error) throw ordersRes.error;
     if (couponsRes.error) throw couponsRes.error;
 
-    const completed = await countCompletedOrders(user.id);
+    const completed = await countCompletedOrders(user.id, req.tenant.id);
     const totalSpent = (ordersRes.data || []).reduce((sum, o) => sum + (Number(o.total) || 0), 0);
 
     const suggestions = await buildSuggestions(ordersRes.data || []);

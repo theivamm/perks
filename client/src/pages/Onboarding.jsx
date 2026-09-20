@@ -81,7 +81,7 @@ export default function Onboarding() {
             window.history.replaceState({}, document.title, url.pathname + url.search);
           }
         }
-        if (session) await loginGoogle(session.access_token);
+        if (session) await loginGoogle(session.access_token, { global: true });
       } catch (e) {
         setError(e.message);
       } finally {

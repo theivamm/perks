@@ -9,6 +9,7 @@ import { asyncHandler } from '../asyncHandler.js';
 import { imageUpload, excelUpload, uploadsDir } from '../upload.js';
 import { addActiveCouponPoint, countCompletedOrders } from '../rewards.js';
 import { notifyPointAdded, notifyUser, redeemReadyCouponAndNotify } from '../notify.js';
+import { getMembership, membershipUserIds } from '../memberships.js';
 
 const router = Router();
 
@@ -40,13 +41,15 @@ router.get(
   '/registered',
   requireAdmin,
   asyncHandler(async (req, res) => {
+    const userIds = await membershipUserIds(req.tenant.id, 'cliente');
     const [usersRes, ordersRes] = await Promise.all([
-      supabase
-        .from('users')
-        .select('id, name, email, phone, image, qr_code, created_at')
-        .eq('role', 'cliente')
-        .eq('tenant_id', req.tenant.id)
-        .order('created_at', { ascending: false }),
+      userIds.length > 0
+        ? supabase
+            .from('users')
+            .select('id, name, email, phone, image, qr_code, created_at')
+            .in('id', userIds)
+            .order('created_at', { ascending: false })
+        : Promise.resolve({ data: [], error: null }),
       supabase.from('orders').select('user_id, status').eq('tenant_id', req.tenant.id),
     ]);
     if (usersRes.error) throw usersRes.error;
@@ -77,21 +80,19 @@ router.get(
   '/registered/:id',
   requireAdmin,
   asyncHandler(async (req, res) => {
+    const membership = await getMembership(req.params.id, req.tenant.id);
+    if (membership?.role !== 'cliente') return res.status(404).json({ error: 'Cliente no encontrado' });
     const baseFields = 'id, name, last_name, email, phone, image, preferences, qr_code, created_at';
     let { data: user, error } = await supabase
       .from('users')
       .select(baseFields)
       .eq('id', req.params.id)
-      .eq('role', 'cliente')
-      .eq('tenant_id', req.tenant.id)
       .maybeSingle();
     if (error) {
       const fallback = await supabase
         .from('users')
         .select('id, name, email, phone, qr_code, created_at')
         .eq('id', req.params.id)
-        .eq('role', 'cliente')
-        .eq('tenant_id', req.tenant.id)
         .maybeSingle();
       if (fallback.error) throw fallback.error;
       user = fallback.data;
@@ -115,7 +116,7 @@ router.get(
     if (ordersRes.error) throw ordersRes.error;
     if (couponsRes.error) throw couponsRes.error;
 
-    const completed = await countCompletedOrders(user.id);
+    const completed = await countCompletedOrders(user.id, req.tenant.id);
     const orders = ordersRes.data || [];
     const totalSpent = orders.reduce((sum, o) => sum + (Number(o.total) || 0), 0);
     const coupons = couponsRes.data || [];
@@ -136,13 +137,15 @@ router.get(
   '/summary',
   requireAdmin,
   asyncHandler(async (req, res) => {
+    const userIds = await membershipUserIds(req.tenant.id, 'cliente');
     const [usersRes, couponsRes] = await Promise.all([
-      supabase
-        .from('users')
-        .select('id, name, email, phone, qr_code')
-        .eq('role', 'cliente')
-        .eq('tenant_id', req.tenant.id)
-        .order('created_at', { ascending: false }),
+      userIds.length > 0
+        ? supabase
+            .from('users')
+            .select('id, name, email, phone, qr_code')
+            .in('id', userIds)
+            .order('created_at', { ascending: false })
+        : Promise.resolve({ data: [], error: null }),
       supabase
         .from('user_coupons')
         .select('id, user_id, title, description, type, value, points, target_points, code, completed_at')
@@ -200,10 +203,9 @@ router.post(
         .from('users')
         .select('id, name, email, phone, qr_code, created_at')
         .eq('qr_code', code)
-        .eq('role', 'cliente')
-        .eq('tenant_id', req.tenant.id)
         .maybeSingle();
-      if (userByQr) {
+      const membership = userByQr ? await getMembership(userByQr.id, req.tenant.id) : null;
+      if (userByQr && membership?.role === 'cliente') {
         userId = userByQr.id;
         const { data: userCoupon } = await supabase
           .from('user_coupons')
@@ -237,10 +239,10 @@ router.post(
         .from('users')
         .select('id, name, email, phone, qr_code, created_at')
         .eq('id', readyCoupon.user_id)
-        .eq('role', 'cliente')
-        .eq('tenant_id', req.tenant.id)
         .maybeSingle();
       if (ruErr) throw ruErr;
+      const readyMembership = readyUser ? await getMembership(readyUser.id, req.tenant.id) : null;
+      if (!readyUser || readyMembership?.role !== 'cliente') return res.status(404).json({ error: 'Cliente no encontrado' });
 
       const redeemed = await redeemReadyCouponAndNotify(readyCoupon.id, req.tenant.id);
       if (!redeemed) {
@@ -254,10 +256,10 @@ router.post(
       .from('users')
       .select('id, name, email, phone, qr_code, created_at')
       .eq('id', userId)
-      .eq('role', 'cliente')
-      .eq('tenant_id', req.tenant.id)
       .maybeSingle();
     if (uErr) throw uErr;
+    const userMembership = user ? await getMembership(user.id, req.tenant.id) : null;
+    if (!user || userMembership?.role !== 'cliente') return res.status(404).json({ error: 'Cliente no encontrado' });
 
     res.json({ client: user, coupon, user_coupon_id: userCouponId });
   })
@@ -272,12 +274,12 @@ router.post(
     const userId = req.params.id;
     const userCouponId = (req.body || {}).user_coupon_id || null;
 
+    const membership = await getMembership(userId, req.tenant.id);
+    if (membership?.role !== 'cliente') return res.status(404).json({ error: 'Cliente no encontrado' });
     const { data: user, error: userErr } = await supabase
       .from('users')
       .select('id, name, email')
       .eq('id', userId)
-      .eq('role', 'cliente')
-      .eq('tenant_id', req.tenant.id)
       .maybeSingle();
     if (userErr) throw userErr;
     if (!user) return res.status(404).json({ error: 'Cliente no encontrado' });
@@ -313,7 +315,7 @@ router.post(
       }
     }
 
-    const result = await addActiveCouponPoint(user.id, userCouponId);
+    const result = await addActiveCouponPoint(user.id, userCouponId, req.tenant.id);
 
     try {
       await notifyPointAdded(user.id, result, req.tenant.id);

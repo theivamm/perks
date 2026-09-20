@@ -64,6 +64,10 @@ export async function runSeed() {
       { onConflict: 'email' }
     );
   if (upErr) throw upErr;
+  const { error: membershipErr } = await supabase
+    .from('tenant_memberships')
+    .upsert({ tenant_id: tenant.id, user_id: authAdmin.id, role: 'admin' }, { onConflict: 'tenant_id,user_id' });
+  if (membershipErr) throw membershipErr;
   log(`admin de Supabase Auth listo (${adminEmail}).`);
 
   const { data: existingSettings } = await supabase

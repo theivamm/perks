@@ -1,10 +1,11 @@
 import { Router } from 'express';
 import { supabase } from '../supabase.js';
 import { asyncHandler } from '../asyncHandler.js';
-import { requireAuth } from '../middleware/auth.js';
+import { requireIdentity } from '../middleware/auth.js';
 import { DEFAULT_PLAN, isValidPlan } from '../plans.js';
 import { slugify, slugError, slugTaken } from '../slug.js';
 import { signToken } from './auth.js';
+import { ensureMembership } from '../memberships.js';
 
 const router = Router();
 
@@ -47,7 +48,7 @@ function defaultSettings(name) {
 // Estado del onboarding para el usuario logueado.
 router.get(
   '/status',
-  requireAuth,
+  requireIdentity,
   asyncHandler(async (req, res) => {
     const { data: user, error } = await supabase
       .from('users')
@@ -56,11 +57,19 @@ router.get(
       .maybeSingle();
     if (error) throw error;
 
-    if (user?.role === 'admin' && user?.tenant_id) {
+    const { data: adminMemberships, error: membershipError } = await supabase
+      .from('tenant_memberships')
+      .select('tenant_id')
+      .eq('user_id', req.user.id)
+      .eq('role', 'admin')
+      .limit(1);
+    if (membershipError) throw membershipError;
+
+    if (adminMemberships?.[0]?.tenant_id) {
       const { data: tenant } = await supabase
         .from('tenants')
         .select('slug, status')
-        .eq('id', user.tenant_id)
+        .eq('id', adminMemberships[0].tenant_id)
         .maybeSingle();
       return res.json({ hasTenant: true, slug: tenant?.slug || null, status: tenant?.status || null, canStart: false });
     }
@@ -92,7 +101,7 @@ router.get(
 // Crea la app (tenant) del usuario logueado y lo convierte en su admin.
 router.post(
   '/create',
-  requireAuth,
+  requireIdentity,
   asyncHandler(async (req, res) => {
     const { businessName, slug, plan } = req.body || {};
     const name = String(businessName || '').trim();
@@ -111,8 +120,15 @@ router.post(
     if (uErr) throw uErr;
     if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
 
-    if (user.role === 'admin' && user.tenant_id) {
-      const { data: t } = await supabase.from('tenants').select('slug').eq('id', user.tenant_id).maybeSingle();
+    const { data: adminMemberships, error: membershipError } = await supabase
+      .from('tenant_memberships')
+      .select('tenant_id')
+      .eq('user_id', user.id)
+      .eq('role', 'admin')
+      .limit(1);
+    if (membershipError) throw membershipError;
+    if (adminMemberships?.[0]?.tenant_id) {
+      const { data: t } = await supabase.from('tenants').select('slug').eq('id', adminMemberships[0].tenant_id).maybeSingle();
       return res.status(409).json({ error: 'Esta cuenta ya tiene una app', slug: t?.slug || null });
     }
 
@@ -151,11 +167,7 @@ router.post(
     const { error: sInsErr } = await supabase.from('settings').insert(rows);
     if (sInsErr) throw sInsErr;
 
-    const { error: upErr } = await supabase
-      .from('users')
-      .update({ tenant_id: tenant.id, role: 'admin' })
-      .eq('id', user.id);
-    if (upErr) throw upErr;
+    const membership = await ensureMembership(user.id, tenant.id, 'admin');
 
     if (payment) {
       await supabase.from('payments').update({ tenant_id: tenant.id }).eq('id', payment.id);
@@ -164,8 +176,7 @@ router.post(
     // Devolvemos una sesión nueva ya como admin de la app recién creada: si
     // no, el cliente queda con el token viejo (rol cliente) y lo expulsa del
     // panel apenas entra.
-    const updatedUser = { ...user, role: 'admin', tenant_id: tenant.id };
-    res.status(201).json({ slug: tenant.slug, tenant, ...signToken(updatedUser, tenant.slug) });
+    res.status(201).json({ slug: tenant.slug, tenant, ...signToken(user, tenant.slug, membership) });
   })
 );
 

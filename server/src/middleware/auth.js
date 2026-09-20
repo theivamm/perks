@@ -1,4 +1,5 @@
 import jwt from 'jsonwebtoken';
+import { ensureMembership, getMembership } from '../memberships.js';
 
 const SECRET = () => process.env.JWT_SECRET || 'dev-secret';
 
@@ -17,17 +18,23 @@ function verify(req) {
   }
 }
 
-export function requireAdmin(req, res, next) {
+export async function requireAdmin(req, res, next) {
   const { user, error, status } = verify(req);
   if (!user) return res.status(status).json({ error });
-  if (user.role !== 'admin') {
-    return res.status(403).json({ error: 'Se requieren permisos de administrador' });
+  try {
+    let membership = await getMembership(user.id, req.tenant?.id);
+    if (!membership && user.role === 'admin' && user.tenant_id === req.tenant?.id) {
+      membership = await ensureMembership(user.id, req.tenant.id, 'admin');
+    }
+    if (membership?.role !== 'admin') {
+      return res.status(403).json({ error: 'Esta cuenta no administra este negocio' });
+    }
+    req.user = { ...user, role: membership.role, tenant_id: membership.tenant_id };
+    req.membership = membership;
+    next();
+  } catch (err) {
+    next(err);
   }
-  if (req.tenant && user.tenant_id && user.tenant_id !== req.tenant.id) {
-    return res.status(403).json({ error: 'Esta cuenta no administra este negocio' });
-  }
-  req.user = user;
-  next();
 }
 
 export function requireSuperAdmin(req, res, next) {
@@ -40,12 +47,26 @@ export function requireSuperAdmin(req, res, next) {
   next();
 }
 
-export function requireAuth(req, res, next) {
+export async function requireAuth(req, res, next) {
   const { user, error, status } = verify(req);
   if (!user) return res.status(status).json({ error });
-  if (user.role !== 'admin' && user.role !== 'cliente') {
-    return res.status(403).json({ error: 'Acceso restringido' });
+  try {
+    let membership = await getMembership(user.id, req.tenant?.id);
+    if (!membership && ['admin', 'cliente'].includes(user.role) && user.tenant_id === req.tenant?.id) {
+      membership = await ensureMembership(user.id, req.tenant.id, user.role);
+    }
+    if (!membership) return res.status(403).json({ error: 'Esta cuenta no pertenece a esta app' });
+    req.user = { ...user, role: membership.role, tenant_id: membership.tenant_id };
+    req.membership = membership;
+    next();
+  } catch (err) {
+    next(err);
   }
+}
+
+export function requireIdentity(req, res, next) {
+  const { user, error, status } = verify(req);
+  if (!user) return res.status(status).json({ error });
   req.user = user;
   next();
 }

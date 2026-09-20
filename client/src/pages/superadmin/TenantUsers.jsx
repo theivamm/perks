@@ -52,11 +52,11 @@ export default function TenantUsers({ tenantId }) {
   }, [load]);
 
   const remove = async (user) => {
-    if (!confirm(`¿Eliminar la cuenta de "${user.name}" (${user.email})? Esta acción no se puede deshacer.`)) return;
+    if (!confirm(`¿Quitar a "${user.name}" (${user.email}) de esta app? Su cuenta y sus accesos a otras apps se conservarán.`)) return;
     setDeletingId(user.id);
     setError('');
     try {
-      await api(`/api/superadmin/users/${user.id}`, { method: 'DELETE' });
+      await api(`/api/superadmin/tenants/${tenantId}/users/${user.id}`, { method: 'DELETE' });
       setUsers((current) => current.filter((item) => item.id !== user.id));
     } catch (err) {
       setError(err.message);
@@ -101,7 +101,7 @@ export default function TenantUsers({ tenantId }) {
                   disabled={deletingId !== null}
                 >
                   {deletingId === user.id ? <Loader2 className="animate-spin" size={14} /> : <Trash2 size={14} />}
-                  Eliminar
+                  Quitar de la app
                 </button>
               </div>
             ))}

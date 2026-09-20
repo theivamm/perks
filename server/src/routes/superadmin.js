@@ -5,6 +5,7 @@ import { requireSuperAdmin } from '../middleware/auth.js';
 import { resetTenancyCache } from '../tenancy.js';
 import { isValidPlan, DEFAULT_PLAN } from '../plans.js';
 import { slugify, slugError, slugTaken } from '../slug.js';
+import { ensureMembership } from '../memberships.js';
 
 const router = Router();
 
@@ -40,11 +41,13 @@ async function listPayments() {
   return data || [];
 }
 
-async function countFor(table, tenantId) {
-  const { count, error } = await supabase
+async function countFor(table, tenantId, role) {
+  let query = supabase
     .from(table)
-    .select('id', { count: 'exact', head: true })
+    .select('*', { count: 'exact', head: true })
     .eq('tenant_id', tenantId);
+  if (role) query = query.eq('role', role);
+  const { count, error } = await query;
   if (error) throw error;
   return count || 0;
 }
@@ -72,7 +75,7 @@ router.get(
         ...t,
         owner: owners[t.owner_user_id] || null,
         counts: {
-          clients: await countFor('users', t.id),
+          clients: await countFor('tenant_memberships', t.id, 'cliente'),
           orders: await countFor('orders', t.id),
           coupons: await countFor('loyalty_coupons', t.id),
         },
@@ -161,7 +164,7 @@ router.post(
     await supabase.from('settings').insert(rows);
 
     if (ownerId) {
-      await supabase.from('users').update({ tenant_id: tenant.id, role: 'admin' }).eq('id', ownerId);
+      await ensureMembership(ownerId, tenant.id, 'admin');
     }
 
     resetTenancyCache();
@@ -239,14 +242,6 @@ router.delete(
       del('support_messages'),
     ]);
 
-    // Usuarios del tenant (admin + clientes) y sus cuentas de Supabase Auth
-    const { data: users = [] } = await supabase.from('users').select('id').eq('tenant_id', req.params.id);
-    const { error: usersErr } = await supabase.from('users').delete().eq('tenant_id', req.params.id);
-    if (usersErr && !ignoreMissing(usersErr)) throw usersErr;
-    for (const u of users) {
-      await supabase.auth.admin.deleteUser(u.id).catch(() => {});
-    }
-
     const { error } = await supabase.from('tenants').delete().eq('id', req.params.id);
     if (error) throw error;
 
@@ -257,31 +252,39 @@ router.delete(
 
 // ===== Usuarios de una app =====
 
-const USER_FIELDS = 'id, name, email, phone, role, tenant_id, created_at, qr_code';
+const USER_FIELDS = 'id, name, email, phone, created_at, qr_code';
 
 // Lista todos los usuarios (admin + clientes) de una app
 router.get(
   '/tenants/:id/users',
   asyncHandler(async (req, res) => {
-    const { data: users = [], error } = await supabase
-      .from('users')
-      .select(USER_FIELDS)
+    const { data: memberships = [], error } = await supabase
+      .from('tenant_memberships')
+      .select('user_id, role, created_at')
       .eq('tenant_id', req.params.id)
       .order('created_at', { ascending: false });
     if (error) throw error;
+    const ids = memberships.map((membership) => membership.user_id);
+    if (ids.length === 0) return res.json({ users: [] });
+    const { data: profiles = [], error: profileError } = await supabase.from('users').select(USER_FIELDS).in('id', ids);
+    if (profileError) throw profileError;
+    const profileMap = Object.fromEntries(profiles.map((profile) => [profile.id, profile]));
+    const users = memberships
+      .map((membership) => ({ ...profileMap[membership.user_id], role: membership.role, membership_created_at: membership.created_at }))
+      .filter((user) => user.id);
     res.json({ users });
   })
 );
 
-// Eliminar un usuario y su cuenta de acceso
+// Quitar un usuario de una app sin eliminar su cuenta global ni otras membresías
 router.delete(
-  '/users/:id',
+  '/tenants/:tenantId/users/:userId',
   asyncHandler(async (req, res) => {
-    const { error: authErr } = await supabase.auth.admin.deleteUser(req.params.id);
-    if (authErr && !/user.*not.?found|not.?found.*user/i.test(authErr.message)) {
-      throw authErr;
-    }
-    const { error } = await supabase.from('users').delete().eq('id', req.params.id);
+    const { error } = await supabase
+      .from('tenant_memberships')
+      .delete()
+      .eq('tenant_id', req.params.tenantId)
+      .eq('user_id', req.params.userId);
     if (error) throw error;
     res.json({ ok: true });
   })

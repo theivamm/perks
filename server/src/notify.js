@@ -1,5 +1,6 @@
 import { supabase } from './supabase.js';
 import { addActiveCouponPoint, redeemReadyCoupon } from './rewards.js';
+import { membershipUserIds } from './memberships.js';
 
 // Inserta una o varias notificaciones. Cada fila: { user_id, tenant_id, type, title, body, icon, link, data }
 export async function insertNotifications(rows, tenantId) {
@@ -30,13 +31,8 @@ export function notifyUser(userId, payload, tenantId) {
 
 // Notifica a todos los usuarios con rol admin del tenant (para pedidos, hitos, etc.)
 export async function notifyAdmins(payload, tenantId) {
-  const { data: admins, error } = await supabase
-    .from('users')
-    .select('id')
-    .eq('role', 'admin')
-    .eq('tenant_id', tenantId);
-  if (error) throw error;
-  const rows = (admins || []).map((a) => ({ user_id: a.id, ...payload }));
+  const adminIds = await membershipUserIds(tenantId, 'admin');
+  const rows = adminIds.map((userId) => ({ user_id: userId, ...payload }));
   return insertNotifications(rows, tenantId);
 }
 
@@ -104,7 +100,7 @@ export async function notifyPointAdded(userId, result, tenantId) {
 // Mantiene la firma usada por el flujo de compras: suma un punto si hay cupón activo.
 export async function notifyRewardsForCompra(userId, tenantId) {
   if (!userId) return;
-  const result = await addActiveCouponPoint(userId);
+  const result = await addActiveCouponPoint(userId, null, tenantId);
   return notifyPointAdded(userId, result, tenantId);
 }
 

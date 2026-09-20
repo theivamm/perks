@@ -4,13 +4,15 @@ import { ensureCouponQrCode } from './qr.js';
 
 const DONE_STATUS = ['completado', 'entregado'];
 
-export async function countCompletedOrders(userId) {
+export async function countCompletedOrders(userId, tenantId) {
   if (!userId) return 0;
-  const { count, error } = await supabase
+  let query = supabase
     .from('orders')
     .select('id', { count: 'exact', head: true })
     .eq('user_id', userId)
     .in('status', DONE_STATUS);
+  if (tenantId) query = query.eq('tenant_id', tenantId);
+  const { count, error } = await query;
   if (error) throw error;
   return count || 0;
 }
@@ -23,11 +25,12 @@ function newCouponCode() {
 // escaneado por el local), suma a ESE cupón siempre que sea del usuario y
 // siga activo. Devuelve el nuevo estado:
 //   { status: 'no_active' } | { status: 'progress', coupon } | { status: 'completed', coupon }
-export async function addActiveCouponPoint(userId, targetId) {
+export async function addActiveCouponPoint(userId, targetId, tenantId) {
   if (!userId) return { status: 'no_active' };
 
   let query = supabase.from('user_coupons').select('*').eq('user_id', userId);
   if (targetId) query = query.eq('id', targetId);
+  if (tenantId) query = query.eq('tenant_id', tenantId);
   query = query.eq('status', 'activado');
 
   const { data: active, error } = await query.maybeSingle();

@@ -69,10 +69,10 @@ export function AuthProvider({ children }) {
     }
   };
 
-  const loginGoogle = async (accessToken) => {
+  const loginGoogle = async (accessToken, options = {}) => {
     setLoading(true);
     try {
-      const data = await api('/api/auth/google', { method: 'POST', body: { access_token: accessToken } });
+      const data = await api('/api/auth/google', { method: 'POST', body: { access_token: accessToken, global: options.global === true } });
       return finishAuth(data, data.user?.tenant_slug || undefined);
     } finally {
       setLoading(false);

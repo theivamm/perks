@@ -6,6 +6,7 @@ import { asyncHandler } from '../asyncHandler.js';
 import { requireAdmin } from '../middleware/auth.js';
 import { newQrCode } from '../qr.js';
 import { verifyTOTP, randomSecret, otpauthURL } from '../otp.js';
+import { ensureMembership, getMembership, membershipUserIds } from '../memberships.js';
 
 const router = Router();
 const SECRET = () => process.env.JWT_SECRET || 'dev-secret';
@@ -13,13 +14,13 @@ const LOGIN_SECRET = () => `${SECRET()}:login`;
 
 const ADMIN_USERNAME_DEFAULT = 'administracion';
 
-export function signToken(userRow, tenantSlug) {
+export function signToken(userRow, tenantSlug, membership = null) {
   const payload = {
     id: userRow.id,
     email: userRow.email,
     name: userRow.name,
-    role: userRow.role,
-    tenant_id: userRow.tenant_id,
+    role: membership?.role || userRow.role,
+    tenant_id: membership?.tenant_id ?? userRow.tenant_id ?? null,
     tenant_slug: tenantSlug || null,
   };
   const token = jwt.sign(payload, SECRET(), { expiresIn: '12h' });
@@ -59,8 +60,8 @@ router.post(
   })
 );
 
-function signLoginToken(userId) {
-  return jwt.sign({ step: 'otp', id: userId }, LOGIN_SECRET(), { expiresIn: '5m' });
+function signLoginToken(userId, tenantId) {
+  return jwt.sign({ step: 'otp', id: userId, tenant_id: tenantId }, LOGIN_SECRET(), { expiresIn: '5m' });
 }
 
 async function userByAuthId(authId) {
@@ -95,13 +96,11 @@ async function writeAdminSettings(tenantId, partial) {
 }
 
 async function singleAdmin(tenantId) {
-  const { data, error } = await supabase
-    .from('users')
-    .select('*')
-    .eq('role', 'admin')
-    .eq('tenant_id', tenantId);
+  const ids = await membershipUserIds(tenantId, 'admin');
+  if (ids.length !== 1) return null;
+  const { data, error } = await supabase.from('users').select('*').eq('id', ids[0]).maybeSingle();
   if (error) throw error;
-  return (data || []).length === 1 ? data[0] : null;
+  return data || null;
 }
 
 router.post(
@@ -132,10 +131,10 @@ router.post(
 
     const settings = await readAdminSettings(tenant.id);
     if (settings.otpEnabled && settings.otpSecret) {
-      return res.json({ step: 'otp', login_token: signLoginToken(admin.id) });
+      return res.json({ step: 'otp', login_token: signLoginToken(admin.id, tenant.id) });
     }
 
-    res.json(signToken(admin, tenant.slug));
+    res.json(signToken(admin, tenant.slug, { role: 'admin', tenant_id: tenant.id }));
   })
 );
 
@@ -164,11 +163,12 @@ router.post(
     }
 
     const admin = await userByAuthId(payload.id);
-    if (!admin || admin.role !== 'admin') {
+    const membership = await getMembership(payload.id, tenant.id);
+    if (!admin || payload.tenant_id !== tenant.id || membership?.role !== 'admin') {
       return res.status(403).json({ error: 'Cuenta sin permisos de administrador' });
     }
 
-    res.json(signToken(admin, tenant.slug));
+    res.json(signToken(admin, tenant.slug, membership));
   })
 );
 
@@ -303,14 +303,16 @@ router.post(
       .single();
     if (insErr) throw insErr;
 
-    res.status(201).json(signToken(userRow, req.tenant.slug));
+    const membership = await ensureMembership(userRow.id, req.tenant.id, 'cliente');
+
+    res.status(201).json(signToken(userRow, req.tenant.slug, membership));
   })
 );
 
 router.post(
   '/google',
   asyncHandler(async (req, res) => {
-    const { access_token } = req.body || {};
+    const { access_token, global } = req.body || {};
     if (!access_token) {
       return res.status(400).json({ error: 'Token requerido' });
     }
@@ -344,21 +346,12 @@ router.post(
       user = created;
     }
 
-    // El slug del JWT sale de la app a la que pertenece la cuenta (no del
-    // header). Así un dueño que entra con Google desde cualquier página cae
-    // en SU app y con su rol real, en vez de terminar como cliente del
-    // negocio por defecto.
-    let slug = req.tenant?.slug || null;
-    if (user.tenant_id) {
-      const { data: tenant } = await supabase
-        .from('tenants')
-        .select('slug')
-        .eq('id', user.tenant_id)
-        .maybeSingle();
-      if (tenant?.slug) slug = tenant.slug;
+    if (global) {
+      return res.json(signToken({ ...user, role: 'cliente', tenant_id: null }, null));
     }
 
-    res.json(signToken(user, slug));
+    const membership = await ensureMembership(user.id, req.tenant.id, 'cliente');
+    res.json(signToken(user, req.tenant.slug, membership));
   })
 );
 
