@@ -13,6 +13,7 @@ import {
   Send,
   ShoppingBag,
   Store,
+  Trash2,
   Users,
   X,
 } from 'lucide-react';
@@ -406,6 +407,7 @@ function TenantRow({ tenant, onSaved }) {
   const [slug, setSlug] = useState(tenant.slug);
   const [plan, setPlan] = useState(tenant.plan);
   const [busy, setBusy] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState('');
 
   const patch = async (body) => {
@@ -419,6 +421,19 @@ function TenantRow({ tenant, onSaved }) {
       setError(e.message);
     } finally {
       setBusy(false);
+    }
+  };
+
+  const remove = async () => {
+    if (!confirm(`¿Eliminar la app "${tenant.business_name}" y TODOS sus datos (clientes, pedidos, cupones, menú, config)? Esta acción no se puede deshacer.`)) return;
+    setDeleting(true);
+    setError('');
+    try {
+      await api(`/api/superadmin/tenants/${tenant.id}`, { method: 'DELETE' });
+      onSaved();
+    } catch (e) {
+      setError(e.message);
+      setDeleting(false);
     }
   };
 
@@ -461,11 +476,24 @@ function TenantRow({ tenant, onSaved }) {
           <option value="pendiente">Pendiente</option>
         </select>
 
-        <button className="btn-ghost !py-1.5" onClick={() => setEditing((v) => !v)}>
+        <button className="btn-ghost !py-1.5" onClick={() => setEditing((v) => !v)} disabled={busy || deleting}>
           {editing ? <X size={15} /> : <Pencil size={15} />}
           Editar
         </button>
+
+        <button
+          className="inline-flex items-center gap-1.5 rounded-xl px-3 !py-1.5 text-xs font-bold text-red-600 transition hover:bg-red-50 disabled:opacity-50 dark:text-red-400 dark:hover:bg-red-500/10"
+          onClick={remove}
+          disabled={busy || deleting}
+        >
+          {deleting ? <Loader2 className="animate-spin" size={15} /> : <Trash2 size={15} />}
+          Eliminar
+        </button>
       </div>
+
+      {(error || deleting) && (
+        <p className="mt-2 text-xs font-medium text-red-500">{deleting ? 'Eliminando...' : error}</p>
+      )}
 
       {editing && (
         <div className="mt-4 grid gap-3 rounded-2xl bg-surface-alt p-4 sm:grid-cols-3">

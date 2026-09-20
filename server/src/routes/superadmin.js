@@ -208,6 +208,53 @@ router.patch(
   })
 );
 
+// Eliminar una app y todos sus datos
+router.delete(
+  '/tenants/:id',
+  asyncHandler(async (req, res) => {
+    const { data: tenant } = await supabase
+      .from('tenants')
+      .select('id, slug, business_name')
+      .eq('id', req.params.id)
+      .maybeSingle();
+    if (!tenant) return res.status(404).json({ error: 'App no encontrada' });
+
+    const ignoreMissing = (e) => /relation .* does not exist/i.test(String(e?.message || ''));
+    const del = async (table) => {
+      const { error } = await supabase.from(table).delete().eq('tenant_id', req.params.id);
+      if (error && !ignoreMissing(error)) throw error;
+    };
+
+    await Promise.all([
+      del('order_items'),
+      del('orders'),
+      del('coupons'),
+      del('loyalty_coupons'),
+      del('user_coupons'),
+      del('notifications'),
+      del('menu_items'),
+      del('clients'),
+      del('reward_rules'),
+      del('settings'),
+      del('support_messages'),
+    ]);
+
+    // Usuarios del tenant (admin + clientes) y sus cuentas de Supabase Auth
+    const { data: users = [] } = await supabase.from('users').select('id').eq('tenant_id', req.params.id);
+    const { error: usersErr } = await supabase.from('users').delete().eq('tenant_id', req.params.id);
+    if (usersErr && !ignoreMissing(usersErr)) throw usersErr;
+    for (const u of users) {
+      await supabase.auth.admin.deleteUser(u.id).catch(() => {});
+    }
+
+    const { error } = await supabase.from('tenants').delete().eq('id', req.params.id);
+    if (error) throw error;
+
+    resetTenancyCache();
+    res.json({ ok: true, id: tenant.id });
+  })
+);
+
 // ===== Soporte =====
 
 async function supportMessages(tenantId) {
