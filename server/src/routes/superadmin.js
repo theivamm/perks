@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import { Router } from 'express';
 import { supabase } from '../supabase.js';
 import { asyncHandler } from '../asyncHandler.js';
@@ -5,6 +6,7 @@ import { requireSuperAdmin } from '../middleware/auth.js';
 import { resetTenancyCache } from '../tenancy.js';
 import { isValidPlan, DEFAULT_PLAN } from '../plans.js';
 import { slugify, slugError, slugTaken } from '../slug.js';
+import { newQrCode } from '../qr.js';
 
 const router = Router();
 
@@ -252,6 +254,180 @@ router.delete(
 
     resetTenancyCache();
     res.json({ ok: true, id: tenant.id });
+  })
+);
+
+// ===== Usuarios de una app =====
+
+const USER_FIELDS = 'id, name, email, phone, role, tenant_id, created_at, qr_code';
+
+// Lista todos los usuarios (admin + clientes) de una app
+router.get(
+  '/tenants/:id/users',
+  asyncHandler(async (req, res) => {
+    const { data: users = [], error } = await supabase
+      .from('users')
+      .select(USER_FIELDS)
+      .eq('tenant_id', req.params.id)
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    res.json({ users });
+  })
+);
+
+// Agregar un usuario manualmente (admin o cliente) desde el superadmin
+router.post(
+  '/tenants/:id/users',
+  asyncHandler(async (req, res) => {
+    const { name, email, role, password } = req.body || {};
+    const cleanName = String(name || '').trim();
+    const cleanEmail = String(email || '').toLowerCase().trim();
+    if (!cleanName || !cleanEmail) return res.status(400).json({ error: 'Nombre y email requeridos' });
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) return res.status(400).json({ error: 'Email inválido' });
+
+    const cleanRole = role === 'admin' ? 'admin' : 'cliente';
+    if (cleanRole === 'admin') {
+      const { data: admins } = await supabase
+        .from('users')
+        .select('id')
+        .eq('tenant_id', req.params.id)
+        .eq('role', 'admin');
+      if ((admins || []).length > 0) {
+        return res
+          .status(409)
+          .json({ error: 'Esta app ya tiene un administrador. Cambiá su rol o desvinculalo antes.' });
+      }
+    }
+
+    const { data: existing } = await supabase
+      .from('users')
+      .select('id')
+      .eq('email', cleanEmail)
+      .maybeSingle();
+    if (existing) return res.status(409).json({ error: 'Ese email ya pertenece a otra cuenta' });
+
+    const pass = String(password || '');
+    if (pass && pass.length < 6) {
+      return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' });
+    }
+    const authPassword = pass || crypto.randomBytes(9).toString('base64url');
+
+    const { data: authUser, error: authErr } = await supabase.auth.admin.createUser({
+      email: cleanEmail,
+      password: authPassword,
+      email_confirm: true,
+      user_metadata: { name: cleanName },
+    });
+    if (authErr) {
+      if (/registered|already|exist/i.test(authErr.message)) {
+        return res.status(409).json({ error: 'Ese email ya tiene una cuenta de acceso registrada' });
+      }
+      return res.status(400).json({ error: authErr.message });
+    }
+
+    const { data: user, error: insErr } = await supabase
+      .from('users')
+      .insert({
+        id: authUser.id,
+        tenant_id: req.params.id,
+        name: cleanName,
+        email: cleanEmail,
+        password_hash: '',
+        role: cleanRole,
+        qr_code: newQrCode(),
+      })
+      .select()
+      .single();
+    if (insErr) throw insErr;
+
+    res.status(201).json({ user });
+  })
+);
+
+// Editar un usuario: nombre, rol, o desvincularlo/moverlo con tenant_id
+router.patch(
+  '/users/:id',
+  asyncHandler(async (req, res) => {
+    const { name, role, tenant_id } = req.body || {};
+
+    const { data: user, error: uErr } = await supabase
+      .from('users')
+      .select('id, tenant_id, role')
+      .eq('id', req.params.id)
+      .maybeSingle();
+    if (uErr) throw uErr;
+    if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
+
+    let newTenant = user.tenant_id;
+    if (tenant_id !== undefined) newTenant = tenant_id ? String(tenant_id) : null;
+
+    let newRole = user.role;
+    if (role !== undefined) {
+      if (!['admin', 'cliente'].includes(role)) return res.status(400).json({ error: 'Rol inválido' });
+      newRole = role;
+    }
+
+    if (newRole === 'admin' && newTenant) {
+      const { data: admins } = await supabase
+        .from('users')
+        .select('id')
+        .eq('tenant_id', newTenant)
+        .eq('role', 'admin')
+        .neq('id', req.params.id);
+      if ((admins || []).length > 0) {
+        return res.status(409).json({ error: 'Esa app ya tiene un administrador' });
+      }
+    }
+
+    const patch = {};
+    if (name !== undefined) {
+      const clean = String(name).trim();
+      if (!clean) return res.status(400).json({ error: 'El nombre no puede quedar vacío' });
+      patch.name = clean;
+    }
+    if (newRole !== user.role) patch.role = newRole;
+    if (newTenant !== user.tenant_id) patch.tenant_id = newTenant;
+
+    if (Object.keys(patch).length === 0) return res.status(400).json({ error: 'Nada para editar' });
+
+    const { data, error } = await supabase
+      .from('users')
+      .update(patch)
+      .eq('id', req.params.id)
+      .select()
+      .single();
+    if (error) throw error;
+
+    resetTenancyCache();
+    res.json({ user: data });
+  })
+);
+
+// Reestablecer la contraseña de un usuario (cuenta de acceso)
+router.post(
+  '/users/:id/reset-password',
+  asyncHandler(async (req, res) => {
+    const { password } = req.body || {};
+    if (!password || String(password).length < 6) {
+      return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' });
+    }
+    const { error } = await supabase.auth.admin.updateUserById(req.params.id, { password: String(password) });
+    if (error) return res.status(400).json({ error: error.message });
+    res.json({ ok: true });
+  })
+);
+
+// Eliminar un usuario y su cuenta de acceso
+router.delete(
+  '/users/:id',
+  asyncHandler(async (req, res) => {
+    const { error: authErr } = await supabase.auth.admin.deleteUser(req.params.id);
+    if (authErr && !/user.*not.?found|not.?found.*user/i.test(authErr.message)) {
+      throw authErr;
+    }
+    const { error } = await supabase.from('users').delete().eq('id', req.params.id);
+    if (error) throw error;
+    res.json({ ok: true });
   })
 );
 

@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { api } from '../../api.js';
 import { useAuth } from '../../context/AuthContext.jsx';
+import TenantUsers from './TenantUsers.jsx';
 
 function slugify(value) {
   return String(value || '')
@@ -403,6 +404,7 @@ function CreateForm({ onDone }) {
 
 function TenantRow({ tenant, onSaved }) {
   const [editing, setEditing] = useState(false);
+  const [showUsers, setShowUsers] = useState(false);
   const [name, setName] = useState(tenant.business_name);
   const [slug, setSlug] = useState(tenant.slug);
   const [plan, setPlan] = useState(tenant.plan);
@@ -482,6 +484,15 @@ function TenantRow({ tenant, onSaved }) {
         </button>
 
         <button
+          className="btn-ghost !py-1.5"
+          onClick={() => setShowUsers((v) => !v)}
+          disabled={busy || deleting}
+        >
+          <Users size={15} />
+          {showUsers ? 'Ocultar' : 'Usuarios'}
+        </button>
+
+        <button
           className="inline-flex items-center gap-1.5 rounded-xl px-3 !py-1.5 text-xs font-bold text-red-600 transition hover:bg-red-50 disabled:opacity-50 dark:text-red-400 dark:hover:bg-red-500/10"
           onClick={remove}
           disabled={busy || deleting}
@@ -490,6 +501,8 @@ function TenantRow({ tenant, onSaved }) {
           Eliminar
         </button>
       </div>
+
+      {showUsers && <TenantUsers tenantId={tenant.id} />}
 
       {(error || deleting) && (
         <p className="mt-2 text-xs font-medium text-red-500">{deleting ? 'Eliminando...' : error}</p>
