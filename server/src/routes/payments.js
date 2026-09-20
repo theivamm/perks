@@ -95,10 +95,7 @@ router.post(
       }),
     });
 
-    const checkoutUrl = accessToken().startsWith('TEST-')
-      ? preference.sandbox_init_point || preference.init_point
-      : preference.init_point;
-    res.json({ checkoutUrl, preferenceId: preference.id });
+    res.json({ checkoutUrl: preference.init_point, preferenceId: preference.id });
   })
 );
 
