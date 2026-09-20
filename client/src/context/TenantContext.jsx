@@ -9,6 +9,7 @@ const RESERVED = new Set([
   'perks',
   'comenzar',
   'checkout',
+  'ingresar',
   'onboarding',
   'demo',
   'login',

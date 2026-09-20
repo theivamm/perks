@@ -3,7 +3,7 @@ import { Router } from 'express';
 import { supabase } from '../supabase.js';
 import { authClient } from '../authClient.js';
 import { asyncHandler } from '../asyncHandler.js';
-import { requireAdmin, requireAuth } from '../middleware/auth.js';
+import { requireAdmin, requireAuth, requireIdentity } from '../middleware/auth.js';
 import { newQrCode } from '../qr.js';
 import { verifyTOTP, randomSecret, otpauthURL } from '../otp.js';
 import { ensureMembership, getMembership, membershipUserIds } from '../memberships.js';
@@ -77,6 +77,47 @@ router.get(
         tenant_slug: req.tenant.slug,
       },
     });
+  })
+);
+
+router.get(
+  '/apps',
+  requireIdentity,
+  asyncHandler(async (req, res) => {
+    const { data: memberships = [], error } = await supabase
+      .from('tenant_memberships')
+      .select('tenant_id, role, created_at')
+      .eq('user_id', req.user.id)
+      .order('created_at', { ascending: true });
+    if (error) throw error;
+    if (memberships.length === 0) return res.json({ apps: [] });
+
+    const { data: tenants = [], error: tenantError } = await supabase
+      .from('tenants')
+      .select('id, slug, business_name, tagline, status')
+      .in('id', memberships.map((membership) => membership.tenant_id));
+    if (tenantError) throw tenantError;
+    const tenantsById = Object.fromEntries(tenants.map((tenant) => [tenant.id, tenant]));
+    const apps = memberships
+      .map((membership) => ({ ...tenantsById[membership.tenant_id], role: membership.role }))
+      .filter((app) => app.id);
+    res.json({ apps });
+  })
+);
+
+router.post(
+  '/switch-app',
+  requireIdentity,
+  asyncHandler(async (req, res) => {
+    const slug = String(req.body?.slug || '').trim().toLowerCase();
+    const { data: tenant, error } = await supabase.from('tenants').select('*').eq('slug', slug).maybeSingle();
+    if (error) throw error;
+    if (!tenant) return res.status(404).json({ error: 'App no encontrada' });
+    const membership = await getMembership(req.user.id, tenant.id);
+    if (!membership) return res.status(403).json({ error: 'Esta cuenta no pertenece a esa app' });
+    const user = await userByAuthId(req.user.id);
+    if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
+    res.json(signToken(user, tenant.slug, membership));
   })
 );
 

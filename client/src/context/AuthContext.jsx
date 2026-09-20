@@ -113,6 +113,16 @@ export function AuthProvider({ children }) {
     }
   };
 
+  const switchApp = async (targetSlug) => {
+    setLoading(true);
+    try {
+      const data = await api('/api/auth/switch-app', { method: 'POST', body: { slug: targetSlug } });
+      return finishAuth(data, targetSlug);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const logout = async (targetSlug) => {
     try {
       await supabase.auth.signOut();
@@ -137,7 +147,7 @@ export function AuthProvider({ children }) {
   const isAuthed = Boolean(getToken() && user);
 
   return (
-    <AuthContext.Provider value={{ user, login, loginOtp, register, loginGoogle, loginSuperAdmin, logout, updateUser, adoptSession, loading, isAuthed }}>
+    <AuthContext.Provider value={{ user, login, loginOtp, register, loginGoogle, loginSuperAdmin, switchApp, logout, updateUser, adoptSession, loading, isAuthed }}>
       {children}
     </AuthContext.Provider>
   );

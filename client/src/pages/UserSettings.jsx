@@ -1,8 +1,10 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   Bell,
+  Building2,
   Camera,
+  Check,
   Loader2,
   Moon,
   Palette,
@@ -22,8 +24,8 @@ import Navbar from '../components/Navbar.jsx';
 
 export default function UserSettings() {
   const { settings, toggleTheme } = useTheme();
-  const { user, updateUser, logout } = useAuth();
-  const { t } = useTenant();
+  const { user, updateUser, switchApp, logout } = useAuth();
+  const { t, slug } = useTenant();
   const navigate = useNavigate();
   const dark = settings.theme === 'dark';
 
@@ -33,6 +35,26 @@ export default function UserSettings() {
   const [deleteModal, setDeleteModal] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState('');
   const [deleting, setDeleting] = useState(false);
+  const [clientApps, setClientApps] = useState([]);
+  const [switchingApp, setSwitchingApp] = useState('');
+
+  useEffect(() => {
+    api('/api/auth/apps')
+      .then((data) => setClientApps((data.apps || []).filter((app) => app.role === 'cliente')))
+      .catch(() => setClientApps([]));
+  }, []);
+
+  const changeApp = async (nextSlug) => {
+    if (!nextSlug || nextSlug === slug) return;
+    setSwitchingApp(nextSlug);
+    try {
+      await switchApp(nextSlug);
+      navigate(`/${nextSlug}/configuracion`);
+    } catch (err) {
+      toast(err.message);
+      setSwitchingApp('');
+    }
+  };
 
   const onPickPhoto = (e) => {
     const file = e.target.files?.[0];
@@ -97,6 +119,31 @@ export default function UserSettings() {
         </section>
 
         <section className="mt-6 space-y-5">
+          {clientApps.length > 1 && (
+            <div className="card p-6">
+              <div className="flex items-center gap-4">
+                <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-softer text-primary-strong"><Building2 size={22} /></span>
+                <div>
+                  <h2 className="font-extrabold text-ink">Cambiar de negocio</h2>
+                  <p className="text-sm text-ink-muted">Elegí en qué app querés consultar tus puntos y beneficios.</p>
+                </div>
+              </div>
+              <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                {clientApps.map((app) => (
+                  <button
+                    key={app.id}
+                    onClick={() => changeApp(app.slug)}
+                    disabled={Boolean(switchingApp)}
+                    className={`flex items-center justify-between gap-3 rounded-2xl border px-4 py-3 text-left transition ${app.slug === slug ? 'border-primary bg-primary-softer' : 'border-line bg-surface hover:border-primary/50'}`}
+                  >
+                    <span><span className="block font-bold text-ink">{app.business_name}</span><span className="block text-xs text-ink-muted">/{app.slug}</span></span>
+                    {switchingApp === app.slug ? <Loader2 className="animate-spin" size={16} /> : app.slug === slug ? <Check size={16} className="text-primary" /> : null}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="tile tile-sky relative overflow-hidden p-6">
             <div className="orb -right-10 -top-14 h-36 w-36 bg-white/50" />
             <div className="relative flex flex-wrap items-center justify-between gap-4">

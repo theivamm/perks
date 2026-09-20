@@ -191,7 +191,7 @@ export default function Landing() {
               </>
             ) : (
               <>
-                <Link to="/checkout" className="text-sm font-semibold text-white/70 transition hover:text-white">
+                <Link to="/ingresar" className="text-sm font-semibold text-white/70 transition hover:text-white">
                   Ingresar
                 </Link>
                 <Link
@@ -241,13 +241,16 @@ export default function Landing() {
                   </button>
                 </>
               ) : (
-                <Link
-                  to="/checkout"
-                  onClick={() => setMenuOpen(false)}
-                  className="rounded-full bg-amber-400 px-4 py-2 text-center text-sm font-bold text-[#0A0A0C]"
-                >
-                  Quiero mi app
-                </Link>
+                <>
+                  <Link to="/ingresar" onClick={() => setMenuOpen(false)} className="text-center text-sm font-semibold text-white/70">Ingresar</Link>
+                  <Link
+                    to="/checkout"
+                    onClick={() => setMenuOpen(false)}
+                    className="rounded-full bg-amber-400 px-4 py-2 text-center text-sm font-bold text-[#0A0A0C]"
+                  >
+                    Quiero mi app
+                  </Link>
+                </>
               )}
             </div>
           </div>
@@ -637,7 +640,7 @@ export default function Landing() {
               Ver demo
             </Link>
             {!isLoggedIn && (
-              <Link to="/checkout" className="transition hover:text-white">
+              <Link to="/ingresar" className="transition hover:text-white">
                 Ingresar
               </Link>
             )}
