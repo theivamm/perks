@@ -199,6 +199,41 @@ router.post(
   })
 );
 
+// Login de admin con email y contraseña explícitos (sin depender de username configurado).
+router.post(
+  '/admin-login',
+  asyncHandler(async (req, res) => {
+    const { email, password } = req.body || {};
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email y contraseña requeridos' });
+    }
+
+    const { data, error } = await authClient.auth.signInWithPassword({
+      email: String(email).toLowerCase().trim(),
+      password: String(password),
+    });
+    if (error || !data?.user) {
+      return res.status(401).json({ error: 'Credenciales inválidas' });
+    }
+
+    const user = await userByAuthId(data.user.id);
+    if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
+
+    const tenant = req.tenant;
+    const membership = await getMembership(user.id, tenant.id);
+    if (!membership || membership.role !== 'admin') {
+      return res.status(403).json({ error: 'Esta cuenta no administra este negocio' });
+    }
+
+    const settings = await readAdminSettings(tenant.id);
+    if (settings.otpEnabled && settings.otpSecret) {
+      return res.json({ step: 'otp', login_token: signLoginToken(user.id, tenant.id) });
+    }
+
+    res.json(signToken(user, tenant.slug, membership));
+  })
+);
+
 router.post(
   '/otp',
   asyncHandler(async (req, res) => {

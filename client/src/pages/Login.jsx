@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, KeyRound, Loader2, LogIn, ShieldCheck, UserRound } from 'lucide-react';
+import { ArrowLeft, KeyRound, Loader2, LogIn, Mail, ShieldCheck, UserRound } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useTheme } from '../context/ThemeContext.jsx';
 import { useTenant } from '../context/TenantContext.jsx';
 import { supabase } from '../lib/supabase.js';
 
 export default function Login() {
-  const { login, loginOtp, loginGoogle } = useAuth();
+  const { loginAdminEmail, loginOtp, loginGoogle } = useAuth();
   const { settings, toggleTheme } = useTheme();
   const { t } = useTenant();
   const navigate = useNavigate();
@@ -17,6 +17,7 @@ export default function Login() {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [busy, setBusy] = useState(false);
 
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loginToken, setLoginToken] = useState('');
   const [otpCode, setOtpCode] = useState('');
@@ -88,7 +89,7 @@ export default function Login() {
     setError('');
     setBusy(true);
     try {
-      const res = await login('administracion', password);
+      const res = await loginAdminEmail(email, password);
       if (res?.step === 'otp') {
         setLoginToken(res.login_token);
         setOtpCode('');
@@ -121,6 +122,7 @@ export default function Login() {
   const cancelOtp = () => {
     setLoginToken('');
     setOtpCode('');
+    setPassword('');
     setError('');
   };
 
@@ -129,7 +131,7 @@ export default function Login() {
       ? 'Entrá con Google para activar cupones, sumar puntos y canjear premios.'
       : loginToken
       ? 'Ingresá el código de 6 dígitos de tu app de autenticación.'
-      : 'Acceso exclusivo para la administración del local.';
+      : 'Ingresá con tu email y contraseña de administrador.';
 
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-surface-page px-4 py-10">
@@ -251,7 +253,7 @@ export default function Login() {
                   onClick={cancelOtp}
                   disabled={busy}
                 >
-                  Volver al usuario y contraseña
+                  Volver al email y contraseña
                 </button>
               </form>
             ) : (
@@ -259,7 +261,24 @@ export default function Login() {
                 <form onSubmit={submitAdmin} className="space-y-4">
                   <div>
                     <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-ink-muted">
-                      Contraseña de administración
+                      Email
+                    </label>
+                    <div className="relative">
+                      <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted" />
+                      <input
+                        className="input !pl-9"
+                        type="email"
+                        placeholder="admin@tulocal.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        autoFocus
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-ink-muted">
+                      Contraseña
                     </label>
                     <div className="relative">
                       <KeyRound size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted" />
@@ -269,12 +288,11 @@ export default function Login() {
                         placeholder="••••••••"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        autoFocus
                         required
                       />
                     </div>
                   </div>
-                  <button className="btn-primary w-full justify-center" disabled={busy || !password}>
+                  <button className="btn-primary w-full justify-center" disabled={busy || !email || !password}>
                     {busy ? <Loader2 className="animate-spin" size={17} /> : <LogIn size={17} />}
                     Iniciar sesión
                   </button>

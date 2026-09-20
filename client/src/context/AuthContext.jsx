@@ -70,6 +70,17 @@ export function AuthProvider({ children }) {
     }
   };
 
+  const loginAdminEmail = async (email, password) => {
+    setLoading(true);
+    try {
+      const data = await api('/api/auth/admin-login', { method: 'POST', body: { email, password } });
+      if (data.token) return finishAuth(data);
+      return data;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const loginOtp = async (loginToken, code) => {
     setLoading(true);
     try {
@@ -147,7 +158,7 @@ export function AuthProvider({ children }) {
   const isAuthed = Boolean(getToken() && user);
 
   return (
-    <AuthContext.Provider value={{ user, login, loginOtp, register, loginGoogle, loginSuperAdmin, switchApp, logout, updateUser, adoptSession, loading, isAuthed }}>
+    <AuthContext.Provider value={{ user, login, loginAdminEmail, loginOtp, register, loginGoogle, loginSuperAdmin, switchApp, logout, updateUser, adoptSession, loading, isAuthed }}>
       {children}
     </AuthContext.Provider>
   );
