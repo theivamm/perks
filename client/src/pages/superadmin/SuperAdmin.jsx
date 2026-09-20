@@ -543,7 +543,7 @@ function TenantRow({ tenant, onSaved }) {
 }
 
 function SupportTab() {
-  const [threads, setThreads] = useState([]);
+  const [tickets, setTickets] = useState([]);
   const [selected, setSelected] = useState(null);
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState('');
@@ -552,10 +552,10 @@ function SupportTab() {
   const [error, setError] = useState('');
   const bottomRef = useRef(null);
 
-  const loadThreads = useCallback(async () => {
+  const loadTickets = useCallback(async () => {
     try {
       const data = await api('/api/superadmin/support');
-      setThreads(data.threads || []);
+      setTickets(data.tickets || []);
     } catch (e) {
       setError(e.message);
     } finally {
@@ -563,9 +563,9 @@ function SupportTab() {
     }
   }, []);
 
-  const loadMessages = useCallback(async (tenantId) => {
+  const loadMessages = useCallback(async (ticketId) => {
     try {
-      const data = await api(`/api/superadmin/support/${tenantId}`);
+      const data = await api(`/api/superadmin/support/${ticketId}`);
       setMessages(data.messages || []);
     } catch (e) {
       setError(e.message);
@@ -573,15 +573,15 @@ function SupportTab() {
   }, []);
 
   useEffect(() => {
-    loadThreads();
-    const id = setInterval(loadThreads, 5000);
+    loadTickets();
+    const id = setInterval(loadTickets, 10000);
     return () => clearInterval(id);
-  }, [loadThreads]);
+  }, [loadTickets]);
 
   useEffect(() => {
     if (!selected) return undefined;
     loadMessages(selected);
-    const id = setInterval(() => loadMessages(selected), 5000);
+    const id = setInterval(() => loadMessages(selected), 10000);
     return () => clearInterval(id);
   }, [selected, loadMessages]);
 
@@ -599,7 +599,7 @@ function SupportTab() {
       const { message } = await api(`/api/superadmin/support/${selected}`, { method: 'POST', body: { body } });
       setMessages((prev) => (prev.some((m) => m.id === message.id) ? prev : [...prev, message]));
       setText('');
-      loadThreads();
+      loadTickets();
     } catch (err) {
       setError(err.message);
     } finally {
@@ -607,7 +607,16 @@ function SupportTab() {
     }
   };
 
-  const thread = threads.find((t) => t.tenant.id === selected);
+  const ticket = tickets.find((item) => item.id === selected);
+
+  const changeStatus = async (status) => {
+    try {
+      await api(`/api/superadmin/support/${selected}`, { method: 'PATCH', body: { status } });
+      loadTickets();
+    } catch (err) {
+      setError(err.message);
+    }
+  };
 
   return (
     <div className="mt-6">
@@ -621,19 +630,19 @@ function SupportTab() {
         <div className="card flex items-center justify-center py-16 text-ink-muted">
           <Loader2 className="animate-spin" size={22} />
         </div>
-      ) : threads.length === 0 ? (
+      ) : tickets.length === 0 ? (
         <div className="card py-16 text-center text-sm text-ink-muted">
-          Todavía no hay conversaciones de soporte.
+          Todavía no hay tickets de soporte.
         </div>
       ) : (
-        <div className="grid gap-4 md:grid-cols-[280px,1fr]">
+        <div className="grid gap-4 md:grid-cols-[320px,1fr]">
           <div className="card max-h-[62vh] overflow-y-auto p-2">
-            {threads.map(({ tenant, last, unread }) => (
+            {tickets.map((item) => (
               <button
-                key={tenant.id}
-                onClick={() => setSelected(tenant.id)}
+                key={item.id}
+                onClick={() => setSelected(item.id)}
                 className={`flex w-full items-start gap-3 rounded-xl px-3 py-3 text-left transition ${
-                  selected === tenant.id ? 'bg-primary-softer' : 'hover:bg-surface-alt'
+                  selected === item.id ? 'bg-primary-softer' : 'hover:bg-surface-alt'
                 }`}
               >
                 <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-surface-alt text-ink-muted">
@@ -641,14 +650,18 @@ function SupportTab() {
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="flex items-center justify-between gap-2">
-                    <span className="truncate text-sm font-bold text-ink">{tenant.business_name}</span>
-                    {unread > 0 && (
+                    <span className="truncate text-sm font-bold text-ink">{item.tenant?.business_name || 'App eliminada'}</span>
+                    {item.unread > 0 && (
                       <span className="rounded-full bg-amber-400 px-1.5 text-xs font-extrabold text-[#0A0A0C]">
-                        {unread}
+                        {item.unread}
                       </span>
                     )}
                   </span>
-                  <span className="mt-0.5 block truncate text-xs text-ink-muted">{last.body}</span>
+                  <span className="mt-0.5 block truncate text-xs font-bold text-ink">{item.subject}</span>
+                  <span className="mt-1 flex items-center justify-between gap-2 text-[11px] text-ink-muted">
+                    <span className="font-mono">{item.code}</span>
+                    <span className="font-bold uppercase">{item.status === 'nuevo' ? 'NUEVO TICKET' : item.status}</span>
+                  </span>
                 </span>
               </button>
             ))}
@@ -658,20 +671,32 @@ function SupportTab() {
             {!selected ? (
               <div className="flex flex-1 flex-col items-center justify-center gap-2 text-ink-muted">
                 <LifeBuoy size={30} />
-                <p className="text-sm">Elegí una conversación.</p>
+                <p className="text-sm">Elegí un ticket.</p>
               </div>
             ) : (
               <>
                 <div className="border-b border-line px-4 py-3">
-                  <a
-                    href={`/${thread?.tenant.slug}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-1.5 text-sm font-extrabold text-ink hover:text-primary"
-                  >
-                    {thread?.tenant.business_name}
-                    <ExternalLink size={13} />
-                  </a>
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <a
+                        href={`/${ticket?.tenant?.slug}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1.5 text-sm font-extrabold text-ink hover:text-primary"
+                      >
+                        {ticket?.tenant?.business_name}
+                        <ExternalLink size={13} />
+                      </a>
+                      <p className="mt-0.5 text-sm font-bold text-ink">{ticket?.subject}</p>
+                      <p className="font-mono text-xs text-ink-muted">{ticket?.code}</p>
+                    </div>
+                    <select className="input !w-auto !py-1.5 text-xs font-bold capitalize" value={ticket?.status || 'nuevo'} onChange={(event) => changeStatus(event.target.value)}>
+                      <option value="nuevo">Nuevo</option>
+                      <option value="abierto">Abierto</option>
+                      <option value="respondido">Respondido</option>
+                      <option value="cerrado">Cerrado</option>
+                    </select>
+                  </div>
                 </div>
 
                 <div className="flex-1 space-y-3 overflow-y-auto p-4">
@@ -701,7 +726,7 @@ function SupportTab() {
                   <div ref={bottomRef} />
                 </div>
 
-                <form onSubmit={send} className="flex items-center gap-2 border-t border-line p-3">
+                {ticket?.status !== 'cerrado' && <form onSubmit={send} className="flex items-center gap-2 border-t border-line p-3">
                   <input
                     className="input flex-1"
                     placeholder="Responder..."
@@ -712,7 +737,7 @@ function SupportTab() {
                   <button className="btn-primary !px-4" disabled={sending || !text.trim()} aria-label="Enviar">
                     {sending ? <Loader2 className="animate-spin" size={17} /> : <Send size={17} />}
                   </button>
-                </form>
+                </form>}
               </>
             )}
           </div>

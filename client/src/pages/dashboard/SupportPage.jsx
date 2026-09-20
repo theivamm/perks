@@ -1,64 +1,162 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { Loader2, LifeBuoy, Send } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
+import { ChevronLeft, LifeBuoy, Loader2, Plus, Send, Ticket, X } from 'lucide-react';
 import { api } from '../../api.js';
 
-function timeOf(value) {
+function formatDate(value) {
   if (!value) return '';
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return '';
-  return d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+  return new Date(value).toLocaleString('es-AR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
 }
 
-function dayOf(value) {
-  const d = new Date(value);
-  return d.toLocaleDateString('es-AR', { day: '2-digit', month: 'long' });
+function StatusBadge({ status }) {
+  const styles = {
+    nuevo: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
+    abierto: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
+    respondido: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
+    cerrado: 'bg-ink-muted/10 text-ink-muted',
+  };
+  return <span className={`rounded-full px-2 py-0.5 text-xs font-bold capitalize ${styles[status] || styles.abierto}`}>{status}</span>;
 }
 
 export default function SupportPage() {
+  const [tickets, setTickets] = useState([]);
+  const [selected, setSelected] = useState(null);
   const [messages, setMessages] = useState([]);
-  const [text, setText] = useState('');
+  const [creating, setCreating] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
-  const scrollRef = useRef(null);
-  const bottomRef = useRef(null);
-  const loadedRef = useRef(false);
 
-  const load = useCallback(async () => {
+  const loadTickets = useCallback(async () => {
     try {
-      const data = await api('/api/support/messages');
-      setMessages(data.messages || []);
-      if (!loadedRef.current) {
-        loadedRef.current = true;
-        setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'auto' }), 0);
-      }
-    } catch (e) {
-      setError(e.message);
+      const data = await api('/api/support/tickets');
+      setTickets(data.tickets || []);
+    } catch (err) {
+      setError(err.message);
     } finally {
       setLoading(false);
     }
   }, []);
 
-  useEffect(() => {
-    load();
-    const id = setInterval(load, 5000);
-    return () => clearInterval(id);
-  }, [load]);
+  const loadTicket = useCallback(async (id) => {
+    try {
+      const data = await api(`/api/support/tickets/${id}`);
+      setMessages(data.messages || []);
+    } catch (err) {
+      setError(err.message);
+    }
+  }, []);
 
   useEffect(() => {
-    if (loadedRef.current) bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+    loadTickets();
+    const timer = setInterval(loadTickets, 10000);
+    return () => clearInterval(timer);
+  }, [loadTickets]);
 
-  const send = async (e) => {
-    e.preventDefault();
-    const body = text.trim();
-    if (!body || sending) return;
+  useEffect(() => {
+    if (!selected) return undefined;
+    loadTicket(selected);
+    const timer = setInterval(() => loadTicket(selected), 10000);
+    return () => clearInterval(timer);
+  }, [selected, loadTicket]);
+
+  const active = tickets.find((ticket) => ticket.id === selected);
+
+  return (
+    <div className="mx-auto max-w-5xl">
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary-softer text-primary-strong">
+            <LifeBuoy size={22} />
+          </span>
+          <div>
+            <h1 className="text-2xl font-extrabold text-ink">Soporte</h1>
+            <p className="text-sm text-ink-muted">Creá un ticket y seguí la respuesta con su código.</p>
+          </div>
+        </div>
+        <button className="btn-primary" onClick={() => setCreating((value) => !value)}>
+          {creating ? <X size={16} /> : <Plus size={16} />}
+          {creating ? 'Cancelar' : 'Nuevo ticket'}
+        </button>
+      </div>
+
+      {error && <p className="mb-4 rounded-xl bg-red-500/10 px-4 py-3 text-sm font-medium text-red-500">{error}</p>}
+      {creating && (
+        <NewTicket
+          onCreated={(ticket, message) => {
+            setTickets((current) => [ticket, ...current]);
+            setSelected(ticket.id);
+            setMessages([message]);
+            setCreating(false);
+          }}
+        />
+      )}
+
+      <div className="grid gap-4 md:grid-cols-[320px,1fr]">
+        <div className={`card overflow-hidden ${selected ? 'hidden md:block' : ''}`}>
+          {loading ? (
+            <div className="flex justify-center py-16 text-ink-muted"><Loader2 className="animate-spin" size={22} /></div>
+          ) : tickets.length === 0 ? (
+            <div className="px-5 py-16 text-center text-sm text-ink-muted">
+              <Ticket className="mx-auto mb-2" size={28} />
+              Todavía no creaste tickets.
+            </div>
+          ) : (
+            <div className="divide-y divide-line">
+              {tickets.map((ticket) => (
+                <button
+                  key={ticket.id}
+                  className={`w-full px-4 py-4 text-left transition ${selected === ticket.id ? 'bg-primary-softer' : 'hover:bg-surface-alt'}`}
+                  onClick={() => setSelected(ticket.id)}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="line-clamp-2 text-sm font-extrabold text-ink">{ticket.subject}</p>
+                    {ticket.unread > 0 && <span className="rounded-full bg-primary px-1.5 text-xs font-bold text-primary-contrast">{ticket.unread}</span>}
+                  </div>
+                  <div className="mt-2 flex items-center justify-between gap-2">
+                    <span className="font-mono text-[11px] text-ink-muted">{ticket.code}</span>
+                    <StatusBadge status={ticket.status} />
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className={`card min-h-[520px] overflow-hidden ${selected ? '' : 'hidden md:block'}`}>
+          {!active ? (
+            <div className="flex h-[520px] flex-col items-center justify-center gap-2 text-ink-muted">
+              <Ticket size={30} />
+              <p className="text-sm">Elegí un ticket para ver su seguimiento.</p>
+            </div>
+          ) : (
+            <TicketDetail
+              ticket={active}
+              messages={messages}
+              onBack={() => setSelected(null)}
+              onMessage={(message) => {
+                setMessages((current) => [...current, message]);
+                loadTickets();
+              }}
+            />
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function NewTicket({ onCreated }) {
+  const [subject, setSubject] = useState('');
+  const [body, setBody] = useState('');
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState('');
+
+  const submit = async (event) => {
+    event.preventDefault();
     setSending(true);
     setError('');
     try {
-      const { message } = await api('/api/support/messages', { method: 'POST', body: { body } });
-      setMessages((prev) => (prev.some((m) => m.id === message.id) ? prev : [...prev, message]));
-      setText('');
+      const data = await api('/api/support/tickets', { method: 'POST', body: { subject, body } });
+      onCreated(data.ticket, data.message);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -66,81 +164,84 @@ export default function SupportPage() {
     }
   };
 
-  let lastDay = '';
+  return (
+    <form onSubmit={submit} className="card mb-4 space-y-3 p-5">
+      <div>
+        <label className="label">Asunto</label>
+        <input className="input" value={subject} onChange={(event) => setSubject(event.target.value)} maxLength={120} required placeholder="¿En qué necesitás ayuda?" />
+      </div>
+      <div>
+        <label className="label">Descripción</label>
+        <textarea className="input min-h-28 resize-y" value={body} onChange={(event) => setBody(event.target.value)} maxLength={2000} required placeholder="Contanos el problema o solicitud con el mayor detalle posible." />
+      </div>
+      {error && <p className="text-sm font-medium text-red-500">{error}</p>}
+      <button className="btn-primary" disabled={sending}>
+        {sending ? <Loader2 className="animate-spin" size={16} /> : <Ticket size={16} />}
+        Crear ticket
+      </button>
+    </form>
+  );
+}
+
+function TicketDetail({ ticket, messages, onBack, onMessage }) {
+  const [text, setText] = useState('');
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState('');
+
+  const send = async (event) => {
+    event.preventDefault();
+    const body = text.trim();
+    if (!body) return;
+    setSending(true);
+    setError('');
+    try {
+      const data = await api(`/api/support/tickets/${ticket.id}/messages`, { method: 'POST', body: { body } });
+      setText('');
+      onMessage(data.message);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSending(false);
+    }
+  };
 
   return (
-    <div className="mx-auto max-w-3xl">
-      <div className="mb-5 flex items-center gap-3">
-        <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary-softer text-primary-strong">
-          <LifeBuoy size={22} />
-        </span>
-        <div>
-          <h1 className="text-2xl font-extrabold text-ink">Soporte</h1>
-          <p className="text-sm text-ink-muted">Escribinos y te respondemos a la brevedad.</p>
+    <div className="flex h-[620px] flex-col">
+      <div className="border-b border-line px-4 py-3">
+        <button className="mb-2 inline-flex items-center gap-1 text-xs font-bold text-ink-muted md:hidden" onClick={onBack}>
+          <ChevronLeft size={14} /> Volver
+        </button>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <p className="font-extrabold text-ink">{ticket.subject}</p>
+            <p className="font-mono text-xs text-ink-muted">{ticket.code}</p>
+          </div>
+          <StatusBadge status={ticket.status} />
         </div>
       </div>
-
-      <div className="card flex h-[62vh] flex-col overflow-hidden">
-        <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto p-4">
-          {loading ? (
-            <div className="flex h-full items-center justify-center text-ink-muted">
-              <Loader2 className="animate-spin" size={22} />
+      <div className="flex-1 space-y-3 overflow-y-auto p-4">
+        {messages.map((message) => {
+          const mine = message.sender_role === 'admin';
+          return (
+            <div key={message.id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
+              <div className={`max-w-[82%] rounded-2xl px-4 py-2.5 text-sm ${mine ? 'rounded-br-md bg-primary text-primary-contrast' : 'rounded-bl-md bg-surface-alt text-ink'}`}>
+                {!mine && <p className="mb-1 text-xs font-bold text-ink-muted">{message.sender_name || 'Equipo PERKS'}</p>}
+                <p className="whitespace-pre-wrap break-words">{message.body}</p>
+                <p className={`mt-1 text-right text-[11px] ${mine ? 'text-primary-contrast/70' : 'text-ink-muted'}`}>{formatDate(message.created_at)}</p>
+              </div>
             </div>
-          ) : messages.length === 0 ? (
-            <div className="flex h-full flex-col items-center justify-center gap-2 text-center text-ink-muted">
-              <LifeBuoy size={30} />
-              <p className="text-sm">Todavía no hay mensajes. Contanos en qué te podemos ayudar.</p>
-            </div>
-          ) : (
-            messages.map((m) => {
-              const mine = m.sender_role === 'admin';
-              const day = dayOf(m.created_at);
-              const showDay = day !== lastDay;
-              lastDay = day;
-              return (
-                <div key={m.id}>
-                  {showDay && (
-                    <p className="my-3 text-center text-xs font-semibold uppercase tracking-wide text-ink-muted">
-                      {day}
-                    </p>
-                  )}
-                  <div className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
-                    <div
-                      className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm shadow-sm ${
-                        mine
-                          ? 'rounded-br-md bg-gradient-to-br from-primary to-primary-strong text-primary-contrast'
-                          : 'rounded-bl-md bg-surface-alt text-ink'
-                      }`}
-                    >
-                      {!mine && <p className="mb-0.5 text-xs font-bold text-ink-muted">{m.sender_name || 'Equipo PERKS'}</p>}
-                      <p className="whitespace-pre-wrap break-words">{m.body}</p>
-                      <p className={`mt-1 text-right text-[11px] ${mine ? 'text-primary-contrast/70' : 'text-ink-muted'}`}>
-                        {timeOf(m.created_at)}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              );
-            })
-          )}
-          <div ref={bottomRef} />
-        </div>
-
-        {error && <p className="px-4 pb-1 text-sm font-medium text-red-500">{error}</p>}
-
-        <form onSubmit={send} className="flex items-center gap-2 border-t border-line p-3">
-          <input
-            className="input flex-1"
-            placeholder="Escribí un mensaje..."
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            maxLength={2000}
-          />
+          );
+        })}
+      </div>
+      {error && <p className="px-4 text-sm font-medium text-red-500">{error}</p>}
+      {ticket.status !== 'cerrado' && (
+        <form onSubmit={send} className="flex gap-2 border-t border-line p-3">
+          <input className="input flex-1" value={text} onChange={(event) => setText(event.target.value)} maxLength={2000} placeholder="Agregar un mensaje..." />
           <button className="btn-primary !px-4" disabled={sending || !text.trim()} aria-label="Enviar">
             {sending ? <Loader2 className="animate-spin" size={17} /> : <Send size={17} />}
           </button>
         </form>
-      </div>
+      )}
     </div>
   );
 }

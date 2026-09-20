@@ -6,6 +6,7 @@ import {
   Check,
   Coffee,
   ImagePlus,
+  LifeBuoy,
   Loader2,
   Palette,
   Rocket,
@@ -37,6 +38,7 @@ export default function SetupWizard() {
   });
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [openingTicket, setOpeningTicket] = useState(false);
   const [crop, setCrop] = useState(null);
   const logoInput = useRef(null);
   const isoInput = useRef(null);
@@ -91,6 +93,26 @@ export default function SetupWizard() {
       setUploading(false);
       URL.revokeObjectURL(src);
       setCrop(null);
+    }
+  };
+
+  const requestLogoReview = async () => {
+    setOpeningTicket(true);
+    try {
+      const { ticket } = await api('/api/support/tickets', {
+        method: 'POST',
+        body: {
+          subject: 'Solicitud de revisión de logo e ícono',
+          category: 'logo',
+          body: 'Necesito ayuda de administración para preparar o revisar el logo horizontal de 400 × 120 px y el ícono de 400 × 400 px de mi app.',
+        },
+      });
+      toast(`Ticket ${ticket.code} creado`);
+      navigate(t('/dashboard/soporte'));
+    } catch (err) {
+      toast(err.message);
+    } finally {
+      setOpeningTicket(false);
     }
   };
 
@@ -267,8 +289,15 @@ export default function SetupWizard() {
             <StepHeader
               icon={ImagePlus}
               title="Tu logo"
-              subtitle="Subí tu logo horizontal y, si querés, un ícono cuadrado."
+              subtitle="Subí el logo horizontal y el ícono cuadrado de tu app."
             />
+            <div className="mb-5 rounded-2xl border border-amber-400/40 bg-amber-500/10 p-4 text-sm text-ink">
+              <p className="font-extrabold">Medidas obligatorias</p>
+              <p className="mt-1 text-ink-muted">
+                Logo horizontal: <strong className="text-ink">400 × 120 px</strong>. Ícono cuadrado: <strong className="text-ink">400 × 400 px</strong>.
+                No se aceptan otras medidas; el editor recorta y guarda las imágenes exactamente en estos tamaños.
+              </p>
+            </div>
             <div className="flex flex-wrap items-center gap-5">
               <div className="relative flex h-14 w-44 items-center justify-center overflow-hidden rounded-xl border border-line bg-gradient-to-br from-primary to-primary-strong text-primary-contrast">
                 {settings.logo ? (
@@ -312,7 +341,19 @@ export default function SetupWizard() {
               />
               <button className="btn-ghost" onClick={() => isoInput.current?.click()} disabled={uploading}>
                 <ImagePlus size={15} />
-                {settings.logoIso ? 'Cambiar ícono' : 'Subir ícono (opcional)'}
+                {settings.logoIso ? 'Cambiar ícono' : 'Subir ícono'}
+              </button>
+            </div>
+
+            <div className="mt-5 rounded-2xl border border-line bg-surface-alt p-4">
+              <p className="text-sm font-extrabold text-ink">El ícono es muy necesario</p>
+              <p className="mt-1 text-sm leading-relaxed text-ink-muted">
+                Aunque podés continuar sin subirlo, se usa como favicon del navegador y mejora notablemente la experiencia visual de la página.
+                Si todavía no tenés las piezas en estas medidas, administración puede ayudarte a prepararlas o revisarlas.
+              </p>
+              <button className="btn-ghost mt-3" onClick={requestLogoReview} disabled={openingTicket}>
+                {openingTicket ? <Loader2 className="animate-spin" size={15} /> : <LifeBuoy size={15} />}
+                Abrir ticket con administración
               </button>
             </div>
 

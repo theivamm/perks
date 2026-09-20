@@ -289,68 +289,84 @@ router.delete(
 
 // ===== Soporte =====
 
-async function supportMessages(tenantId) {
-  let query = supabase.from('support_messages').select('*').order('created_at', { ascending: true }).limit(300);
-  if (tenantId) query = query.eq('tenant_id', tenantId);
-  const { data, error } = await query;
-  if (error) {
-    if (isMissingTable(error)) return [];
-    throw error;
-  }
-  return data || [];
-}
-
-// Hilos de conversación por app, con último mensaje y no leídos
 router.get(
   '/support',
   asyncHandler(async (_req, res) => {
-    const [messages, { data: tenants, error }] = await Promise.all([
-      supportMessages(),
+    const [{ data: tickets = [], error: ticketError }, { data: tenants = [], error: tenantError }] = await Promise.all([
+      supabase.from('support_tickets').select('*').order('updated_at', { ascending: false }),
       supabase.from('tenants').select('id, slug, business_name, status'),
     ]);
-    if (error) throw error;
+    if (ticketError) {
+      if (isMissingTable(ticketError)) return res.status(503).json({ error: 'Corré migracion_14_tickets_soporte.sql para habilitar tickets.' });
+      throw ticketError;
+    }
+    if (tenantError) throw tenantError;
 
-    const byTenant = new Map();
-    for (const m of messages) {
-      const entry = byTenant.get(m.tenant_id) || { last: null, unread: 0 };
-      entry.last = m;
-      if (m.sender_role === 'admin' && !m.read_by_superadmin) entry.unread += 1;
-      byTenant.set(m.tenant_id, entry);
+    let messages = [];
+    if (tickets.length > 0) {
+      const result = await supabase
+        .from('support_messages')
+        .select('*')
+        .in('ticket_id', tickets.map((ticket) => ticket.id))
+        .order('created_at', { ascending: true });
+      if (result.error) throw result.error;
+      messages = result.data || [];
     }
 
-    const threads = (tenants || [])
-      .map((t) => {
-        const entry = byTenant.get(t.id);
-        return {
-          tenant: t,
-          last: entry?.last || null,
-          unread: entry?.unread || 0,
-        };
-      })
-      .filter((t) => t.last)
-      .sort((a, b) => new Date(b.last.created_at) - new Date(a.last.created_at));
-
-    res.json({ threads });
+    const tenantMap = Object.fromEntries(tenants.map((tenant) => [tenant.id, tenant]));
+    const enriched = tickets.map((ticket) => {
+      const own = messages.filter((message) => message.ticket_id === ticket.id);
+      return {
+        ...ticket,
+        tenant: tenantMap[ticket.tenant_id] || null,
+        last_message: own.at(-1) || null,
+        unread: own.filter((message) => message.sender_role === 'admin' && !message.read_by_superadmin).length,
+      };
+    });
+    res.json({ tickets: enriched });
   })
 );
 
 router.get(
-  '/support/:tenantId',
+  '/support/:ticketId',
   asyncHandler(async (req, res) => {
-    const messages = await supportMessages(req.params.tenantId);
+    const { data: ticket, error: ticketError } = await supabase
+      .from('support_tickets')
+      .select('*')
+      .eq('id', req.params.ticketId)
+      .maybeSingle();
+    if (ticketError) throw ticketError;
+    if (!ticket) return res.status(404).json({ error: 'Ticket no encontrado' });
+
+    const { data: messages = [], error } = await supabase
+      .from('support_messages')
+      .select('*')
+      .eq('ticket_id', ticket.id)
+      .order('created_at', { ascending: true });
+    if (error) throw error;
+
     await supabase
       .from('support_messages')
       .update({ read_by_superadmin: true })
-      .eq('tenant_id', req.params.tenantId)
+      .eq('ticket_id', ticket.id)
       .eq('sender_role', 'admin')
       .eq('read_by_superadmin', false);
-    res.json({ messages });
+    res.json({ ticket, messages });
   })
 );
 
 router.post(
-  '/support/:tenantId',
+  '/support/:ticketId',
   asyncHandler(async (req, res) => {
+    const { data: ticket, error: ticketError } = await supabase
+      .from('support_tickets')
+      .select('*')
+      .eq('id', req.params.ticketId)
+      .maybeSingle();
+    if (ticketError) throw ticketError;
+    if (!ticket) return res.status(404).json({ error: 'Ticket no encontrado' });
+    if (ticket.status === 'cerrado') return res.status(409).json({ error: 'Este ticket está cerrado' });
+
     const body = String(req.body?.body || '').trim();
     if (!body) return res.status(400).json({ error: 'Escribí un mensaje' });
     if (body.length > 2000) return res.status(400).json({ error: 'El mensaje es demasiado largo' });
@@ -358,7 +374,8 @@ router.post(
     const { data, error } = await supabase
       .from('support_messages')
       .insert({
-        tenant_id: req.params.tenantId,
+        ticket_id: ticket.id,
+        tenant_id: ticket.tenant_id,
         sender_role: 'superadmin',
         sender_id: req.user.id,
         sender_name: req.user.name || 'Equipo PERKS',
@@ -372,7 +389,29 @@ router.post(
       }
       throw error;
     }
+    await supabase
+      .from('support_tickets')
+      .update({ status: 'respondido', updated_at: new Date().toISOString() })
+      .eq('id', ticket.id);
     res.status(201).json({ message: data });
+  })
+);
+
+router.patch(
+  '/support/:ticketId',
+  asyncHandler(async (req, res) => {
+    const status = String(req.body?.status || '');
+    if (!['nuevo', 'abierto', 'respondido', 'cerrado'].includes(status)) {
+      return res.status(400).json({ error: 'Estado inválido' });
+    }
+    const { data: ticket, error } = await supabase
+      .from('support_tickets')
+      .update({ status, updated_at: new Date().toISOString() })
+      .eq('id', req.params.ticketId)
+      .select()
+      .single();
+    if (error) throw error;
+    res.json({ ticket });
   })
 );
 
