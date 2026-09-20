@@ -2,23 +2,30 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   ArrowLeft,
+  BadgePercent,
   Check,
+  CreditCard,
+  Gift,
   Link2,
   Loader2,
   Rocket,
   ShieldCheck,
   Sparkles,
+  Star,
   Store,
+  Users,
 } from 'lucide-react';
 import { api } from '../api.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { supabase } from '../lib/supabase.js';
 
+const BG = 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&w=1600&q=85';
+
 function slugify(value) {
   return String(value || '')
     .toLowerCase()
     .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[̀-ͯ]/g, '')
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
     .slice(0, 40);
@@ -26,6 +33,46 @@ function slugify(value) {
 
 function formatPrice(value) {
   return `$ ${Number(value || 0).toLocaleString('es-AR')}`;
+}
+
+const STEPS = [
+  { n: 1, label: 'Tu cuenta' },
+  { n: 2, label: 'El pago' },
+  { n: 3, label: 'Tu negocio' },
+];
+
+function StepIndicator({ current }) {
+  return (
+    <div className="flex items-center gap-0">
+      {STEPS.map((step, i) => (
+        <div key={step.n} className="flex items-center">
+          <div className="flex items-center gap-2">
+            <span
+              className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-black transition-all ${
+                step.n < current
+                  ? 'bg-amber-400 text-[#151515]'
+                  : step.n === current
+                  ? 'bg-[#151515] text-white ring-2 ring-[#151515] ring-offset-2'
+                  : 'bg-black/[0.07] text-black/35'
+              }`}
+            >
+              {step.n < current ? <Check size={13} strokeWidth={3} /> : step.n}
+            </span>
+            <span
+              className={`text-xs font-bold ${
+                step.n === current ? 'text-[#151515]' : step.n < current ? 'text-black/55' : 'text-black/30'
+              }`}
+            >
+              {step.label}
+            </span>
+          </div>
+          {i < STEPS.length - 1 && (
+            <span className={`mx-3 h-px w-8 transition-all ${step.n < current ? 'bg-amber-400' : 'bg-black/10'}`} />
+          )}
+        </div>
+      ))}
+    </div>
+  );
 }
 
 export default function Onboarding() {
@@ -58,7 +105,6 @@ export default function Onboarding() {
       .catch(() => {});
   }, []);
 
-  // Vuelta del login con Google
   useEffect(() => {
     const isReturn =
       new URLSearchParams(window.location.search).has('code') ||
@@ -103,13 +149,10 @@ export default function Onboarding() {
     }
   }, [isAuthed, user?.id]);
 
-  // Estado del onboarding
   useEffect(() => {
     loadStatus();
   }, [loadStatus]);
 
-  // Confirma inmediatamente el pago al volver de Mercado Pago; el webhook
-  // queda como respaldo si el usuario cierra la pestaña antes del retorno.
   useEffect(() => {
     const paymentId = params.get('payment_id') || params.get('collection_id');
     if (!isAuthed || !paymentId || params.get('payment') !== 'success') return;
@@ -121,15 +164,9 @@ export default function Onboarding() {
         if (!result.approved) setError('El pago todavía está pendiente de aprobación.');
         await loadStatus();
       })
-      .catch((err) => {
-        if (active) setError(err.message);
-      })
-      .finally(() => {
-        if (active) setPaymentLoading(false);
-      });
-    return () => {
-      active = false;
-    };
+      .catch((err) => { if (active) setError(err.message); })
+      .finally(() => { if (active) setPaymentLoading(false); });
+    return () => { active = false; };
   }, [isAuthed, loadStatus, params]);
 
   useEffect(() => {
@@ -142,31 +179,21 @@ export default function Onboarding() {
         if (!result.approved) setError('La suscripción todavía está pendiente de autorización.');
         await loadStatus();
       })
-      .catch((err) => {
-        if (active) setError(err.message);
-      })
-      .finally(() => {
-        if (active) setPaymentLoading(false);
-      });
-    return () => {
-      active = false;
-    };
+      .catch((err) => { if (active) setError(err.message); })
+      .finally(() => { if (active) setPaymentLoading(false); });
+    return () => { active = false; };
   }, [isAuthed, loadStatus, params]);
 
   useEffect(() => {
     if (status?.hasTenant && status.slug) navigate(`/${status.slug}/dashboard`, { replace: true });
   }, [status, navigate]);
 
-  // Slug automático a partir del nombre
   useEffect(() => {
     if (!slugTouched) setSlug(slugify(businessName));
   }, [businessName, slugTouched]);
 
   useEffect(() => {
-    if (!slug) {
-      setSlugInfo(null);
-      return;
-    }
+    if (!slug) { setSlugInfo(null); return; }
     const id = setTimeout(() => {
       api(`/api/onboarding/slug?value=${encodeURIComponent(slug)}`)
         .then(setSlugInfo)
@@ -198,11 +225,7 @@ export default function Onboarding() {
         method: 'POST',
         body: { plan: desiredPlan },
       });
-      if (data.approved) {
-        await loadStatus();
-        setPaymentLoading(false);
-        return;
-      }
+      if (data.approved) { await loadStatus(); setPaymentLoading(false); return; }
       window.location.assign(data.checkoutUrl);
     } catch (err) {
       setError(err.message);
@@ -213,10 +236,7 @@ export default function Onboarding() {
   const submit = async (e) => {
     e.preventDefault();
     if (submitting) return;
-    if (slugInfo && !slugInfo.available) {
-      setError(slugInfo.reason || 'Ese link no está disponible');
-      return;
-    }
+    if (slugInfo && !slugInfo.available) { setError(slugInfo.reason || 'Ese link no está disponible'); return; }
     setSubmitting(true);
     setError('');
     try {
@@ -234,164 +254,218 @@ export default function Onboarding() {
 
   const slugOk = slugInfo?.available;
 
+  // Determinar paso actual
+  const currentStep = !isAuthed ? 1 : !status?.canStart ? 2 : 3;
+
   return (
-    <div className="relative min-h-screen overflow-hidden bg-surface-page px-4 py-10">
-      <div className="pointer-events-none absolute -left-32 -top-32 h-96 w-96 rounded-full bg-primary/20 blur-3xl" />
-      <div className="pointer-events-none absolute -bottom-32 -right-32 h-96 w-96 rounded-full bg-primary/20 blur-3xl" />
+    <div className="relative min-h-screen bg-cover bg-center lg:grid lg:grid-cols-2" style={{ backgroundImage: `url(${BG})` }}>
+      <div className="absolute inset-0 bg-[#0A0A0C]/75 backdrop-blur-[2px] lg:hidden" />
 
-      <div className="relative mx-auto w-full max-w-lg">
-        <Link
-          to="/"
-          className="mb-6 inline-flex items-center gap-2 text-sm font-semibold text-ink-muted transition-colors hover:text-ink"
-        >
-          <ArrowLeft size={16} />
-          Volver a PERKS
-        </Link>
+      {/* Panel izquierdo — formulario */}
+      <section className="relative flex min-h-screen items-center justify-center px-5 py-10 lg:bg-[#F5F1E8] lg:text-[#151515]">
+        <div className="w-full max-w-lg rounded-3xl border border-white/20 bg-white/95 p-6 text-[#151515] shadow-2xl backdrop-blur sm:p-8 lg:border-black/10 lg:shadow-xl">
 
-        <div className="card overflow-hidden">
-          <div className="bg-gradient-to-br from-primary to-primary-strong p-6 text-primary-contrast">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-contrast/15">
-              <Rocket size={24} />
-            </div>
-            <h1 className="mt-4 text-2xl font-extrabold">Creá tu app de fidelización</h1>
-            <p className="mt-1 text-sm text-primary-contrast/85">
-              {selectedPlan
-                ? `Plan ${selectedPlan.name} · ${formatPrice(selectedPlan.price)} ${selectedPlan.period}`
-                : 'En unos segundos tenés tu propio perfil listo para tus clientes.'}
-            </p>
+          {/* Header */}
+          <div className="flex items-center justify-between">
+            <Link to="/" className="inline-flex items-center gap-2 text-sm font-bold text-black/55 hover:text-black">
+              <ArrowLeft size={16} /> Volver
+            </Link>
+            <span className="inline-flex items-center gap-2 font-black">
+              <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-400">
+                <Sparkles size={16} className="text-[#0A0A0C]" />
+              </span>
+              PERKS
+            </span>
           </div>
 
-          <div className="space-y-5 p-6">
-            {error && (
-              <div className="rounded-xl border border-red-300 bg-red-50 px-4 py-2.5 text-sm font-medium text-red-700 dark:border-red-500/40 dark:bg-red-500/10 dark:text-red-400">
-                {error}
+          <h1 className="mt-7 text-3xl font-black tracking-tight">Creá tu app de fidelización.</h1>
+          <p className="mt-2 text-sm leading-relaxed text-black/55">
+            {selectedPlan
+              ? `Plan ${selectedPlan.name} · ${formatPrice(selectedPlan.price)} ${selectedPlan.period} · Sin comisiones.`
+              : 'Fidelizá a tus clientes con cupones, puntos y premios. Sin comisiones.'}
+          </p>
+
+          {/* Pasos */}
+          <div className="mt-6 mb-7">
+            <StepIndicator current={currentStep} />
+          </div>
+
+          {error && (
+            <div className="mb-5 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+              {error}
+            </div>
+          )}
+
+          {loading || paymentLoading ? (
+            <div className="flex flex-col items-center justify-center gap-3 py-10 text-black/40">
+              <Loader2 className="animate-spin" size={26} />
+              <p className="text-sm font-semibold">
+                {paymentLoading ? 'Confirmando tu pago...' : 'Cargando...'}
+              </p>
+            </div>
+          ) : !isAuthed ? (
+            /* PASO 1 — Google */
+            <div className="space-y-4">
+              <div className="rounded-2xl bg-black/[0.04] p-4">
+                <p className="text-sm font-bold text-[#151515]">Entrá con tu cuenta de Google</p>
+                <p className="mt-1 text-sm text-black/55">
+                  La misma cuenta que vas a usar para administrar tu app.
+                  Si no tenés cuenta de Google, podés crear una gratis.
+                </p>
               </div>
-            )}
-
-            {loading ? (
-              <div className="flex items-center justify-center py-10 text-ink-muted">
-                <Loader2 className="animate-spin" size={22} />
+              <button
+                className="flex w-full items-center justify-center gap-3 rounded-2xl border border-black/15 bg-white px-5 py-3.5 font-extrabold transition hover:bg-black/5 disabled:opacity-50"
+                onClick={startGoogle}
+                disabled={oauthLoading}
+              >
+                {oauthLoading ? <Loader2 className="animate-spin" size={19} /> : <GoogleIcon />}
+                Continuar con Google
+              </button>
+              <p className="text-center text-xs text-black/35">
+                Al continuar aceptás los términos de uso de PERKS.
+              </p>
+            </div>
+          ) : !status?.canStart ? (
+            /* PASO 2 — Pago */
+            <div className="space-y-4">
+              <div className="rounded-2xl bg-black/[0.04] p-4">
+                <p className="text-sm font-bold text-[#151515]">Confirmá tu plan</p>
+                <p className="mt-1 text-sm text-black/55">
+                  Tu app estará activa en segundos después del pago.
+                  MercadoPago nos notifica automáticamente.
+                </p>
               </div>
-            ) : !isAuthed ? (
-              <>
-                <div className="flex items-start gap-3 rounded-2xl bg-surface-alt p-4">
-                  <ShieldCheck size={18} className="mt-0.5 text-primary" />
-                  <p className="text-sm text-ink-muted">
-                    Entrá con tu cuenta de Google para crear el perfil de tu negocio.
-                    Es la misma cuenta que vas a usar para administrarlo.
-                  </p>
-                </div>
-                <button className="btn-ghost w-full !py-3 text-base" onClick={startGoogle} disabled={oauthLoading}>
-                  {oauthLoading ? <Loader2 className="animate-spin" size={18} /> : <GoogleIcon />}
-                  Continuar con Google
-                </button>
-              </>
-            ) : status?.canStart ? (
-              <form onSubmit={submit} className="space-y-4">
-                <div>
-                  <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-ink-muted">
-                    Nombre del negocio
-                  </label>
-                  <div className="relative">
-                    <Store size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted" />
-                    <input
-                      className="input !pl-9"
-                      placeholder="Ej: Cafetería Central"
-                      value={businessName}
-                      onChange={(e) => setBusinessName(e.target.value)}
-                      maxLength={60}
-                      autoFocus
-                      required
-                    />
-                  </div>
-                </div>
 
-                <div>
-                  <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-ink-muted">
-                    Link de tu app
-                  </label>
-                  <div className="relative">
-                    <Link2 size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted" />
-                    <input
-                      className="input !pl-9 font-mono text-sm"
-                      placeholder="mi-negocio"
-                      value={slug}
-                      onChange={(e) => {
-                        setSlugTouched(true);
-                        setSlug(slugify(e.target.value));
-                      }}
-                      required
-                    />
+              {selectedPlan && (
+                <div className="flex items-center justify-between rounded-2xl border border-black/10 bg-white px-5 py-4">
+                  <div>
+                    <p className="font-extrabold text-[#151515]">Plan {selectedPlan.name}</p>
+                    <p className="text-xs text-black/45">{selectedPlan.period} · Sin comisiones</p>
                   </div>
-                  <p className="mt-1.5 flex items-center gap-1.5 text-xs text-ink-muted">
-                    {slug && slugOk && (
-                      <>
-                        <Check size={13} className="text-green-500" />
-                        <span>
-                          Tu app va a estar en{' '}
-                          <strong className="text-ink">perks.com/{slugInfo?.slug || slug}</strong>
-                        </span>
-                      </>
-                    )}
-                    {slug && slugInfo && !slugInfo.available && (
-                      <span className="text-red-500">{slugInfo.reason}</span>
-                    )}
-                    {!slug && <span>Elegí el link con el que vas a compartir tu app.</span>}
-                  </p>
+                  <p className="text-xl font-black text-amber-500">{formatPrice(selectedPlan.price)}</p>
                 </div>
+              )}
 
-                <div className="flex items-start gap-3 rounded-2xl bg-surface-alt p-4">
-                  <Sparkles size={18} className="mt-0.5 text-primary" />
-                  <p className="text-sm text-ink-muted">
-                    Tu app arranca vacía: después cargás tus productos, cupones y logo desde el panel.
-                  </p>
-                </div>
-
-                <button className="btn-primary w-full justify-center !py-3" disabled={submitting || !businessName || !slugOk}>
-                  {submitting ? <Loader2 className="animate-spin" size={18} /> : <Rocket size={18} />}
-                  Crear mi app
-                </button>
-              </form>
-            ) : (
-              <div className="space-y-4">
-                <div className="flex items-start gap-3 rounded-2xl bg-surface-alt p-4">
-                  <ShieldCheck size={18} className="mt-0.5 text-primary" />
-                  <div className="text-sm text-ink-muted">
-                    <p className="font-semibold text-ink">Todavía no registramos tu pago</p>
-                    <p className="mt-1">
-                      Si ya pagaste, esperá unos minutos: MercadoPago nos avisa automáticamente.
-                    </p>
-                  </div>
-                </div>
-                {selectedPlan && (
-                  <div className="card flex items-center justify-between p-4">
-                    <div>
-                      <p className="font-extrabold text-ink">Plan {selectedPlan.name}</p>
-                      <p className="text-xs text-ink-muted">{selectedPlan.period}</p>
-                    </div>
-                    <p className="text-lg font-extrabold text-primary">{formatPrice(selectedPlan.price)}</p>
-                  </div>
-                )}
-                <button className="btn-primary w-full justify-center !py-3" onClick={startPayment} disabled={paymentLoading}>
-                  {paymentLoading ? <Loader2 className="animate-spin" size={18} /> : <ShieldCheck size={18} />}
-                  Pagar de forma segura con Mercado Pago
-                </button>
-                <p className="text-center text-xs text-ink-muted">Volvés automáticamente a PERKS cuando se confirme el pago.</p>
-                <button className="btn-ghost w-full justify-center" onClick={startGoogle}>
-                  Cambiar de cuenta
-                </button>
+              <button
+                className="flex w-full items-center justify-center gap-3 rounded-2xl bg-[#151515] px-5 py-3.5 font-extrabold text-white transition hover:bg-black/80 disabled:opacity-50"
+                onClick={startPayment}
+                disabled={paymentLoading}
+              >
+                {paymentLoading ? <Loader2 className="animate-spin" size={19} /> : <CreditCard size={19} />}
+                Pagar con Mercado Pago
+              </button>
+              <p className="text-center text-xs text-black/35">
+                Pago 100% seguro. Volvés acá automáticamente al confirmarse.
+              </p>
+              <button className="flex w-full items-center justify-center gap-2 text-xs font-bold text-black/40 hover:text-black/60" onClick={startGoogle}>
+                Cambiar de cuenta Google
+              </button>
+            </div>
+          ) : (
+            /* PASO 3 — Crear app */
+            <form onSubmit={submit} className="space-y-4">
+              <div className="rounded-2xl bg-black/[0.04] p-4">
+                <p className="text-sm font-bold text-[#151515]">¡Pago confirmado! Último paso.</p>
+                <p className="mt-1 text-sm text-black/55">
+                  Ponele nombre a tu negocio y elegí el link con el que tus clientes van a encontrarte.
+                </p>
               </div>
-            )}
+
+              <div>
+                <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-black/45">
+                  Nombre del negocio
+                </label>
+                <div className="relative">
+                  <Store size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-black/30" />
+                  <input
+                    className="w-full rounded-2xl border border-black/15 bg-white py-3 pl-10 pr-4 text-sm font-semibold outline-none placeholder:text-black/25 focus:border-black/30 focus:ring-2 focus:ring-black/10"
+                    placeholder="Ej: Cafetería Central"
+                    value={businessName}
+                    onChange={(e) => setBusinessName(e.target.value)}
+                    maxLength={60}
+                    autoFocus
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-black/45">
+                  Link de tu app
+                </label>
+                <div className="relative">
+                  <Link2 size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-black/30" />
+                  <input
+                    className="w-full rounded-2xl border border-black/15 bg-white py-3 pl-10 pr-4 font-mono text-sm font-semibold outline-none placeholder:text-black/25 focus:border-black/30 focus:ring-2 focus:ring-black/10"
+                    placeholder="mi-negocio"
+                    value={slug}
+                    onChange={(e) => { setSlugTouched(true); setSlug(slugify(e.target.value)); }}
+                    required
+                  />
+                </div>
+                <p className="mt-1.5 flex items-center gap-1.5 text-xs">
+                  {slug && slugOk && (
+                    <>
+                      <Check size={13} className="text-emerald-500" />
+                      <span className="text-black/55">
+                        Tu app en <strong className="text-[#151515]">perks.com/{slugInfo?.slug || slug}</strong>
+                      </span>
+                    </>
+                  )}
+                  {slug && slugInfo && !slugInfo.available && (
+                    <span className="text-red-500">{slugInfo.reason}</span>
+                  )}
+                  {!slug && <span className="text-black/35">Elegí el link para compartir tu app.</span>}
+                </p>
+              </div>
+
+              <button
+                className="flex w-full items-center justify-center gap-3 rounded-2xl bg-amber-400 px-5 py-3.5 font-extrabold text-[#0A0A0C] transition hover:bg-amber-300 disabled:opacity-50"
+                disabled={submitting || !businessName || !slugOk}
+              >
+                {submitting ? <Loader2 className="animate-spin" size={19} /> : <Rocket size={19} />}
+                Crear mi app ahora
+              </button>
+            </form>
+          )}
+        </div>
+      </section>
+
+      {/* Panel derecho — imagen + beneficios */}
+      <aside className="relative hidden min-h-screen overflow-hidden bg-cover bg-center lg:block" style={{ backgroundImage: `url(${BG})` }}>
+        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/20" />
+        <div className="absolute inset-0 flex flex-col justify-end p-12 text-white">
+          <p className="text-xs font-bold uppercase tracking-[0.22em] text-amber-400">Para negocios como el tuyo</p>
+          <p className="mt-3 text-4xl font-black leading-tight">
+            Tus clientes vuelven cuando los recompensás.
+          </p>
+          <p className="mt-4 text-white/65">
+            Creá tu programa de fidelización en minutos. Sin apps que instalar, sin comisiones por venta.
+          </p>
+
+          <div className="mt-8 grid grid-cols-2 gap-3">
+            {[
+              { icon: BadgePercent, title: 'Cupones con puntos', desc: 'Cada compra suma un punto. Al completar el cupón, el cliente gana su premio.' },
+              { icon: Gift, title: 'Premios que elegís vos', desc: 'Descuentos, productos gratis o lo que quieras ofrecer a tus clientes fieles.' },
+              { icon: Users, title: 'Clientes que vuelven', desc: 'El programa incentiva visitas repetidas. Fidelizá sin esfuerzo extra.' },
+              { icon: Star, title: 'Tu marca, tu estilo', desc: 'Logo, colores y menú propios. Tu app refleja la identidad de tu negocio.' },
+            ].map(({ icon: Icon, title, desc }) => (
+              <div key={title} className="rounded-2xl bg-white/10 p-4 backdrop-blur-sm">
+                <Icon size={18} className="text-amber-400" />
+                <p className="mt-2 text-sm font-extrabold">{title}</p>
+                <p className="mt-1 text-xs leading-relaxed text-white/60">{desc}</p>
+              </div>
+            ))}
           </div>
         </div>
-      </div>
+      </aside>
     </div>
   );
 }
 
 function GoogleIcon() {
   return (
-    <svg width="16" height="16" viewBox="0 0 48 48" aria-hidden="true">
+    <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
       <path fill="#FFC107" d="M43.6 20.1H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3l5.7-5.7C34.3 6.1 29.4 4 24 4 13 4 4 13 4 24s9 20 20 20 20-9 20-20c0-1.3-.1-2.6-.4-3.9z" />
       <path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.9 1.2 8 3l5.7-5.7C34.3 6.1 29.4 4 24 4 16.3 4 9.7 8.3 6.3 14.7z" />
       <path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z" />
