@@ -91,11 +91,12 @@ export function ThemeProvider({ children }) {
   }, [slug]);
 
   useEffect(() => {
+    if (!slug) return;
     const name = settings.businessName || 'Mi negocio';
     document.title = settings.tagline ? `${name} · ${settings.tagline}` : name;
     const meta = document.querySelector('meta[name="description"]');
     if (meta && settings.tagline) meta.setAttribute('content', settings.tagline);
-  }, [settings.businessName, settings.tagline]);
+  }, [slug, settings.businessName, settings.tagline]);
 
   useEffect(() => {
     const href = settings.logoIso || settings.logo || '/favicon.svg';
