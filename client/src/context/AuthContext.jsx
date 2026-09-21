@@ -7,7 +7,7 @@ const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const { slug } = useTenant();
-  const userKey = slug ? `perks:user:${slug}` : 'perks:user:_global';
+  const userKey = slug ? `wintuu:user:${slug}` : 'wintuu:user:_global';
 
   const [user, setUser] = useState(() => {
     try {
@@ -51,7 +51,7 @@ export function AuthProvider({ children }) {
   const finishAuth = (data, targetSlug) => {
     // El backend nos puede avisar explícitamente a qué app pertenece la sesión
     const slugToUse = data.user?.tenant_slug !== undefined ? data.user.tenant_slug : (targetSlug !== undefined ? targetSlug : slug);
-    const finalUserKey = slugToUse ? `perks:user:${slugToUse}` : 'perks:user:_global';
+    const finalUserKey = slugToUse ? `wintuu:user:${slugToUse}` : 'wintuu:user:_global';
     
     setToken(data.token, slugToUse);
     setUser(data.user);
@@ -154,7 +154,7 @@ export function AuthProvider({ children }) {
     if (targetSlug) setToken(null, targetSlug);
     setUser(null);
     localStorage.removeItem(userKey);
-    if (targetSlug) localStorage.removeItem(`perks:user:${targetSlug}`);
+    if (targetSlug) localStorage.removeItem(`wintuu:user:${targetSlug}`);
   };
 
   const updateUser = (next) => {

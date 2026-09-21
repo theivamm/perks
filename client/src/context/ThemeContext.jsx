@@ -17,7 +17,7 @@ const DEFAULT_SETTINGS = {
   setupCompleted: 'true',
 };
 
-const settingsKey = (slug = '') => `perks:settings:${slug || '_perks'}`;
+const settingsKey = (slug = '') => `wintuu:settings:${slug || '_wintuu'}`;
 
 function normalize(data) {
   return {
@@ -69,7 +69,7 @@ export function ThemeProvider({ children }) {
     setSettings(cached);
     applyPalette(cached.primaryColor, cached.theme === 'dark', true, slug);
 
-    // Sin tenant (landing, onboarding, panel PERKS): no pedimos settings de
+    // Sin tenant (landing, onboarding, panel WINTUU): no pedimos settings de
     // ningún negocio para no filtrar branding ajeno.
     if (!slug) return undefined;
 

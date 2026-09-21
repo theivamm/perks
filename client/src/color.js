@@ -29,7 +29,7 @@ export function hexToHsl(hex) {
 
 const clamp = (n, min, max) => Math.min(max, Math.max(min, n));
 
-const paletteKey = (slug = '') => `perks:palette:${slug || '_perks'}`;
+const paletteKey = (slug = '') => `wintuu:palette:${slug || '_wintuu'}`;
 
 export function persistPalette(primaryHex, dark, slug = '') {
   try {

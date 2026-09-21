@@ -281,7 +281,7 @@ export default function Onboarding() {
               <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-400">
                 <Sparkles size={16} className="text-[#0A0A0C]" />
               </span>
-              PERKS
+              WINTUU
             </span>
           </div>
 
@@ -329,7 +329,7 @@ export default function Onboarding() {
                 Continuar con Google
               </button>
               <p className="text-center text-xs text-black/35">
-                Al continuar aceptás los términos de uso de PERKS.
+                Al continuar aceptás los términos de uso de WINTUU.
               </p>
             </div>
           ) : !status?.canStart ? (
@@ -486,7 +486,7 @@ export default function Onboarding() {
                     <>
                       <Check size={13} className="text-emerald-500" />
                       <span className="text-black/55">
-                        Tu app en <strong className="text-[#151515]">perks.com/{slugInfo?.slug || slug}</strong>
+                        Tu app en <strong className="text-[#151515]">wintuu.com/{slugInfo?.slug || slug}</strong>
                       </span>
                     </>
                   )}

@@ -123,7 +123,7 @@ export default function AccessPortal() {
         <div className="w-full max-w-lg rounded-3xl border border-white/20 bg-white/95 p-6 text-[#151515] shadow-2xl backdrop-blur sm:p-8 lg:border-black/10 lg:shadow-xl">
           <div className="flex items-center justify-between">
             <Link to="/" className="inline-flex items-center gap-2 text-sm font-bold text-black/55 hover:text-black"><ArrowLeft size={16} /> Volver</Link>
-            <span className="inline-flex items-center gap-2 font-black"><span className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-400"><Sparkles size={16} /></span> PERKS</span>
+            <span className="inline-flex items-center gap-2 font-black"><span className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-400"><Sparkles size={16} /></span> WINTUU</span>
           </div>
 
           <h1 className="mt-8 text-3xl font-black tracking-tight">Ingresá a tus beneficios.</h1>

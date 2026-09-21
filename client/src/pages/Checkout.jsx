@@ -3,7 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Check, Loader2, MessageCircle, ShieldCheck, Sparkles } from 'lucide-react';
 import { api } from '../api.js';
 
-const WHATSAPP_URL = 'https://wa.me/541161120433?text=Hola%2C%20quiero%20contratar%20PERKS%20y%20necesito%20hablar%20con%20un%20agente%20de%20ventas.';
+const WHATSAPP_URL = 'https://wa.me/541161120433?text=Hola%2C%20quiero%20contratar%20WINTUU%20y%20necesito%20hablar%20con%20un%20agente%20de%20ventas.';
 
 function formatPrice(value) {
   return `$ ${Number(value || 0).toLocaleString('es-AR')}`;
@@ -34,13 +34,13 @@ export default function Checkout() {
           </Link>
           <span className="inline-flex items-center gap-2 font-extrabold">
             <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-400 text-[#0A0A0C]"><Sparkles size={16} /></span>
-            PERKS
+            WINTUU
           </span>
         </div>
 
         <div className="mt-12 text-center">
           <p className="text-xs font-bold uppercase tracking-[0.2em] text-amber-300">Contratá tu app</p>
-          <h1 className="mt-3 text-3xl font-extrabold tracking-tight sm:text-5xl">Elegí tu plan y activá PERKS</h1>
+          <h1 className="mt-3 text-3xl font-extrabold tracking-tight sm:text-5xl">Elegí tu plan y activá WINTUU</h1>
           <p className="mx-auto mt-4 max-w-2xl text-white/60">
             Después del pago creás el nombre y el enlace de tu app, y entrás directamente a la bienvenida para configurarla.
           </p>
@@ -78,7 +78,7 @@ export default function Checkout() {
               <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
                 <p className="font-extrabold">Todos los planes incluyen</p>
                 <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                  {['App con tu marca y enlace', 'Panel de administración', 'Clientes mediante Google', 'Cupones y recompensas', 'Códigos QR', 'Soporte de PERKS'].map((item) => (
+                  {['App con tu marca y enlace', 'Panel de administración', 'Clientes mediante Google', 'Cupones y recompensas', 'Códigos QR', 'Soporte de WINTUU'].map((item) => (
                     <span key={item} className="flex items-center gap-2 text-sm text-white/65"><Check size={15} className="text-amber-300" /> {item}</span>
                   ))}
                 </div>
@@ -89,7 +89,7 @@ export default function Checkout() {
               <p className="text-xs font-bold uppercase tracking-wider text-white/45">Resumen</p>
               <div className="mt-4 flex items-end justify-between gap-3 border-b border-white/10 pb-5">
                 <div>
-                  <p className="font-extrabold">PERKS {plan?.name || ''}</p>
+                  <p className="font-extrabold">WINTUU {plan?.name || ''}</p>
                   <p className="text-sm text-white/50">{plan?.period}</p>
                 </div>
                 <p className="text-2xl font-extrabold">{formatPrice(plan?.price)}</p>

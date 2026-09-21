@@ -4,9 +4,9 @@ import { setTenantSlug } from '../api.js';
 
 const TenantContext = createContext({ slug: '', t: (p) => p, home: () => '/' });
 
-// Primer segmento de la URL que NO es una ruta propia de PERKS.
+// Primer segmento de la URL que NO es una ruta propia de WINTUU.
 const RESERVED = new Set([
-  'perks',
+  'wintuu',
   'comenzar',
   'checkout',
   'ingresar',

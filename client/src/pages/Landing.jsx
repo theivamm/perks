@@ -77,14 +77,14 @@ const FAQ = [
   ],
   [
     '¿Puede funcionar en más de un local?',
-    'Sí. PERKS está preparado para trabajar con varios puntos de atención y consolidar la información de tus clientes.',
+    'Sí. WINTUU está preparado para trabajar con varios puntos de atención y consolidar la información de tus clientes.',
   ],
   [
     '¿Puede enviar mensajes por WhatsApp?',
     'Sí. Las notificaciones automáticas por WhatsApp requieren una integración autorizada con WhatsApp Business Platform o un proveedor oficial, además del consentimiento del cliente.',
   ],
   [
-    '¿PERKS entrega una plataforma propia?',
+    '¿WINTUU entrega una plataforma propia?',
     'Sí. Cada negocio tiene su propio perfil, con su nombre, sus colores y su link personalizado para compartir con sus clientes.',
   ],
   [
@@ -96,7 +96,7 @@ const FAQ = [
 function storedAdminApp() {
   for (let i = 0; i < localStorage.length; i += 1) {
     const key = localStorage.key(i) || '';
-    if (!key.startsWith('perks:user:') || key.endsWith(':_global')) continue;
+    if (!key.startsWith('wintuu:user:') || key.endsWith(':_global')) continue;
     try {
       const saved = JSON.parse(localStorage.getItem(key) || 'null');
       if (saved?.role === 'admin' && saved?.tenant_slug) return { slug: saved.tenant_slug, user: saved };
@@ -137,12 +137,12 @@ export default function Landing() {
   };
 
   useEffect(() => {
-    document.title = 'PERKS · Clientes que vuelven';
+    document.title = 'WINTUU · Clientes que vuelven';
     const meta = document.querySelector('meta[name="description"]');
     if (meta) {
       meta.setAttribute(
         'content',
-        'PERKS convierte cada compra en una razón para volver: registrá visitas, conocé a tus clientes y premialos automáticamente.'
+        'WINTUU convierte cada compra en una razón para volver: registrá visitas, conocé a tus clientes y premialos automáticamente.'
       );
     }
     api('/api/plans')
@@ -159,7 +159,7 @@ export default function Landing() {
             <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-400 text-[#0A0A0C]">
               <Sparkles size={16} />
             </span>
-            <span className="text-lg font-extrabold tracking-tight">PERKS</span>
+            <span className="text-lg font-extrabold tracking-tight">WINTUU</span>
           </Link>
 
           <nav className="hidden items-center gap-7 md:flex">
@@ -269,8 +269,8 @@ export default function Landing() {
               Convertí cada compra en una razón para volver.
             </h1>
             <p className="mt-5 max-w-xl text-lg text-white/60">
-              PERKS registra cada visita, conoce mejor a tus clientes y los premia automáticamente cuando alcanzan
-              la meta que vos definís. Vos elegís la regla; PERKS reconoce y premia.
+              WINTUU registra cada visita, conoce mejor a tus clientes y los premia automáticamente cuando alcanzan
+              la meta que vos definís. Vos elegís la regla; WINTUU reconoce y premia.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <Link
@@ -321,7 +321,7 @@ export default function Landing() {
               </ul>
             </div>
             <div className="rounded-3xl border border-amber-400/30 bg-amber-400/[0.06] p-7">
-              <h3 className="text-lg font-bold text-amber-300">Con PERKS</h3>
+              <h3 className="text-lg font-bold text-amber-300">Con WINTUU</h3>
               <ul className="mt-5 space-y-3 text-white/85">
                 {['Perfil único por cliente', 'Historial de compras', 'Progreso visible', 'Premio configurado', 'Cada visita cuenta'].map(
                   (t) => (
@@ -633,7 +633,7 @@ export default function Landing() {
             <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-400 text-[#0A0A0C]">
               <Sparkles size={14} />
             </span>
-            <span className="font-extrabold tracking-tight">PERKS</span>
+            <span className="font-extrabold tracking-tight">WINTUU</span>
           </div>
           <div className="flex items-center gap-6 text-sm text-white/50">
             <Link to="/shanti-chi" className="transition hover:text-white">
@@ -644,11 +644,11 @@ export default function Landing() {
                 Ingresar
               </Link>
             )}
-            <Link to="/perks/admin" className="transition hover:text-white">
-              Equipo PERKS
+            <Link to="/wintuu/admin" className="transition hover:text-white">
+              Equipo WINTUU
             </Link>
           </div>
-          <p className="text-sm text-white/30">© {new Date().getFullYear()} PERKS</p>
+          <p className="text-sm text-white/30">© {new Date().getFullYear()} WINTUU</p>
         </div>
       </footer>
     </div>

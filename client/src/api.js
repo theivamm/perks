@@ -1,6 +1,6 @@
 function getTokenKey(targetSlug) {
   const slug = targetSlug !== undefined ? targetSlug : currentTenantSlug;
-  return slug ? `perks:token:${slug}` : 'perks:token:_global';
+  return slug ? `wintuu:token:${slug}` : 'wintuu:token:_global';
 }
 
 export function getToken(targetSlug) {

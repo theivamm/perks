@@ -90,7 +90,7 @@ export default function SuperAdmin() {
                 <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-400">
                   <Sparkles size={16} className="text-[#0A0A0C]" />
                 </span>
-                <span className="text-white">PERKS</span>
+                <span className="text-white">WINTUU</span>
               </span>
             </div>
 
@@ -100,7 +100,7 @@ export default function SuperAdmin() {
               </span>
               <div>
                 <h1 className="text-2xl font-black tracking-tight">Superadmin</h1>
-                <p className="text-sm text-white/45">Acceso exclusivo al panel de control de PERKS.</p>
+                <p className="text-sm text-white/45">Acceso exclusivo al panel de control de WINTUU.</p>
               </div>
             </div>
 
@@ -116,7 +116,7 @@ export default function SuperAdmin() {
                 <input
                   className="w-full rounded-2xl border border-white/10 bg-white/5 py-3 pl-10 pr-4 text-sm font-semibold text-white outline-none placeholder:text-white/25 focus:border-amber-400/50 focus:ring-2 focus:ring-amber-400/15"
                   type="email"
-                  placeholder="superadmin@perks.app"
+                  placeholder="superadmin@wintuu.app"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
@@ -150,7 +150,7 @@ export default function SuperAdmin() {
           <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
           <div className="absolute bottom-0 left-0 max-w-xl p-12 text-white">
             <p className="text-xs font-bold uppercase tracking-[0.22em] text-amber-400">Solo acceso autorizado</p>
-            <p className="mt-3 text-4xl font-black leading-tight">Panel de control de todas las apps PERKS.</p>
+            <p className="mt-3 text-4xl font-black leading-tight">Panel de control de todas las apps WINTUU.</p>
             <p className="mt-4 text-white/55">Gestión de negocios, usuarios, pagos y soporte desde un único lugar.</p>
           </div>
         </aside>
@@ -212,7 +212,7 @@ function Panel({ email, onLogout }) {
               <Store size={18} />
             </span>
             <div>
-              <p className="text-sm font-extrabold leading-tight text-ink">PERKS · Superadmin</p>
+              <p className="text-sm font-extrabold leading-tight text-ink">WINTUU · Superadmin</p>
               <p className="text-xs text-ink-muted">{email}</p>
             </div>
           </div>
@@ -506,7 +506,7 @@ function TenantRow({ tenant, onSaved }) {
             tenant.status === 'activo' ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'
           }`}
           value={tenant.status}
-          disabled={busy || tenant.slug === 'perks'}
+          disabled={busy || tenant.slug === 'wintuu'}
           onChange={(e) => patch({ status: e.target.value })}
         >
           <option value="activo">Activo</option>
@@ -514,8 +514,8 @@ function TenantRow({ tenant, onSaved }) {
           <option value="pendiente">Pendiente</option>
         </select>
 
-        {tenant.slug !== 'perks' && (
-          <button className="btn-ghost !py-1.5" onClick={() => setEditing((v) => !v)} disabled={busy || deleting}>
+        {tenant.slug !== 'wintuu' && (
+<button className="btn-ghost !py-1.5" onClick={() => setEditing((v) => !v)} disabled={busy || deleting}>
             {editing ? <X size={15} /> : <Pencil size={15} />}
             Editar
           </button>
@@ -530,8 +530,8 @@ function TenantRow({ tenant, onSaved }) {
           {showUsers ? 'Ocultar' : 'Usuarios'}
         </button>
 
-        {tenant.slug !== 'perks' && (
-          <button
+        {tenant.slug !== 'wintuu' && (
+<button
             className="inline-flex items-center gap-1.5 rounded-xl px-3 !py-1.5 text-xs font-bold text-red-600 transition hover:bg-red-50 disabled:opacity-50 dark:text-red-400 dark:hover:bg-red-500/10"
             onClick={remove}
             disabled={busy || deleting}

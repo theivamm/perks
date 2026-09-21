@@ -225,7 +225,7 @@ function TicketDetail({ ticket, messages, onBack, onMessage }) {
           return (
             <div key={message.id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
               <div className={`max-w-[82%] rounded-2xl px-4 py-2.5 text-sm ${mine ? 'rounded-br-md bg-primary text-primary-contrast' : 'rounded-bl-md bg-surface-alt text-ink'}`}>
-                {!mine && <p className="mb-1 text-xs font-bold text-ink-muted">{message.sender_name || 'Equipo PERKS'}</p>}
+                {!mine && <p className="mb-1 text-xs font-bold text-ink-muted">{message.sender_name || 'Equipo WINTUU'}</p>}
                 <p className="whitespace-pre-wrap break-words">{message.body}</p>
                 <p className={`mt-1 text-right text-[11px] ${mine ? 'text-primary-contrast/70' : 'text-ink-muted'}`}>{formatDate(message.created_at)}</p>
               </div>

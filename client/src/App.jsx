@@ -46,7 +46,7 @@ function DefaultRedirect() {
   useEffect(() => {
     api('/api/tenants/default')
       .then(({ slug }) => navigate(`/${slug}`, { replace: true }))
-      .catch(() => navigate('/perks/admin', { replace: true }));
+      .catch(() => navigate('/wintuu/admin', { replace: true }));
   }, [navigate]);
   return null;
 }
@@ -138,7 +138,7 @@ export default function App() {
       <Route path="/" element={<Landing />} />
       <Route path="/checkout" element={<Checkout />} />
       <Route path="/ingresar" element={<AccessPortal />} />
-      <Route path="/perks/admin" element={<SuperAdmin />} />
+      <Route path="/wintuu/admin" element={<SuperAdmin />} />
       <Route path="/comenzar" element={<Onboarding />} />
       <Route path="/onboarding" element={<Onboarding />} />
       <Route path="/demo" element={<DefaultRedirect />} />
