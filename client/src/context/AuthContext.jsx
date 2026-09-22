@@ -36,7 +36,11 @@ export function AuthProvider({ children }) {
       })
       .catch((err) => {
         if (!active) return;
-        if (!/sesión|no autorizado|no pertenece/i.test(String(err?.message || ''))) return;
+        // Solo cerramos la sesión ante un token realmente inválido/expirado (401).
+        // Un 403 (p. ej. "no pertenece a esta app") puede ser una verificación
+        // en segundo plano que llega justo después de un login/switch-app
+        // legítimo; cerrar la sesión ahí borraría un login válido en silencio.
+        if (err?.status !== 401) return;
         setToken(null, slug);
         localStorage.removeItem(userKey);
         setUser(null);

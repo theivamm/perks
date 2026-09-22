@@ -455,7 +455,10 @@ router.post(
         .upsert(
           {
             id: authUser.id,
-            tenant_id: req.tenant.id,
+            // Login global (/ingresar): esta identidad todavía no pertenece a
+            // ningún negocio puntual, así que la columna legacy tenant_id no
+            // debe apuntar al tenant por defecto que resuelve attachTenant.
+            tenant_id: global ? null : req.tenant.id,
             name: authUser.user_metadata?.name || 'Cliente',
             email: authUser.email,
             password_hash: '',

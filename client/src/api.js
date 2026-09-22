@@ -47,7 +47,9 @@ export async function api(path, options = {}) {
     } catch {
       /* noop */
     }
-    throw new Error(message);
+    const err = new Error(message);
+    err.status = res.status;
+    throw err;
   }
   return res.json();
 }
