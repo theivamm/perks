@@ -573,6 +573,59 @@ html:has(.wintuu-landing) {
   }
 }
 
+/* ══════════════════════════════════════════════════════════
+   VARIANTE OSCURA — panel de superadmin. Mismos componentes
+   (wt-glass, wt-btn-mint, wt-h1/h2/h3, wt-eyebrow…), solo se
+   reasignan los valores de los tokens. Se activa agregando
+   .wintuu-dark junto a .wintuu-landing en la raíz de la página.
+══════════════════════════════════════════════════════════ */
+.wintuu-landing.wintuu-dark {
+  --wt-bg: #0a0e13;
+  --wt-surface: #121821;
+  --wt-surface-raised: #1a222c;
+  --wt-mint-light: #6fe9df;
+  --wt-mint-dark: #00cfcd;
+  --wt-cream: #1a222c;
+  --wt-text: #f2f6f5;
+  --wt-muted: #8fa0a2;
+  --wt-border: rgba(220, 255, 250, 0.12);
+}
+
+.wintuu-dark .wt-glass {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.02)), rgba(18, 24, 33, 0.82);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 24px 60px rgba(0, 0, 0, 0.45);
+}
+.wintuu-dark .wt-glass-strong {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.03)), rgba(10, 14, 19, 0.9);
+}
+.wintuu-dark .wt-eyebrow,
+.wintuu-dark .wt-eyebrow-light {
+  background: linear-gradient(135deg, rgba(0, 207, 205, 0.18), rgba(0, 207, 205, 0.06));
+  border-color: rgba(0, 207, 205, 0.4);
+}
+.wintuu-dark .wt-btn-ghost,
+.wintuu-dark .wt-btn-ghost-light {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.14);
+}
+.wintuu-dark .wt-btn-ghost:hover,
+.wintuu-dark .wt-btn-ghost-light:hover {
+  background: rgba(255, 255, 255, 0.09);
+  border-color: rgba(255, 255, 255, 0.26);
+}
+.wintuu-dark .wt-nav-link { color: rgba(242, 246, 245, 0.62); }
+.wintuu-dark .wt-nav-link:hover { color: var(--wt-text); }
+.wintuu-dark .wt-tag {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--wt-muted);
+}
+.wintuu-dark .wt-coupon-dot { background: rgba(255, 255, 255, 0.18); }
+.wintuu-dark input,
+.wintuu-dark select,
+.wintuu-dark textarea {
+  color-scheme: dark;
+}
+
 /* ── Bento de producto ───────────────────────────────────── */
 .wintuu-landing .wt-product-bento {
   display: grid;

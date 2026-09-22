@@ -15,7 +15,6 @@ import {
   Send,
   ShieldAlert,
   ShoppingBag,
-  Sparkles,
   Store,
   Trash2,
   Users,
@@ -24,12 +23,18 @@ import {
 import { api } from '../../api.js';
 import { useAuth } from '../../context/AuthContext.jsx';
 import TenantUsers from './TenantUsers.jsx';
+import '../../styles/wintuu-landing.css';
+import WintuuLogo from '../../components/landing/WintuuLogo.jsx';
+
+const INPUT_CLS =
+  'w-full rounded-xl border border-[var(--wt-border)] bg-white/5 px-3.5 py-2.5 text-sm font-semibold text-[var(--wt-text)] outline-none placeholder:text-[var(--wt-muted)]/50 focus:border-[var(--wt-mint)] focus:ring-2 focus:ring-[var(--wt-mint)]/20';
+const LABEL_CLS = 'mb-1.5 block text-xs font-bold uppercase tracking-wide text-[var(--wt-muted)]';
 
 function slugify(value) {
   return String(value || '')
     .toLowerCase()
     .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[̀-ͯ]/g, '')
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
     .slice(0, 40);
@@ -75,32 +80,26 @@ export default function SuperAdmin() {
     }
   };
 
-  const BG = 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1600&q=80';
-
   if (!isSuper) {
     return (
-      <div className="relative min-h-screen bg-cover bg-center lg:grid lg:grid-cols-2" style={{ backgroundImage: `url(${BG})` }}>
-        <div className="absolute inset-0 bg-[#0A0A0C]/80 backdrop-blur-[2px] lg:hidden" />
+      <div className="wintuu-landing wintuu-dark relative min-h-screen lg:grid lg:grid-cols-2">
+        <section className="relative flex min-h-screen items-center justify-center overflow-hidden px-5 py-10">
+          <div className="wt-halo h-72 w-72 -left-10 -top-10" style={{ opacity: 0.5 }} />
+          <div className="wt-halo h-64 w-64 -bottom-10 -right-10" style={{ opacity: 0.35 }} />
 
-        <section className="relative flex min-h-screen items-center justify-center px-5 py-10 lg:bg-[#0D0D10] lg:text-white">
-          <div className="w-full max-w-lg rounded-3xl border border-white/10 bg-[#0D0D10]/95 p-6 text-white shadow-2xl backdrop-blur sm:p-8">
+          <div className="wt-glass relative w-full max-w-lg p-6 sm:p-8">
             <div className="flex items-center justify-between">
-              <span className="inline-flex items-center gap-2 text-sm font-bold text-white/40">Zona restringida</span>
-              <span className="inline-flex items-center gap-2 font-black">
-                <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-400">
-                  <Sparkles size={16} className="text-[#0A0A0C]" />
-                </span>
-                <span className="text-white">WINTUU</span>
-              </span>
+              <span className="wt-tag">Zona restringida</span>
+              <WintuuLogo height={20} />
             </div>
 
             <div className="mt-8 flex items-center gap-3">
-              <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-400/15 text-amber-400">
+              <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[rgba(0,207,205,0.14)] text-[var(--wt-mint-light)]">
                 <ShieldAlert size={22} />
               </span>
               <div>
-                <h1 className="text-2xl font-black tracking-tight">Superadmin</h1>
-                <p className="text-sm text-white/45">Acceso exclusivo al panel de control de WINTUU.</p>
+                <h1 className="wt-h2 text-[26px] text-[var(--wt-text)]">Superadmin</h1>
+                <p className="text-sm text-[var(--wt-muted)]">Acceso exclusivo al panel de control de Wintuu.</p>
               </div>
             </div>
 
@@ -112,9 +111,9 @@ export default function SuperAdmin() {
 
             <form onSubmit={submit} className="mt-6 space-y-3">
               <div className="relative">
-                <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/30" />
+                <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--wt-muted)]" />
                 <input
-                  className="w-full rounded-2xl border border-white/10 bg-white/5 py-3 pl-10 pr-4 text-sm font-semibold text-white outline-none placeholder:text-white/25 focus:border-amber-400/50 focus:ring-2 focus:ring-amber-400/15"
+                  className={`${INPUT_CLS} pl-10`}
                   type="email"
                   placeholder="superadmin@wintuu.app"
                   value={email}
@@ -124,9 +123,9 @@ export default function SuperAdmin() {
                 />
               </div>
               <div className="relative">
-                <KeyRound size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/30" />
+                <KeyRound size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--wt-muted)]" />
                 <input
-                  className="w-full rounded-2xl border border-white/10 bg-white/5 py-3 pl-10 pr-4 text-sm font-semibold text-white outline-none placeholder:text-white/25 focus:border-amber-400/50 focus:ring-2 focus:ring-amber-400/15"
+                  className={`${INPUT_CLS} pl-10`}
                   type="password"
                   placeholder="Contraseña"
                   value={password}
@@ -134,11 +133,7 @@ export default function SuperAdmin() {
                   required
                 />
               </div>
-              <button
-                type="submit"
-                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-amber-400 px-5 py-3.5 font-extrabold text-[#0A0A0C] transition hover:bg-amber-300 disabled:opacity-50"
-                disabled={busy || !email || !password}
-              >
+              <button type="submit" className="wt-btn-mint w-full" disabled={busy || !email || !password}>
                 {busy ? <Loader2 className="animate-spin" size={18} /> : <LogIn size={18} />}
                 Ingresar al panel
               </button>
@@ -146,12 +141,14 @@ export default function SuperAdmin() {
           </div>
         </section>
 
-        <aside className="relative hidden min-h-screen overflow-hidden bg-cover bg-center lg:block" style={{ backgroundImage: `url(${BG})` }}>
-          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
-          <div className="absolute bottom-0 left-0 max-w-xl p-12 text-white">
-            <p className="text-xs font-bold uppercase tracking-[0.22em] text-amber-400">Solo acceso autorizado</p>
-            <p className="mt-3 text-4xl font-black leading-tight">Panel de control de todas las apps WINTUU.</p>
-            <p className="mt-4 text-white/55">Gestión de negocios, usuarios, pagos y soporte desde un único lugar.</p>
+        <aside className="relative hidden min-h-screen items-end overflow-hidden lg:flex" style={{ background: 'linear-gradient(165deg, #0d131a 0%, #0a0e13 100%)' }}>
+          <div className="wt-halo h-96 w-96 -right-20 -top-20" style={{ opacity: 0.4 }} />
+          <div className="relative max-w-xl p-12">
+            <p className="wt-eyebrow-light">Solo acceso autorizado</p>
+            <p className="wt-heading mt-3 text-[38px] font-semibold leading-tight text-[var(--wt-text)]">
+              Panel de control de todas las apps Wintuu.
+            </p>
+            <p className="wt-body mt-4">Gestión de negocios, usuarios, pagos y soporte desde un único lugar.</p>
           </div>
         </aside>
       </div>
@@ -204,24 +201,22 @@ function Panel({ email, onLogout }) {
   );
 
   return (
-    <div className="min-h-screen bg-surface-page">
-      <header className="border-b border-line bg-surface">
+    <div className="wintuu-landing wintuu-dark min-h-screen">
+      <header className="border-b border-[var(--wt-border)]">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4">
-          <div className="flex items-center gap-2">
-            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-amber-500 text-[#0A0A0C]">
-              <Store size={18} />
-            </span>
-            <div>
-              <p className="text-sm font-extrabold leading-tight text-ink">WINTUU · Superadmin</p>
-              <p className="text-xs text-ink-muted">{email}</p>
+          <div className="flex items-center gap-3">
+            <WintuuLogo height={18} />
+            <div className="border-l border-[var(--wt-border)] pl-3">
+              <p className="text-sm font-extrabold leading-tight text-[var(--wt-text)]">Superadmin</p>
+              <p className="text-xs text-[var(--wt-muted)]">{email}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <button className="btn-ghost !py-2" onClick={load} disabled={loading}>
+            <button className="wt-btn-ghost !h-9 !px-4 !text-[13px]" onClick={load} disabled={loading}>
               {loading ? <Loader2 className="animate-spin" size={15} /> : <RefreshCw size={15} />}
               Actualizar
             </button>
-            <button className="btn-ghost !py-2" onClick={onLogout}>
+            <button className="wt-btn-ghost !h-9 !px-4 !text-[13px]" onClick={onLogout}>
               Salir
             </button>
           </div>
@@ -231,17 +226,17 @@ function Panel({ email, onLogout }) {
       <main className="mx-auto max-w-6xl px-5 py-8">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {cards.map(([label, value, Icon]) => (
-            <div key={label} className="card p-5">
+            <div key={label} className="wt-glass p-5">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-ink-muted">{label}</p>
-                <Icon size={16} className="text-ink-muted" />
+                <p className="text-sm text-[var(--wt-muted)]">{label}</p>
+                <Icon size={16} className="text-[var(--wt-muted)]" />
               </div>
-              <p className="mt-2 text-2xl font-extrabold text-ink">{value}</p>
+              <p className="wt-heading mt-2 text-2xl font-semibold text-[var(--wt-text)]">{value}</p>
             </div>
           ))}
         </div>
 
-        <div className="mt-8 flex gap-2 border-b border-line">
+        <div className="mt-8 flex gap-2 border-b border-[var(--wt-border)]">
           {[
             ['apps', 'Apps'],
             ['pagos', 'Pagos'],
@@ -249,9 +244,11 @@ function Panel({ email, onLogout }) {
           ].map(([id, label]) => (
             <button
               key={id}
-              className={`-mb-px border-b-2 px-4 py-2.5 text-sm font-bold transition ${
-                tab === id ? 'border-primary text-ink' : 'border-transparent text-ink-muted hover:text-ink'
-              }`}
+              className="-mb-px border-b-2 px-4 py-2.5 text-sm font-bold transition"
+              style={{
+                borderColor: tab === id ? 'var(--wt-mint)' : 'transparent',
+                color: tab === id ? 'var(--wt-text)' : 'var(--wt-muted)',
+              }}
               onClick={() => setTab(id)}
             >
               {label}
@@ -260,7 +257,7 @@ function Panel({ email, onLogout }) {
         </div>
 
         {error && (
-          <div className="mt-4 rounded-xl border border-red-300 bg-red-50 px-4 py-2.5 text-sm font-medium text-red-700 dark:border-red-500/40 dark:bg-red-500/10 dark:text-red-400">
+          <div className="mt-4 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-2.5 text-sm font-medium text-red-400">
             {error}
           </div>
         )}
@@ -268,8 +265,8 @@ function Panel({ email, onLogout }) {
         {tab === 'apps' && (
           <div className="mt-6 space-y-6">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-extrabold text-ink">Apps</h2>
-              <button className="btn-primary !py-2" onClick={() => setCreating((v) => !v)}>
+              <h2 className="wt-heading text-lg font-semibold text-[var(--wt-text)]">Apps</h2>
+              <button className="wt-btn-mint !h-10 !px-4 !text-[13px]" onClick={() => setCreating((v) => !v)}>
                 {creating ? <X size={16} /> : <Plus size={16} />}
                 {creating ? 'Cancelar' : 'Nueva app'}
               </button>
@@ -277,15 +274,15 @@ function Panel({ email, onLogout }) {
 
             {creating && <CreateForm onDone={() => { setCreating(false); load(); }} />}
 
-            <div className="card overflow-hidden">
+            <div className="wt-glass overflow-hidden">
               {loading ? (
-                <div className="flex items-center justify-center py-16 text-ink-muted">
+                <div className="flex items-center justify-center py-16 text-[var(--wt-muted)]">
                   <Loader2 className="animate-spin" size={22} />
                 </div>
               ) : tenants.length === 0 ? (
-                <p className="py-16 text-center text-sm text-ink-muted">Todavía no hay apps.</p>
+                <p className="py-16 text-center text-sm text-[var(--wt-muted)]">Todavía no hay apps.</p>
               ) : (
-                <div className="divide-y divide-line">
+                <div className="divide-y divide-[var(--wt-border)]">
                   {tenants.map((t) => (
                     <TenantRow key={t.id} tenant={t} onSaved={load} />
                   ))}
@@ -297,18 +294,18 @@ function Panel({ email, onLogout }) {
 
         {tab === 'pagos' && (
           <div className="mt-6">
-            <div className="card overflow-hidden">
+            <div className="wt-glass overflow-hidden">
               {loading ? (
-                <div className="flex items-center justify-center py-16 text-ink-muted">
+                <div className="flex items-center justify-center py-16 text-[var(--wt-muted)]">
                   <Loader2 className="animate-spin" size={22} />
                 </div>
               ) : payments.length === 0 ? (
-                <p className="py-16 text-center text-sm text-ink-muted">Todavía no hay pagos registrados.</p>
+                <p className="py-16 text-center text-sm text-[var(--wt-muted)]">Todavía no hay pagos registrados.</p>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="border-b border-line text-left text-xs uppercase tracking-wide text-ink-muted">
+                      <tr className="border-b border-[var(--wt-border)] text-left text-xs uppercase tracking-wide text-[var(--wt-muted)]">
                         <th className="px-5 py-3">Fecha</th>
                         <th className="px-5 py-3">Email</th>
                         <th className="px-5 py-3">Plan</th>
@@ -317,18 +314,18 @@ function Panel({ email, onLogout }) {
                         <th className="px-5 py-3">App</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-line">
+                    <tbody className="divide-y divide-[var(--wt-border)]">
                       {payments.map((p) => (
                         <tr key={p.id}>
-                          <td className="px-5 py-3 text-ink-muted">{formatDate(p.created_at)}</td>
-                          <td className="px-5 py-3 text-ink">{p.payer_email || '—'}</td>
-                          <td className="px-5 py-3 capitalize text-ink">{p.plan}</td>
-                          <td className="px-5 py-3 text-ink">{money(p.amount)}</td>
+                          <td className="px-5 py-3 text-[var(--wt-muted)]">{formatDate(p.created_at)}</td>
+                          <td className="px-5 py-3 text-[var(--wt-text)]">{p.payer_email || '—'}</td>
+                          <td className="px-5 py-3 capitalize text-[var(--wt-text)]">{p.plan}</td>
+                          <td className="px-5 py-3 text-[var(--wt-text)]">{money(p.amount)}</td>
                           <td className="px-5 py-3">
                             <StatusBadge status={p.status} />
                           </td>
-                          <td className="px-5 py-3 text-ink-muted">
-                            {p.tenant_id ? <BadgeCheck size={16} className="text-emerald-500" /> : '—'}
+                          <td className="px-5 py-3 text-[var(--wt-muted)]">
+                            {p.tenant_id ? <BadgeCheck size={16} className="text-emerald-400" /> : '—'}
                           </td>
                         </tr>
                       ))}
@@ -348,13 +345,13 @@ function Panel({ email, onLogout }) {
 
 function StatusBadge({ status }) {
   const map = {
-    approved: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
-    pending: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
-    rejected: 'bg-red-500/10 text-red-600 dark:text-red-400',
-    cancelled: 'bg-ink-muted/10 text-ink-muted',
+    approved: 'bg-emerald-500/15 text-emerald-400',
+    pending: 'bg-amber-500/15 text-amber-400',
+    rejected: 'bg-red-500/15 text-red-400',
+    cancelled: 'bg-white/10 text-[var(--wt-muted)]',
   };
   return (
-    <span className={`rounded-full px-2.5 py-1 text-xs font-bold capitalize ${map[status] || 'bg-ink-muted/10 text-ink-muted'}`}>
+    <span className={`rounded-full px-2.5 py-1 text-xs font-bold capitalize ${map[status] || 'bg-white/10 text-[var(--wt-muted)]'}`}>
       {status}
     </span>
   );
@@ -390,16 +387,16 @@ function CreateForm({ onDone }) {
   };
 
   return (
-    <form onSubmit={submit} className="card space-y-4 p-5">
+    <form onSubmit={submit} className="wt-glass space-y-4 p-5">
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
-          <label className="label">Nombre del negocio</label>
-          <input className="input" value={businessName} onChange={(e) => setBusinessName(e.target.value)} required />
+          <label className={LABEL_CLS}>Nombre del negocio</label>
+          <input className={INPUT_CLS} value={businessName} onChange={(e) => setBusinessName(e.target.value)} required />
         </div>
         <div>
-          <label className="label">Link</label>
+          <label className={LABEL_CLS}>Link</label>
           <input
-            className="input font-mono text-sm"
+            className={`${INPUT_CLS} font-mono`}
             value={slug}
             onChange={(e) => {
               setTouched(true);
@@ -409,28 +406,26 @@ function CreateForm({ onDone }) {
           />
         </div>
         <div>
-          <label className="label">Plan</label>
-          <select className="input" value={plan} onChange={(e) => setPlan(e.target.value)}>
+          <label className={LABEL_CLS}>Plan</label>
+          <select className={INPUT_CLS} value={plan} onChange={(e) => setPlan(e.target.value)}>
             <option value="mensual">Mensual</option>
             <option value="vitalicia">De por vida</option>
           </select>
         </div>
         <div>
-          <label className="label">Email del dueño (opcional)</label>
+          <label className={LABEL_CLS}>Email del dueño (opcional)</label>
           <input
-            className="input"
+            className={INPUT_CLS}
             type="email"
             placeholder="dueno@gmail.com"
             value={ownerEmail}
             onChange={(e) => setOwnerEmail(e.target.value)}
           />
-          <p className="mt-1 text-xs text-ink-muted">
-            Debe haber ingresado al menos una vez con Google.
-          </p>
+          <p className="mt-1 text-xs text-[var(--wt-muted)]">Debe haber ingresado al menos una vez con Google.</p>
         </div>
       </div>
-      {error && <p className="text-sm font-medium text-red-500">{error}</p>}
-      <button className="btn-primary" disabled={busy}>
+      {error && <p className="text-sm font-medium text-red-400">{error}</p>}
+      <button className="wt-btn-mint" disabled={busy}>
         {busy ? <Loader2 className="animate-spin" size={16} /> : <Plus size={16} />}
         Crear app
       </button>
@@ -480,17 +475,17 @@ function TenantRow({ tenant, onSaved }) {
       <div className="flex flex-wrap items-center gap-4">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <p className="truncate font-bold text-ink">{tenant.business_name}</p>
-            <span className="rounded-full bg-surface-alt px-2 py-0.5 text-xs font-semibold capitalize text-ink-muted">
+            <p className="truncate font-bold text-[var(--wt-text)]">{tenant.business_name}</p>
+            <span className="rounded-full bg-white/[0.06] px-2 py-0.5 text-xs font-semibold capitalize text-[var(--wt-muted)]">
               {tenant.plan}
             </span>
           </div>
-          <div className="mt-0.5 flex items-center gap-3 text-xs text-ink-muted">
+          <div className="mt-0.5 flex flex-wrap items-center gap-3 text-xs text-[var(--wt-muted)]">
             <a
               href={`/${tenant.slug}`}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-1 font-mono hover:text-primary"
+              className="inline-flex items-center gap-1 font-mono hover:text-[var(--wt-mint-light)]"
             >
               /{tenant.slug} <ExternalLink size={11} />
             </a>
@@ -502,9 +497,8 @@ function TenantRow({ tenant, onSaved }) {
         </div>
 
         <select
-          className={`input !w-auto !py-1.5 text-xs font-bold ${
-            tenant.status === 'activo' ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'
-          }`}
+          className={`${INPUT_CLS} !w-auto !py-1.5 text-xs font-bold`}
+          style={{ color: tenant.status === 'activo' ? '#6fe4a8' : '#f5c76b' }}
           value={tenant.status}
           disabled={busy || tenant.slug === 'wintuu'}
           onChange={(e) => patch({ status: e.target.value })}
@@ -515,24 +509,20 @@ function TenantRow({ tenant, onSaved }) {
         </select>
 
         {tenant.slug !== 'wintuu' && (
-<button className="btn-ghost !py-1.5" onClick={() => setEditing((v) => !v)} disabled={busy || deleting}>
+          <button className="wt-btn-ghost !h-9 !px-3.5 !text-[13px]" onClick={() => setEditing((v) => !v)} disabled={busy || deleting}>
             {editing ? <X size={15} /> : <Pencil size={15} />}
             Editar
           </button>
         )}
 
-        <button
-          className="btn-ghost !py-1.5"
-          onClick={() => setShowUsers((v) => !v)}
-          disabled={busy || deleting}
-        >
+        <button className="wt-btn-ghost !h-9 !px-3.5 !text-[13px]" onClick={() => setShowUsers((v) => !v)} disabled={busy || deleting}>
           <Users size={15} />
           {showUsers ? 'Ocultar' : 'Usuarios'}
         </button>
 
         {tenant.slug !== 'wintuu' && (
-<button
-            className="inline-flex items-center gap-1.5 rounded-xl px-3 !py-1.5 text-xs font-bold text-red-600 transition hover:bg-red-50 disabled:opacity-50 dark:text-red-400 dark:hover:bg-red-500/10"
+          <button
+            className="inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold text-red-400 transition hover:bg-red-500/10 disabled:opacity-50"
             onClick={remove}
             disabled={busy || deleting}
           >
@@ -545,36 +535,32 @@ function TenantRow({ tenant, onSaved }) {
       {showUsers && <TenantUsers tenantId={tenant.id} />}
 
       {(error || deleting) && (
-        <p className="mt-2 text-xs font-medium text-red-500">{deleting ? 'Eliminando...' : error}</p>
+        <p className="mt-2 text-xs font-medium text-red-400">{deleting ? 'Eliminando...' : error}</p>
       )}
 
       {editing && (
-        <div className="mt-4 grid gap-3 rounded-2xl bg-surface-alt p-4 sm:grid-cols-3">
+        <div className="mt-4 grid gap-3 rounded-2xl border border-[var(--wt-border)] bg-white/[0.03] p-4 sm:grid-cols-3">
           <div>
-            <label className="label">Nombre</label>
-            <input className="input !py-2" value={name} onChange={(e) => setName(e.target.value)} />
+            <label className={LABEL_CLS}>Nombre</label>
+            <input className={`${INPUT_CLS} !py-2`} value={name} onChange={(e) => setName(e.target.value)} />
           </div>
           <div>
-            <label className="label">Link</label>
-            <input className="input !py-2 font-mono text-sm" value={slug} onChange={(e) => setSlug(slugify(e.target.value))} />
+            <label className={LABEL_CLS}>Link</label>
+            <input className={`${INPUT_CLS} !py-2 font-mono`} value={slug} onChange={(e) => setSlug(slugify(e.target.value))} />
           </div>
           <div>
-            <label className="label">Plan</label>
-            <select className="input !py-2" value={plan} onChange={(e) => setPlan(e.target.value)}>
+            <label className={LABEL_CLS}>Plan</label>
+            <select className={`${INPUT_CLS} !py-2`} value={plan} onChange={(e) => setPlan(e.target.value)}>
               <option value="mensual">Mensual</option>
               <option value="vitalicia">De por vida</option>
             </select>
           </div>
-          <div className="sm:col-span-3 flex items-center gap-3">
-            <button
-              className="btn-primary !py-2"
-              disabled={busy}
-              onClick={() => patch({ business_name: name, slug, plan })}
-            >
+          <div className="flex items-center gap-3 sm:col-span-3">
+            <button className="wt-btn-mint !h-10 !px-4 !text-[13px]" disabled={busy} onClick={() => patch({ business_name: name, slug, plan })}>
               {busy ? <Loader2 className="animate-spin" size={16} /> : <Check size={16} />}
               Guardar
             </button>
-            {error && <span className="text-sm font-medium text-red-500">{error}</span>}
+            {error && <span className="text-sm font-medium text-red-400">{error}</span>}
           </div>
         </div>
       )}
@@ -661,44 +647,41 @@ function SupportTab() {
   return (
     <div className="mt-6">
       {error && (
-        <div className="mb-4 rounded-xl border border-red-300 bg-red-50 px-4 py-2.5 text-sm font-medium text-red-700 dark:border-red-500/40 dark:bg-red-500/10 dark:text-red-400">
+        <div className="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-2.5 text-sm font-medium text-red-400">
           {error}
         </div>
       )}
 
       {loading ? (
-        <div className="card flex items-center justify-center py-16 text-ink-muted">
+        <div className="wt-glass flex items-center justify-center py-16 text-[var(--wt-muted)]">
           <Loader2 className="animate-spin" size={22} />
         </div>
       ) : tickets.length === 0 ? (
-        <div className="card py-16 text-center text-sm text-ink-muted">
-          Todavía no hay tickets de soporte.
-        </div>
+        <div className="wt-glass py-16 text-center text-sm text-[var(--wt-muted)]">Todavía no hay tickets de soporte.</div>
       ) : (
         <div className="grid gap-4 md:grid-cols-[320px,1fr]">
-          <div className="card max-h-[62vh] overflow-y-auto p-2">
+          <div className="wt-glass max-h-[62vh] overflow-y-auto p-2">
             {tickets.map((item) => (
               <button
                 key={item.id}
                 onClick={() => setSelected(item.id)}
-                className={`flex w-full items-start gap-3 rounded-xl px-3 py-3 text-left transition ${
-                  selected === item.id ? 'bg-primary-softer' : 'hover:bg-surface-alt'
-                }`}
+                className="flex w-full items-start gap-3 rounded-xl px-3 py-3 text-left transition"
+                style={{ background: selected === item.id ? 'rgba(0,207,205,0.1)' : 'transparent' }}
               >
-                <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-surface-alt text-ink-muted">
+                <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/[0.06] text-[var(--wt-muted)]">
                   <Store size={17} />
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="flex items-center justify-between gap-2">
-                    <span className="truncate text-sm font-bold text-ink">{item.tenant?.business_name || 'App eliminada'}</span>
+                    <span className="truncate text-sm font-bold text-[var(--wt-text)]">{item.tenant?.business_name || 'App eliminada'}</span>
                     {item.unread > 0 && (
-                      <span className="rounded-full bg-amber-400 px-1.5 text-xs font-extrabold text-[#0A0A0C]">
+                      <span className="rounded-full bg-[var(--wt-mint)] px-1.5 text-xs font-extrabold text-[var(--wt-ink)]">
                         {item.unread}
                       </span>
                     )}
                   </span>
-                  <span className="mt-0.5 block truncate text-xs font-bold text-ink">{item.subject}</span>
-                  <span className="mt-1 flex items-center justify-between gap-2 text-[11px] text-ink-muted">
+                  <span className="mt-0.5 block truncate text-xs font-bold text-[var(--wt-text)]">{item.subject}</span>
+                  <span className="mt-1 flex items-center justify-between gap-2 text-[11px] text-[var(--wt-muted)]">
                     <span className="font-mono">{item.code}</span>
                     <span className="font-bold uppercase">{item.status === 'nuevo' ? 'NUEVO TICKET' : item.status}</span>
                   </span>
@@ -707,30 +690,34 @@ function SupportTab() {
             ))}
           </div>
 
-          <div className="card flex h-[62vh] flex-col overflow-hidden">
+          <div className="wt-glass flex h-[62vh] flex-col overflow-hidden">
             {!selected ? (
-              <div className="flex flex-1 flex-col items-center justify-center gap-2 text-ink-muted">
+              <div className="flex flex-1 flex-col items-center justify-center gap-2 text-[var(--wt-muted)]">
                 <LifeBuoy size={30} />
                 <p className="text-sm">Elegí un ticket.</p>
               </div>
             ) : (
               <>
-                <div className="border-b border-line px-4 py-3">
+                <div className="border-b border-[var(--wt-border)] px-4 py-3">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
                       <a
                         href={`/${ticket?.tenant?.slug}`}
                         target="_blank"
                         rel="noreferrer"
-                        className="inline-flex items-center gap-1.5 text-sm font-extrabold text-ink hover:text-primary"
+                        className="inline-flex items-center gap-1.5 text-sm font-extrabold text-[var(--wt-text)] hover:text-[var(--wt-mint-light)]"
                       >
                         {ticket?.tenant?.business_name}
                         <ExternalLink size={13} />
                       </a>
-                      <p className="mt-0.5 text-sm font-bold text-ink">{ticket?.subject}</p>
-                      <p className="font-mono text-xs text-ink-muted">{ticket?.code}</p>
+                      <p className="mt-0.5 text-sm font-bold text-[var(--wt-text)]">{ticket?.subject}</p>
+                      <p className="font-mono text-xs text-[var(--wt-muted)]">{ticket?.code}</p>
                     </div>
-                    <select className="input !w-auto !py-1.5 text-xs font-bold capitalize" value={ticket?.status || 'nuevo'} onChange={(event) => changeStatus(event.target.value)}>
+                    <select
+                      className={`${INPUT_CLS} !w-auto !py-1.5 text-xs font-bold capitalize`}
+                      value={ticket?.status || 'nuevo'}
+                      onChange={(event) => changeStatus(event.target.value)}
+                    >
                       <option value="nuevo">Nuevo</option>
                       <option value="abierto">Abierto</option>
                       <option value="respondido">Respondido</option>
@@ -741,21 +728,22 @@ function SupportTab() {
 
                 <div className="flex-1 space-y-3 overflow-y-auto p-4">
                   {messages.length === 0 ? (
-                    <p className="mt-8 text-center text-sm text-ink-muted">Sin mensajes todavía.</p>
+                    <p className="mt-8 text-center text-sm text-[var(--wt-muted)]">Sin mensajes todavía.</p>
                   ) : (
                     messages.map((m) => {
                       const mine = m.sender_role === 'superadmin';
                       return (
                         <div key={m.id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
                           <div
-                            className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm shadow-sm ${
+                            className="max-w-[80%] rounded-2xl px-4 py-2.5 text-sm shadow-sm"
+                            style={
                               mine
-                                ? 'rounded-br-md bg-gradient-to-br from-primary to-primary-strong text-primary-contrast'
-                                : 'rounded-bl-md bg-surface-alt text-ink'
-                            }`}
+                                ? { borderBottomRightRadius: 6, background: 'linear-gradient(135deg, var(--wt-mint), var(--wt-mint-light))', color: 'var(--wt-ink)' }
+                                : { borderBottomLeftRadius: 6, background: 'rgba(255,255,255,0.06)', color: 'var(--wt-text)' }
+                            }
                           >
                             <p className="whitespace-pre-wrap break-words">{m.body}</p>
-                            <p className={`mt-1 text-right text-[11px] ${mine ? 'text-primary-contrast/70' : 'text-ink-muted'}`}>
+                            <p className="mt-1 text-right text-[11px]" style={{ opacity: mine ? 0.7 : 1, color: mine ? 'var(--wt-ink)' : 'var(--wt-muted)' }}>
                               {formatDateTime(m.created_at)}
                             </p>
                           </div>
@@ -766,18 +754,20 @@ function SupportTab() {
                   <div ref={bottomRef} />
                 </div>
 
-                {ticket?.status !== 'cerrado' && <form onSubmit={send} className="flex items-center gap-2 border-t border-line p-3">
-                  <input
-                    className="input flex-1"
-                    placeholder="Responder..."
-                    value={text}
-                    onChange={(e) => setText(e.target.value)}
-                    maxLength={2000}
-                  />
-                  <button className="btn-primary !px-4" disabled={sending || !text.trim()} aria-label="Enviar">
-                    {sending ? <Loader2 className="animate-spin" size={17} /> : <Send size={17} />}
-                  </button>
-                </form>}
+                {ticket?.status !== 'cerrado' && (
+                  <form onSubmit={send} className="flex items-center gap-2 border-t border-[var(--wt-border)] p-3">
+                    <input
+                      className={`${INPUT_CLS} flex-1`}
+                      placeholder="Responder..."
+                      value={text}
+                      onChange={(e) => setText(e.target.value)}
+                      maxLength={2000}
+                    />
+                    <button className="wt-btn-mint !h-11 !w-11 !px-0" disabled={sending || !text.trim()} aria-label="Enviar">
+                      {sending ? <Loader2 className="animate-spin" size={17} /> : <Send size={17} />}
+                    </button>
+                  </form>
+                )}
               </>
             )}
           </div>
