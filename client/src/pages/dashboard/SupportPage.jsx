@@ -1,11 +1,6 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ChevronLeft, LifeBuoy, Loader2, Plus, Send, Ticket, X } from 'lucide-react';
-import { api } from '../../api.js';
-
-function formatDate(value) {
-  if (!value) return '';
-  return new Date(value).toLocaleString('es-AR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
-}
+import { api, formatDate } from '../../api.js';
 
 function StatusBadge({ status }) {
   const styles = {
@@ -109,7 +104,14 @@ export default function SupportPage() {
                 >
                   <div className="flex items-start justify-between gap-2">
                     <p className="line-clamp-2 text-sm font-extrabold text-ink">{ticket.subject}</p>
-                    {ticket.unread > 0 && <span className="rounded-full bg-primary px-1.5 text-xs font-bold text-primary-contrast">{ticket.unread}</span>}
+                    {ticket.unread > 0 && (
+                      <span
+                        aria-label={`${ticket.unread} mensajes sin leer`}
+                        className="rounded-full bg-primary px-1.5 text-xs font-bold text-primary-contrast"
+                      >
+                        {ticket.unread}
+                      </span>
+                    )}
                   </div>
                   <div className="mt-2 flex items-center justify-between gap-2">
                     <span className="font-mono text-[11px] text-ink-muted">{ticket.code}</span>
@@ -187,6 +189,11 @@ function TicketDetail({ ticket, messages, onBack, onMessage }) {
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
+  const bottomRef = useRef(null);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ block: 'end' });
+  }, [messages.length]);
 
   const send = async (event) => {
     event.preventDefault();
@@ -225,13 +232,14 @@ function TicketDetail({ ticket, messages, onBack, onMessage }) {
           return (
             <div key={message.id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
               <div className={`max-w-[82%] rounded-2xl px-4 py-2.5 text-sm ${mine ? 'rounded-br-md bg-primary text-primary-contrast' : 'rounded-bl-md bg-surface-alt text-ink'}`}>
-                {!mine && <p className="mb-1 text-xs font-bold text-ink-muted">{message.sender_name || 'Equipo WINTUU'}</p>}
+                {!mine && <p className="mb-1 text-xs font-bold text-ink-muted">{message.sender_name || 'Equipo Wintuu'}</p>}
                 <p className="whitespace-pre-wrap break-words">{message.body}</p>
                 <p className={`mt-1 text-right text-[11px] ${mine ? 'text-primary-contrast/70' : 'text-ink-muted'}`}>{formatDate(message.created_at)}</p>
               </div>
             </div>
           );
         })}
+        <div ref={bottomRef} />
       </div>
       {error && <p className="px-4 text-sm font-medium text-red-500">{error}</p>}
       {ticket.status !== 'cerrado' && (

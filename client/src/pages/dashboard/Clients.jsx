@@ -13,20 +13,21 @@ export default function Clients() {
   const [search, setSearch] = useState('');
 
   const load = async () => {
-    const r = await api('/api/clients/registered').catch(() => []);
-    setRegistered(r);
+    try {
+      const r = await api('/api/clients/registered');
+      setRegistered(r);
+    } catch (err) {
+      toast(err.message);
+    }
   };
 
   useEffect(() => {
-    load()
-      .catch(() => {})
-      .finally(() => setLoading(false));
+    load().finally(() => setLoading(false));
   }, []);
 
   const viewClient = (c) => navigate(t(`/dashboard/cliente/${c.id}`));
 
   const addPoint = async (c) => {
-    if (!confirm(`¿Sumar 1 punto al cupón activo de "${c.name}"?`)) return;
     try {
       await api(`/api/clients/registered/${c.id}/puntos`, { method: 'POST' });
       toast('Punto sumado. El cliente recibió su notificación.');
@@ -38,7 +39,7 @@ export default function Clients() {
 
   const reFiltered = registered.filter((c) => {
     const q = search.trim().toLowerCase();
-    return !q || c.name.toLowerCase().includes(q) || (c.email || '').toLowerCase().includes(q);
+    return !q || (c.name || '').toLowerCase().includes(q) || (c.email || '').toLowerCase().includes(q);
   });
 
   return (
@@ -88,10 +89,10 @@ export default function Clients() {
                         <img src={c.image} alt={c.name} className="h-9 w-9 shrink-0 rounded-full object-cover" />
                       ) : (
                         <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary-soft text-sm font-extrabold text-primary-strong">
-                          {c.name.charAt(0).toUpperCase()}
+                          {(c.name || '?').charAt(0).toUpperCase()}
                         </div>
                       )}
-                      <p className="truncate font-bold text-ink">{c.name}</p>
+                      <p className="truncate font-bold text-ink">{c.name || 'Sin nombre'}</p>
                     </div>
                     <div className="col-span-4 text-sm text-ink-muted">
                       <p className="flex items-center gap-1.5 truncate">

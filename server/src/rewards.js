@@ -25,7 +25,7 @@ function newCouponCode() {
 // escaneado por el local), suma a ESE cupón siempre que sea del usuario y
 // siga activo. Devuelve el nuevo estado:
 //   { status: 'no_active' } | { status: 'progress', coupon } | { status: 'completed', coupon }
-export async function addActiveCouponPoint(userId, targetId, tenantId) {
+export async function addActiveCouponPoint(userId, targetId, tenantId, attempt = 0) {
   if (!userId) return { status: 'no_active' };
 
   let query = supabase.from('user_coupons').select('*').eq('user_id', userId);
@@ -40,6 +40,9 @@ export async function addActiveCouponPoint(userId, targetId, tenantId) {
   const points = (Number(active.points) || 0) + 1;
   const target = Math.max(1, Number(active.target_points) || 1);
 
+  // Bloqueo optimista: el UPDATE solo aplica si "points" sigue siendo el valor
+  // que leímos. Si otro escaneo casi simultáneo ya lo cambió, no pisamos su
+  // resultado — reintentamos leyendo el estado ya actualizado (una vez).
   if (points >= target) {
     const baseQr = await ensureCouponQrCode(active.id);
     const { data: coupon, error: upErr } = await supabase
@@ -51,9 +54,14 @@ export async function addActiveCouponPoint(userId, targetId, tenantId) {
         code: newCouponCode(),
       })
       .eq('id', active.id)
+      .eq('points', active.points)
       .select()
-      .single();
+      .maybeSingle();
     if (upErr) throw upErr;
+    if (!coupon) {
+      if (attempt >= 1) return { status: 'no_active' };
+      return addActiveCouponPoint(userId, targetId, tenantId, attempt + 1);
+    }
     coupon.qr_code = baseQr || coupon.qr_code;
     return { status: 'completed', coupon };
   }
@@ -62,9 +70,14 @@ export async function addActiveCouponPoint(userId, targetId, tenantId) {
     .from('user_coupons')
     .update({ points })
     .eq('id', active.id)
+    .eq('points', active.points)
     .select()
-    .single();
+    .maybeSingle();
   if (upErr2) throw upErr2;
+  if (!coupon) {
+    if (attempt >= 1) return { status: 'no_active' };
+    return addActiveCouponPoint(userId, targetId, tenantId, attempt + 1);
+  }
   return { status: 'progress', coupon };
 }
 
@@ -81,13 +94,16 @@ export async function redeemReadyCoupon(userCouponId) {
   if (selErr) throw selErr;
   if (!current || current.status !== 'completado') return null;
 
+  // .eq('status', 'completado') repetido acá (no solo en el SELECT de arriba)
+  // evita que dos canjes casi simultáneos del mismo cupón lo procesen dos veces.
   const { data: updated, error: upErr } = await supabase
     .from('user_coupons')
     .update({ status: 'canjeado', redeemed_at: new Date().toISOString() })
     .eq('id', current.id)
+    .eq('status', 'completado')
     .select()
-    .single();
+    .maybeSingle();
   if (upErr) throw upErr;
 
-  return updated;
+  return updated || null;
 }

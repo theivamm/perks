@@ -3,6 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { Router } from 'express';
 import { supabase, uploadImage } from '../supabase.js';
+import { authClient } from '../authClient.js';
 import { imageUpload, uploadsDir } from '../upload.js';
 import { requireAuth } from '../middleware/auth.js';
 import { asyncHandler } from '../asyncHandler.js';
@@ -165,15 +166,26 @@ router.put(
   })
 );
 
-// Cambiar contraseña (administrada por Supabase Auth)
+// Cambiar contraseña (administrada por Supabase Auth). Pide la contraseña
+// actual primero: sin esto, un token robado alcanzaba para tomar la cuenta.
 router.post(
   '/change-password',
   requireAuth,
   asyncHandler(async (req, res) => {
-    const { password } = req.body || {};
+    const { current_password, password } = req.body || {};
+    if (!current_password) {
+      return res.status(400).json({ error: 'Ingresá tu contraseña actual' });
+    }
     if (!password || String(password).length < 6) {
       return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' });
     }
+
+    const { error: authErr } = await authClient.auth.signInWithPassword({
+      email: req.user.email,
+      password: String(current_password),
+    });
+    if (authErr) return res.status(401).json({ error: 'La contraseña actual es incorrecta' });
+
     const { error } = await supabase.auth.admin.updateUserById(req.user.id, { password: String(password) });
     if (error) return res.status(400).json({ error: error.message });
     res.json({ ok: true });
@@ -239,9 +251,19 @@ router.post(
     const { error: e4 } = await supabase.from('notifications').delete().eq('user_id', userId);
     note('notifications', e4);
 
-    // Fila en users
-    const { error: e5 } = await supabase.from('users').delete().eq('id', userId);
-    note('users', e5);
+    // Membresías en cada negocio (hay que borrarlas antes que la fila en users,
+    // o su FK puede hacer fallar ese delete en silencio).
+    const { error: e5 } = await supabase.from('tenant_memberships').delete().eq('user_id', userId);
+    note('tenant_memberships', e5);
+
+    // Fila en users. Si esto falla de verdad (no una tabla inexistente), no
+    // seguimos: mejor devolver un error real que borrar el login y dejar
+    // datos húerfanos con un "listo" falso.
+    const { error: e6 } = await supabase.from('users').delete().eq('id', userId);
+    if (e6 && !ignoreMissing(e6)) {
+      note('users', e6);
+      return res.status(500).json({ error: 'No se pudo eliminar tu cuenta. Intentá de nuevo o escribinos por soporte.' });
+    }
 
     // Cuenta de Supabase Auth
     const { error: authErr } = await supabase.auth.admin.deleteUser(userId);

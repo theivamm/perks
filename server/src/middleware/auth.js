@@ -1,7 +1,14 @@
 import jwt from 'jsonwebtoken';
 import { ensureMembership, getMembership } from '../memberships.js';
 
-const SECRET = () => process.env.JWT_SECRET || 'dev-secret';
+// Sin JWT_SECRET, cualquiera podría firmar un token con role:"superadmin".
+// Igual que supabase.js, falla al arrancar en vez de degradar en silencio.
+if (!process.env.JWT_SECRET) {
+  console.error('[Auth] Falta JWT_SECRET en server/.env. El servidor no puede arrancar sin un secreto propio.');
+  process.exit(1);
+}
+
+const SECRET = () => process.env.JWT_SECRET;
 
 function parseToken(req) {
   const header = req.headers.authorization || '';
@@ -61,6 +68,12 @@ export async function requireAuth(req, res, next) {
       membership = await ensureMembership(user.id, req.tenant.id, user.role);
     }
     if (!membership) return res.status(403).json({ error: 'Esta cuenta no pertenece a esta app' });
+    // Un negocio suspendido por falta de pago no puede seguir operando su
+    // programa de fidelización para los clientes (mismo criterio que requireAdmin).
+    const supportRoute = req.originalUrl.startsWith('/api/support');
+    if (req.tenant?.status === 'suspendido' && !supportRoute) {
+      return res.status(402).json({ error: 'Este negocio tiene su app suspendida temporalmente.' });
+    }
     req.user = { ...user, role: membership.role, tenant_id: membership.tenant_id };
     req.membership = membership;
     next();
@@ -73,11 +86,5 @@ export function requireIdentity(req, res, next) {
   const { user, error, status } = verify(req);
   if (!user) return res.status(status).json({ error });
   req.user = user;
-  next();
-}
-
-export function optionalAuth(req, _res, next) {
-  const { user } = verify(req);
-  if (user) req.user = user;
   next();
 }

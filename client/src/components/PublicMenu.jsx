@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Loader2, Search, SearchX, Star, UtensilsCrossed } from 'lucide-react';
+import { Loader2, Search, SearchX, Star, UtensilsCrossed, X } from 'lucide-react';
 import { api, formatMoney } from '../api.js';
 import { useTheme } from '../context/ThemeContext.jsx';
 import { EmptyState } from './ui.jsx';
@@ -121,7 +121,7 @@ export default function PublicMenu() {
               onClick={() => setQuery('')}
               aria-label="Limpiar búsqueda"
             >
-              ✕
+              <X size={16} />
             </button>
           )}
         </div>
@@ -130,6 +130,7 @@ export default function PublicMenu() {
             <button
               key={cat}
               onClick={() => setCatFilter(cat)}
+              aria-current={catFilter === cat ? 'true' : undefined}
               className={`rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all ${
                 catFilter === cat
                   ? 'bg-primary text-primary-contrast shadow'
@@ -173,7 +174,7 @@ export default function PublicMenu() {
                     <img src={item.image} alt={item.title} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center text-4xl font-extrabold text-primary-contrast/60">
-                      {item.title.slice(0, 2).toUpperCase()}
+                      {(item.title || '?').slice(0, 2).toUpperCase()}
                     </div>
                   )}
                   <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-amber-400 to-orange-500 px-3 py-1.5 text-sm font-black text-white shadow-glow">
@@ -238,7 +239,7 @@ export default function PublicMenu() {
                           <img src={item.image} alt={item.title} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
                         ) : (
                           <div className="flex h-full w-full items-center justify-center text-3xl font-extrabold text-primary-contrast/60">
-                            {item.title.slice(0, 2).toUpperCase()}
+                            {(item.title || '?').slice(0, 2).toUpperCase()}
                           </div>
                         )}
                       </div>

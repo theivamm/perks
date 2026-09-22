@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import { Router } from 'express';
 import { supabase } from '../supabase.js';
 import { asyncHandler } from '../asyncHandler.js';
@@ -9,6 +10,36 @@ const router = Router();
 
 function accessToken() {
   return process.env.MERCADOPAGO_ACCESS_TOKEN || '';
+}
+
+// Verifica la firma x-signature que manda Mercado Pago en cada webhook, según
+// su algoritmo documentado: HMAC-SHA256 de "id:{dataId};request-id:{reqId};ts:{ts};"
+// con el "Secret" configurado en la integración. Sin esto, cualquiera puede
+// llamar al webhook con IDs arbitrarios. Si todavía no configuraste el secret
+// (MERCADOPAGO_WEBHOOK_SECRET), se deja pasar con un warning para no cortar
+// notificaciones existentes — pero conviene configurarlo cuanto antes.
+function isValidWebhookSignature(req, dataId) {
+  const secret = process.env.MERCADOPAGO_WEBHOOK_SECRET || '';
+  if (!secret) {
+    console.warn('[MP] MERCADOPAGO_WEBHOOK_SECRET no configurado: el webhook no verifica firma.');
+    return true;
+  }
+  const signatureHeader = String(req.headers['x-signature'] || '');
+  const requestId = String(req.headers['x-request-id'] || '');
+  const parts = Object.fromEntries(
+    signatureHeader.split(',').map((p) => p.split('=').map((s) => s.trim()))
+  );
+  const ts = parts.ts;
+  const hash = parts.v1;
+  if (!ts || !hash) return false;
+
+  const manifest = `id:${String(dataId).toLowerCase()};request-id:${requestId};ts:${ts};`;
+  const expected = crypto.createHmac('sha256', secret).update(manifest).digest('hex');
+  try {
+    return crypto.timingSafeEqual(Buffer.from(hash), Buffer.from(expected));
+  } catch {
+    return false;
+  }
 }
 
 function graceDays() {
@@ -209,8 +240,8 @@ router.post(
       const preapproval = await mercadoPago('/preapproval', {
         method: 'POST',
         body: JSON.stringify({
-          reason: 'PERKS · Plan Mensual',
-          external_reference: `perks:${req.user.id}:mensual`,
+          reason: 'Wintuu · Plan Mensual',
+          external_reference: `wintuu:${req.user.id}:mensual`,
           payer_email: req.user.email,
           back_url: `${origin}/comenzar?plan=mensual&subscription=success`,
           status: 'pending',
@@ -231,7 +262,7 @@ router.post(
       body: JSON.stringify({
         items: [{
           id: plan.id,
-          title: `PERKS · Plan ${plan.name}`,
+          title: `Wintuu · Plan ${plan.name}`,
           description: 'App de fidelización personalizada',
           quantity: 1,
           currency_id: plan.currency,
@@ -307,8 +338,8 @@ router.post(
     const preapproval = await mercadoPago('/preapproval', {
       method: 'POST',
       body: JSON.stringify({
-        reason: 'PERKS · Plan Mensual',
-        external_reference: `perks:${req.user.id}:${req.tenant.id}`,
+        reason: 'Wintuu · Plan Mensual',
+        external_reference: `wintuu:${req.user.id}:${req.tenant.id}`,
         payer_email: req.user.email,
         back_url: `${origin}/${req.tenant.slug}/dashboard/configuracion?subscription=success`,
         status: 'pending',
@@ -452,6 +483,10 @@ router.post(
     const dataId = req.query['data.id'] || req.body?.data?.id;
     if (!dataId) return res.json({ ok: true, ignored: true });
     if (!accessToken()) return res.json({ ok: true, ignored: true });
+    if (!isValidWebhookSignature(req, dataId)) {
+      console.warn('[MP] Webhook con firma inválida, ignorado. data.id:', dataId);
+      return res.status(401).json({ error: 'Firma inválida' });
+    }
 
     if (type === 'payment') {
       const payment = await mercadoPago(`/v1/payments/${encodeURIComponent(dataId)}`);

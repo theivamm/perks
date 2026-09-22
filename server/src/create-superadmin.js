@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import { pathToFileURL } from 'url';
 import { supabase } from './supabase.js';
+import { CENTRAL_TENANT_SLUG } from './slug.js';
 
 const email = (process.env.SUPERADMIN_EMAIL || '').toLowerCase().trim();
 const password = process.env.SUPERADMIN_PASSWORD || '';
@@ -14,11 +15,11 @@ async function main() {
   const { data: tenant, error: tErr } = await supabase
     .from('tenants')
     .select('*')
-    .eq('slug', 'perks')
+    .eq('slug', CENTRAL_TENANT_SLUG)
     .maybeSingle();
   if (tErr) throw tErr;
   if (!tenant) {
-    console.error('[Superadmin] El tenant "perks" no existe. Ejecutá migracion_09_perks.sql primero.');
+    console.error(`[Superadmin] El tenant "${CENTRAL_TENANT_SLUG}" no existe. Crealo primero (o corré la migración correspondiente).`);
     process.exit(1);
   }
 
@@ -27,7 +28,7 @@ async function main() {
     email,
     password,
     email_confirm: true,
-    user_metadata: { name: 'PERKS' },
+    user_metadata: { name: 'Wintuu' },
   });
   if (created?.user) authUser = created.user;
   else {
@@ -43,7 +44,7 @@ async function main() {
     {
       id: authUser.id,
       tenant_id: tenant.id,
-      name: 'PERKS',
+      name: 'Wintuu',
       email,
       password_hash: '',
       role: 'superadmin',

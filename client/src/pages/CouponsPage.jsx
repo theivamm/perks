@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { BadgePercent, Check, Copy, Gift, QrCode, Sparkles, Ticket, Zap } from 'lucide-react';
 import QRCode from 'qrcode';
 import { api } from '../api.js';
@@ -14,6 +14,7 @@ export default function CouponsPage() {
   const { isAuthed } = useAuth();
   const { settings } = useTheme();
   const { t } = useTenant();
+  const navigate = useNavigate();
   const currency = settings.currency || '$';
 
   const [catalog, setCatalog] = useState([]);
@@ -28,8 +29,6 @@ export default function CouponsPage() {
       setCatalog(res.coupons || []);
     } catch (err) {
       toast(err.message);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -44,8 +43,8 @@ export default function CouponsPage() {
   };
 
   useEffect(() => {
-    loadCatalog();
-    if (isAuthed) loadMine();
+    setLoading(true);
+    Promise.all([loadCatalog(), loadMine()]).finally(() => setLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthed]);
 
@@ -72,8 +71,16 @@ export default function CouponsPage() {
       setQrCopied(true);
       setTimeout(() => setQrCopied(false), 1500);
     } catch {
-      /* noop */
+      toast('No se pudo copiar el código');
     }
+  };
+
+  const openConfirm = (coupon) => {
+    if (!isAuthed) {
+      navigate(t('/login'));
+      return;
+    }
+    setConfirmCoupon(coupon);
   };
 
   const activate = async (coupon) => {
@@ -82,11 +89,11 @@ export default function CouponsPage() {
       await api('/api/coupons/activate', { method: 'POST', body: { coupon_id: coupon.id } });
       toast('Cupón activado. ¡Empezá a sumar puntos!');
       await loadMine();
+      setConfirmCoupon(null);
     } catch (err) {
       toast(err.message);
     } finally {
       setActivating(null);
-      setConfirmCoupon(null);
     }
   };
 
@@ -131,7 +138,7 @@ export default function CouponsPage() {
               <button
                 className="btn-primary w-full justify-center text-sm"
                 disabled={activating === c.id}
-                onClick={() => setConfirmCoupon(c)}
+                onClick={() => openConfirm(c)}
               >
                 {activating === c.id ? 'Activando…' : 'Activar este cupón'}
               </button>
@@ -242,6 +249,7 @@ export default function CouponsPage() {
                     className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-1 text-xs font-bold transition-colors hover:bg-white/30"
                     onClick={copyActiveQr}
                     title="Copiar código QR"
+                    aria-label="Copiar código QR"
                   >
                     {qrCopied ? <Check size={13} /> : <Copy size={13} />}
                     <span className="font-mono">{activeQr || '—'}</span>

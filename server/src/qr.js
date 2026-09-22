@@ -2,7 +2,7 @@ import crypto from 'crypto';
 import { supabase } from './supabase.js';
 
 export function newQrCode() {
-  return 'PERKS-' + crypto.randomBytes(4).toString('hex').toUpperCase();
+  return 'WINTUU-' + crypto.randomBytes(4).toString('hex').toUpperCase();
 }
 
 // Devuelve el QR del usuario; lo genera y guarda si aún no lo tiene (cuentas previas).

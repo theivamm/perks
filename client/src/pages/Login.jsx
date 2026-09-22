@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, KeyRound, Loader2, LogIn, Mail, ShieldCheck, UserRound } from 'lucide-react';
+import { ArrowLeft, KeyRound, Loader2, LogIn, Mail, Moon, ShieldCheck, Sun, UserRound } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useTheme } from '../context/ThemeContext.jsx';
 import { useTenant } from '../context/TenantContext.jsx';
@@ -158,7 +158,7 @@ export default function Login() {
                 onClick={toggleTheme}
                 aria-label="Cambiar tema"
               >
-                {settings.theme === 'dark' ? '☀️' : '🌙'}
+                {settings.theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
               </button>
             </div>
             <h1 className="mt-4 text-2xl font-extrabold">Ingresá</h1>
@@ -168,6 +168,7 @@ export default function Login() {
           <div className="p-6">
             <div className="mb-5 grid grid-cols-2 gap-1 rounded-2xl bg-surface-alt p-1">
               <button
+                aria-pressed={mode === 'client'}
                 className={`flex items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-sm font-extrabold transition ${
                   mode === 'client'
                     ? 'bg-surface text-ink shadow-sm'
@@ -183,6 +184,7 @@ export default function Login() {
                 Clientes
               </button>
               <button
+                aria-pressed={mode === 'admin'}
                 className={`flex items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-sm font-extrabold transition ${
                   mode === 'admin'
                     ? 'bg-surface text-ink shadow-sm'
@@ -228,10 +230,11 @@ export default function Login() {
             ) : loginToken ? (
               <form onSubmit={submitOtp} className="space-y-4">
                 <div>
-                  <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-ink-muted">
+                  <label htmlFor="login-otp-code" className="mb-1 block text-xs font-bold uppercase tracking-wide text-ink-muted">
                     Código de 6 dígitos
                   </label>
                   <input
+                    id="login-otp-code"
                     className="input text-center font-mono text-xl tracking-[0.4em]"
                     placeholder="••••••"
                     value={otpCode}
@@ -260,12 +263,13 @@ export default function Login() {
               <>
                 <form onSubmit={submitAdmin} className="space-y-4">
                   <div>
-                    <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-ink-muted">
+                    <label htmlFor="login-admin-email" className="mb-1 block text-xs font-bold uppercase tracking-wide text-ink-muted">
                       Email
                     </label>
                     <div className="relative">
                       <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted" />
                       <input
+                        id="login-admin-email"
                         className="input !pl-9"
                         type="email"
                         placeholder="admin@tulocal.com"
@@ -277,12 +281,13 @@ export default function Login() {
                     </div>
                   </div>
                   <div>
-                    <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-ink-muted">
+                    <label htmlFor="login-admin-password" className="mb-1 block text-xs font-bold uppercase tracking-wide text-ink-muted">
                       Contraseña
                     </label>
                     <div className="relative">
                       <KeyRound size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted" />
                       <input
+                        id="login-admin-password"
                         className="input !pl-9"
                         type="password"
                         placeholder="••••••••"

@@ -357,6 +357,7 @@ router.post(
 
 router.post(
   '/',
+  requireAdmin,
   asyncHandler(async (req, res) => {
     const { name, email = '', phone = '', image = '', preferences = {} } = req.body || {};
     if (!name || !String(name).trim()) {

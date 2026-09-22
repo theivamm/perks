@@ -4,7 +4,7 @@ import { asyncHandler } from '../asyncHandler.js';
 import { requireSuperAdmin } from '../middleware/auth.js';
 import { resetTenancyCache } from '../tenancy.js';
 import { isValidPlan, DEFAULT_PLAN } from '../plans.js';
-import { slugify, slugError, slugTaken } from '../slug.js';
+import { slugify, slugError, slugTaken, CENTRAL_TENANT_SLUG } from '../slug.js';
 import { ensureMembership } from '../memberships.js';
 
 const router = Router();
@@ -178,8 +178,8 @@ router.patch(
   asyncHandler(async (req, res) => {
     const { slug, business_name, plan, status, tagline } = req.body || {};
     const { data: currentTenant } = await supabase.from('tenants').select('slug').eq('id', req.params.id).maybeSingle();
-    if (currentTenant?.slug === 'perks') {
-      return res.status(403).json({ error: 'La app central PERKS no se puede modificar' });
+    if (currentTenant?.slug === CENTRAL_TENANT_SLUG) {
+      return res.status(403).json({ error: 'La app central Wintuu no se puede modificar' });
     }
     const patch = {};
 
@@ -225,7 +225,7 @@ router.delete(
       .eq('id', req.params.id)
       .maybeSingle();
     if (!tenant) return res.status(404).json({ error: 'App no encontrada' });
-    if (tenant.slug === 'perks') return res.status(403).json({ error: 'La app central PERKS no se puede eliminar' });
+    if (tenant.slug === CENTRAL_TENANT_SLUG) return res.status(403).json({ error: 'La app central Wintuu no se puede eliminar' });
 
     const ignoreMissing = (e) => /relation .* does not exist/i.test(String(e?.message || ''));
     const del = async (table) => {
@@ -245,7 +245,10 @@ router.delete(
       del('reward_rules'),
       del('settings'),
       del('support_messages'),
+      del('tenant_memberships'),
     ]);
+    // support_tickets se borra después: support_messages ya no lo referencia.
+    await del('support_tickets');
 
     // `users.tenant_id` es una referencia legacy. La identidad y sus demás
     // membresías se conservan; solo se limpia el tenant que se está borrando.
@@ -490,7 +493,7 @@ router.post(
         tenant_id: ticket.tenant_id,
         sender_role: 'superadmin',
         sender_id: req.user.id,
-        sender_name: req.user.name || 'Equipo PERKS',
+        sender_name: req.user.name || 'Equipo Wintuu',
         body,
       })
       .select()

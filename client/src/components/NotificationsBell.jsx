@@ -110,8 +110,11 @@ export default function NotificationsBell() {
       setCelebrate(n);
       return;
     }
-    const link = n.link && !/^https?:\/\//i.test(n.link) ? t(n.link) : n.link;
-    navigate(link || t('/notificaciones'));
+    if (n.link && /^https?:\/\//i.test(n.link)) {
+      window.open(n.link, '_blank', 'noopener,noreferrer');
+      return;
+    }
+    navigate(n.link ? t(n.link) : t('/notificaciones'));
   };
 
   return (
@@ -126,6 +129,7 @@ export default function NotificationsBell() {
         {unread > 0 && (
           <span
             key={unread}
+            aria-label={`${unread} notificaciones sin leer`}
             className="animate-pop absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[11px] font-bold text-white ring-2 ring-surface"
           >
             {unread > 99 ? '99+' : unread}
@@ -179,9 +183,9 @@ export default function NotificationsBell() {
                   const meta = notificationMeta(n.type);
                   const Icon = meta.icon;
                   return (
-                    <li key={n.id}>
+                    <li key={n.id} className="flex items-start gap-1 px-1">
                       <button
-                        className="flex w-full items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-surface-alt"
+                        className="flex min-w-0 flex-1 items-start gap-3 rounded-lg px-3 py-3 text-left transition-colors hover:bg-surface-alt"
                         onClick={() => openItem(n)}
                       >
                         <span className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${meta.style}`}>
@@ -190,25 +194,25 @@ export default function NotificationsBell() {
                         <span className="min-w-0 flex-1">
                           <span className="flex items-center gap-1.5">
                             <span className="truncate text-sm font-extrabold text-ink">{n.title}</span>
-                            {!n.read && <span className="h-2 w-2 shrink-0 rounded-full bg-primary-strong" />}
+                            {!n.read && (
+                              <span className="h-2 w-2 shrink-0 rounded-full bg-primary-strong">
+                                <span className="sr-only">Sin leer</span>
+                              </span>
+                            )}
                           </span>
                           <span className="mt-0.5 block text-xs leading-relaxed text-ink-muted">{n.body}</span>
                           <span className="mt-1 block text-[11px] font-semibold text-ink-muted/70 dark:text-ink-muted">
                             {formatWhen(n.created_at)}
                           </span>
                         </span>
-                        <span
-                          role="button"
-                          tabIndex={0}
-                          aria-label="Archivar"
-                          className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-ink-muted transition-colors hover:bg-surface hover:text-ink"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            archive(n);
-                          }}
-                        >
-                          <Archive size={14} />
-                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        aria-label="Archivar"
+                        className="mt-3 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-ink-muted transition-colors hover:bg-surface hover:text-ink"
+                        onClick={() => archive(n)}
+                      >
+                        <Archive size={14} />
                       </button>
                     </li>
                   );

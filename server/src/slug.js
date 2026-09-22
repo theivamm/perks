@@ -1,9 +1,12 @@
 import { supabase } from './supabase.js';
 
-// Slugs que no pueden usarse como link de negocio (colisionan con rutas de PERKS).
+// Slug del tenant central/plataforma (superadmin, panel de equipo). Antes 'perks'.
+export const CENTRAL_TENANT_SLUG = 'wintuu';
+
+// Slugs que no pueden usarse como link de negocio (colisionan con rutas de Wintuu).
 export const RESERVED = new Set([
   'login', 'registro', 'logout', 'perfil', 'cupones', 'notificaciones',
-  'configuracion', 'dashboard', 'onboarding', 'comenzar', 'empezar', 'perks',
+  'configuracion', 'dashboard', 'onboarding', 'comenzar', 'empezar', 'wintuu',
   'api', 'admin', 'superadmin', 'menu', 'pedidos', 'clientes', 'soporte',
   'landing', 'www', 'app', 'home', 'precios', 'planes', 'ayuda', 'terminos',
   'privacidad', 'contacto', 'gracias', 'pago', 'pagos', 'checkout', 'demo',
@@ -24,7 +27,7 @@ export function slugify(value) {
 export function slugError(slug) {
   if (!slug || slug.length < 3) return 'El link debe tener al menos 3 caracteres';
   if (!SLUG_RE.test(slug)) return 'Solo minúsculas, números y guiones (sin empezar ni terminar en guión)';
-  if (RESERVED.has(slug)) return 'Ese link está reservado por PERKS';
+  if (RESERVED.has(slug)) return 'Ese link está reservado por Wintuu';
   return null;
 }
 

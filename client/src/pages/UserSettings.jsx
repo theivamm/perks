@@ -270,25 +270,27 @@ export default function UserSettings() {
         </section>
       </main>
 
-      <Modal open={deleteModal} onClose={() => setDeleteModal(false)} title="Eliminar cuenta">
+      <Modal open={deleteModal} onClose={() => { if (!deleting) setDeleteModal(false); }} title="Eliminar cuenta">
         <form onSubmit={deleteAccount} className="space-y-4">
           <p className="text-sm leading-relaxed text-ink-muted">
             Esta acción <strong className="text-red-500">borra todo</strong>: tu perfil, cupones, puntos, compras e
             historial, y <strong className="text-red-500">desvincula tu cuenta de Google</strong>. No se puede deshacer.
           </p>
           <div>
-            <label className="label">Escribí ELIMINAR para confirmar</label>
+            <label className="label" htmlFor="delete-account-confirm">Escribí ELIMINAR para confirmar</label>
             <input
+              id="delete-account-confirm"
               className="input"
               value={deleteConfirm}
               onChange={(e) => setDeleteConfirm(e.target.value)}
               placeholder="ELIMINAR"
               required
               autoFocus
+              disabled={deleting}
             />
           </div>
           <div className="flex justify-end gap-2 pt-1">
-            <button type="button" className="btn-ghost" onClick={() => setDeleteModal(false)}>
+            <button type="button" className="btn-ghost" onClick={() => setDeleteModal(false)} disabled={deleting}>
               Cancelar
             </button>
             <button type="submit" className="btn-danger" disabled={deleting}>

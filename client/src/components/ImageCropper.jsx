@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import Cropper from 'react-easy-crop';
 import { Check, Loader2, X, ZoomIn } from 'lucide-react';
+import { toast } from './ui.jsx';
 
 function createImage(src) {
   return new Promise((resolve, reject) => {
@@ -49,7 +50,7 @@ export default function ImageCropper({ src, aspect = 4 / 3, cropShape = 'rect', 
       onCancel();
     } catch (err) {
       onCancel();
-      alert(err.message);
+      toast(err.message);
     } finally {
       setSaving(false);
     }

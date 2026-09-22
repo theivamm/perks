@@ -23,7 +23,7 @@ function detect(value) {
   return [COUNTRIES.some((c) => c.code === prefix) ? prefix : DEFAULT_PREFIX, number];
 }
 
-export default function PhoneInput({ value, onChange, placeholder = 'Ej: 11 6112 0433' }) {
+export default function PhoneInput({ value, onChange, placeholder = 'Ej: 11 6112 0433', id }) {
   const [prefix, number] = detect(value);
 
   return (
@@ -41,6 +41,7 @@ export default function PhoneInput({ value, onChange, placeholder = 'Ej: 11 6112
         ))}
       </select>
       <input
+        id={id}
         className="input flex-1"
         value={number}
         onChange={(e) => onChange(`${prefix} ${e.target.value}`.trim())}

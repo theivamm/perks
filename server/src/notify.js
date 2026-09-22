@@ -1,5 +1,5 @@
 import { supabase } from './supabase.js';
-import { addActiveCouponPoint, redeemReadyCoupon } from './rewards.js';
+import { redeemReadyCoupon } from './rewards.js';
 import { membershipUserIds } from './memberships.js';
 
 // Inserta una o varias notificaciones. Cada fila: { user_id, tenant_id, type, title, body, icon, link, data }
@@ -95,13 +95,6 @@ export async function notifyPointAdded(userId, result, tenantId) {
     },
     tenantId
   );
-}
-
-// Mantiene la firma usada por el flujo de compras: suma un punto si hay cupón activo.
-export async function notifyRewardsForCompra(userId, tenantId) {
-  if (!userId) return;
-  const result = await addActiveCouponPoint(userId, null, tenantId);
-  return notifyPointAdded(userId, result, tenantId);
 }
 
 // Canjea un cupón completado y le notifica al cliente. Devuelve el cupón

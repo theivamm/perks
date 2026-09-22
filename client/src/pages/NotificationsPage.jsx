@@ -45,7 +45,7 @@ export default function NotificationsPage() {
 
   return (
     <div className="min-h-screen bg-surface-page">
-      <header className="sticky top-0 z-40 border-b border-line bg-surface/page px-4 py-3 backdrop-blur-md">
+      <header className="sticky top-0 z-40 border-b border-line bg-surface-page px-4 py-3 backdrop-blur-md">
         <div className="mx-auto flex max-w-3xl items-center justify-between gap-3">
           <Link
             to={backTo}

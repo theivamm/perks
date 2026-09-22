@@ -9,7 +9,8 @@ import { verifyTOTP, randomSecret, otpauthURL } from '../otp.js';
 import { ensureMembership, getMembership, membershipUserIds } from '../memberships.js';
 
 const router = Router();
-const SECRET = () => process.env.JWT_SECRET || 'dev-secret';
+// middleware/auth.js ya valida que JWT_SECRET exista al arrancar el server.
+const SECRET = () => process.env.JWT_SECRET;
 const LOGIN_SECRET = () => `${SECRET()}:login`;
 
 const ADMIN_USERNAME_DEFAULT = 'administracion';
@@ -52,7 +53,7 @@ router.post(
   })
 );
 
-// Login del equipo PERKS (superadmin) con email y contraseña directos.
+// Login del equipo Wintuu (superadmin) con email y contraseña directos.
 // No depende del tenant ni del username configurado en cada negocio.
 router.post(
   '/superadmin/login',
@@ -199,7 +200,9 @@ router.post(
 
     const admin = await singleAdmin(req.tenant.id);
     if (!admin) {
-      return res.status(403).json({ error: 'Hay más de un administrador configurado. Contactá soporte.' });
+      return res.status(403).json({
+        error: 'Este negocio tiene más de un administrador. Iniciá sesión con tu email y contraseña en su lugar.',
+      });
     }
     const tenant = req.tenant;
     if (String(username).trim().toLowerCase() !== (await readAdminSettings(tenant.id)).username.toLowerCase()) {

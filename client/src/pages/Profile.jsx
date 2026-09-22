@@ -149,7 +149,7 @@ export default function Profile() {
 
   return (
     <div className="min-h-screen bg-surface-page">
-      <header className="sticky top-0 z-40 border-b border-line bg-surface/page px-4 py-3 backdrop-blur-md">
+      <header className="sticky top-0 z-40 border-b border-line bg-surface-page px-4 py-3 backdrop-blur-md">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-3">
           <Link to={t('/')} className="inline-flex items-center gap-2 text-sm font-semibold text-ink-muted hover:text-ink">
             <ArrowLeft size={16} />
@@ -203,6 +203,7 @@ export default function Profile() {
                 className="btn-ghost mx-auto mt-4 inline-flex items-center gap-2"
                 onClick={copyCode}
                 title="Copiar código"
+                aria-label="Copiar código QR"
               >
                 <span className="font-mono text-sm font-bold tracking-wider text-ink">{qrCode}</span>
                 {copied ? <CheckCircleMini /> : <Copy size={14} />}
@@ -304,7 +305,11 @@ export default function Profile() {
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5">
                         <p className="text-sm font-extrabold text-ink">{n.title}</p>
-                        {!n.read && <span className="h-2 w-2 shrink-0 rounded-full bg-primary-strong" />}
+                        {!n.read && (
+                          <span className="h-2 w-2 shrink-0 rounded-full bg-primary-strong">
+                            <span className="sr-only">Sin leer</span>
+                          </span>
+                        )}
                       </div>
                       <p className="mt-0.5 text-sm leading-relaxed text-ink-muted">{n.body}</p>
                       <p className="mt-1 text-[11px] font-semibold text-ink-muted/70 dark:text-ink-muted">{formatWhen(n.created_at)}</p>
@@ -357,8 +362,9 @@ export default function Profile() {
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
-              <label className="label">Nombre</label>
+              <label className="label" htmlFor="profile-name">Nombre</label>
               <input
+                id="profile-name"
                 className="input"
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
@@ -366,8 +372,9 @@ export default function Profile() {
               />
             </div>
             <div>
-              <label className="label">Apellido</label>
+              <label className="label" htmlFor="profile-last-name">Apellido</label>
               <input
+                id="profile-last-name"
                 className="input"
                 value={form.last_name}
                 onChange={(e) => setForm({ ...form, last_name: e.target.value })}
@@ -375,8 +382,9 @@ export default function Profile() {
             </div>
           </div>
           <div>
-            <label className="label">Email</label>
+            <label className="label" htmlFor="profile-email">Email</label>
             <input
+              id="profile-email"
               className="input"
               type="email"
               value={form.email}
@@ -385,8 +393,8 @@ export default function Profile() {
             />
           </div>
           <div>
-            <label className="label">Teléfono</label>
-            <PhoneInput value={form.phone} onChange={(v) => setForm((f) => ({ ...f, phone: v }))} />
+            <label className="label" htmlFor="profile-phone">Teléfono</label>
+            <PhoneInput id="profile-phone" value={form.phone} onChange={(v) => setForm((f) => ({ ...f, phone: v }))} />
           </div>
           <div className="flex justify-end gap-2 pt-1">
             <button type="button" className="btn-ghost" onClick={() => setEditModal(false)}>

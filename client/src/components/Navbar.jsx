@@ -24,7 +24,7 @@ export default function Navbar() {
     <header
       className={`sticky top-0 z-40 border-b transition-all ${
         scrolled
-          ? 'border-line bg-surface/page backdrop-blur-md'
+          ? 'border-line bg-surface-page backdrop-blur-md'
           : 'border-transparent bg-transparent'
       }`}
     >

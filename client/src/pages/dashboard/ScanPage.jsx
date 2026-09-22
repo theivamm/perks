@@ -15,11 +15,21 @@ export default function ScanPage() {
   const [scanning, setScanning] = useState(false);
   const [paused, setPaused] = useState(false);
   const [resolving, setResolving] = useState(false);
-  const [lastError, setLastError] = useState('');
+  const pausedRef = useRef(false);
+  const resolvingRef = useRef(false);
+  const [cameraError, setCameraError] = useState('');
   const [redeemed, setRedeemed] = useState(null);
   const [progress, setProgress] = useState(null);
   const [saving, setSaving] = useState(false);
-  const notifyTimer = useRef(null);
+
+  const setPausedState = (v) => {
+    pausedRef.current = v;
+    setPaused(v);
+  };
+  const setResolvingState = (v) => {
+    resolvingRef.current = v;
+    setResolving(v);
+  };
 
   const stopScanner = async () => {
     if (scannerRef.current) {
@@ -41,11 +51,11 @@ export default function ScanPage() {
         () => {}
       );
       setScanning(true);
-      setLastError('');
-      setPaused(false);
-      setResolving(false);
+      setCameraError('');
+      setPausedState(false);
+      setResolvingState(false);
     } catch (err) {
-      setLastError(String(err?.message || err));
+      setCameraError(String(err?.message || err));
     }
   };
 
@@ -55,19 +65,17 @@ export default function ScanPage() {
     startScanner();
 
     return () => {
-      if (notifyTimer.current) clearTimeout(notifyTimer.current);
       stopScanner();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const onSuccess = async (decodedText) => {
-    if (paused || resolving) return;
-    setPaused(true);
-    setResolving(true);
+    if (pausedRef.current || resolvingRef.current) return;
+    setPausedState(true);
+    setResolvingState(true);
     try {
       const res = await api('/api/clients/scan', { method: 'POST', body: { qr_code: decodedText.trim() } });
-      setLastError('');
       setProgress(null);
       if (res.redeemed) {
         setRedeemed(res);
@@ -77,18 +85,17 @@ export default function ScanPage() {
       setProgress(res);
       await stopScanner();
     } catch (err) {
-      setLastError(err.message);
       toast(err.message);
-      setPaused(false);
-      setResolving(false);
+      setPausedState(false);
+      setResolvingState(false);
     }
   };
 
   const resumeScanning = () => {
     setRedeemed(null);
     setProgress(null);
-    setPaused(false);
-    setResolving(false);
+    setPausedState(false);
+    setResolvingState(false);
     startScanner();
   };
 
@@ -201,7 +208,7 @@ export default function ScanPage() {
         <div className="card p-6">
           <div id={SCAN_ELEMENT} className="mx-auto max-w-md overflow-hidden rounded-2xl" />
 
-          {scanning && !lastError && (
+          {scanning && !cameraError && (
             <div className="mt-4 flex items-center justify-between gap-3">
               <p className="flex items-center gap-2 text-sm font-semibold text-ink-muted">
                 {resolving ? (
@@ -222,7 +229,7 @@ export default function ScanPage() {
             </div>
           )}
 
-          {!scanning && !lastError && !redeemed && (
+          {!scanning && !cameraError && !redeemed && (
             <div className="mt-4 flex items-center justify-center gap-2 text-sm text-ink-muted">
               <Loader2 className="animate-spin" size={16} />
               Iniciando cámara...
@@ -236,17 +243,14 @@ export default function ScanPage() {
             </p>
           )}
 
-          {lastError && (
+          {cameraError && (
             <div className="mt-4 rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-center">
               <CameraOff size={20} className="mx-auto mb-2 text-red-500" />
               <p className="text-sm font-bold text-ink">No se pudo iniciar la cámara</p>
               <p className="mt-1 text-xs leading-relaxed text-ink-muted">
-                {lastError.includes('permiso') || lastError.includes('Permission') || lastError.includes('NotFound')
+                {cameraError.includes('permiso') || cameraError.includes('Permission') || cameraError.includes('NotFound')
                   ? 'Otorgá permiso de cámara desde el navegador o probá con otro dispositivo.'
-                  : lastError}
-              </p>
-              <p className="mt-2 text-xs text-ink-muted">
-                Otorgá permiso de cámara desde el navegador o probá con otro dispositivo.
+                  : cameraError}
               </p>
             </div>
           )}

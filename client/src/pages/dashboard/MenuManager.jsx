@@ -48,10 +48,7 @@ export default function MenuManager() {
   useEffect(() => {
     setLoading(true);
     api('/api/menu')
-      .then((d) => {
-        setData(d);
-        if (!d.categories.includes(filter) && filter !== 'Todas') setFilter('Todas');
-      })
+      .then(setData)
       .catch((e) => toast(e.message))
       .finally(() => setLoading(false));
   }, []);
@@ -60,7 +57,7 @@ export default function MenuManager() {
     return data.items.filter((it) => {
       const okCat = filter === 'Todas' || it.category === filter;
       const q = search.trim().toLowerCase();
-      const okSearch = !q || it.title.toLowerCase().includes(q) || it.category.toLowerCase().includes(q);
+      const okSearch = !q || it.title.toLowerCase().includes(q) || (it.category || '').toLowerCase().includes(q);
       return okCat && okSearch;
     });
   }, [data.items, filter, search]);
@@ -365,7 +362,7 @@ export default function MenuManager() {
                         <img src={item.image} alt={item.title} className="h-full w-full object-cover" />
                       ) : (
                         <div className="flex h-full w-full items-center justify-center text-3xl font-extrabold text-primary-contrast/60">
-                          {item.title.slice(0, 2).toUpperCase()}
+                          {(item.title || '?').slice(0, 2).toUpperCase()}
                         </div>
                       )}
                       <div className="absolute right-2 top-2 flex flex-wrap items-center justify-end gap-1.5">
@@ -443,10 +440,15 @@ export default function MenuManager() {
                           className={`btn-ghost !px-2.5 !py-1.5 !text-xs ${item.featured ? 'border-amber-400/60 text-amber-600 dark:text-amber-400' : ''}`}
                           onClick={(e) => toggleFeatured(item, e)}
                           title={item.featured ? 'Quitar de ofertas' : 'Marcar como oferta especial'}
+                          aria-label={item.featured ? 'Quitar de ofertas' : 'Marcar como oferta especial'}
                         >
                           <Star size={14} className={item.featured ? 'fill-amber-400 text-amber-500' : ''} />
                         </button>
-                        <button className="btn-danger !py-1.5 !text-xs" onClick={() => remove(item)}>
+                        <button
+                          className="btn-danger !py-1.5 !text-xs"
+                          onClick={() => remove(item)}
+                          aria-label={`Eliminar ${item.title}`}
+                        >
                           <Trash2 size={14} />
                         </button>
                       </div>

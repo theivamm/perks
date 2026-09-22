@@ -65,10 +65,10 @@ export function otpauthURL(secret, label = 'Administrador') {
   const clean = label.replace(/:/g, '');
   const params = new URLSearchParams({
     secret,
-    issuer: 'Fidelizacion',
+    issuer: 'Wintuu',
     algorithm: 'SHA1',
     digits: '6',
     period: '30',
   });
-  return `otpauth://totp/Fidelizacion:${encodeURIComponent(clean)}?${params.toString()}`;
+  return `otpauth://totp/Wintuu:${encodeURIComponent(clean)}?${params.toString()}`;
 }

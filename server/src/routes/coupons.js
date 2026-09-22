@@ -178,6 +178,26 @@ router.post(
       .select()
       .single();
     if (iErr) throw iErr;
+
+    // Sin una constraint a nivel de base que lo impida, dos activaciones casi
+    // simultáneas del mismo usuario pueden pasar el chequeo de arriba antes de
+    // que la primera termine de insertar. Revalidamos después de insertar y
+    // deshacemos si quedaron dos cupones activos a la vez.
+    const { data: activeNow, error: checkErr } = await supabase
+      .from('user_coupons')
+      .select('id, created_at')
+      .eq('user_id', req.user.id)
+      .eq('status', 'activado')
+      .eq('tenant_id', req.tenant.id)
+      .order('created_at', { ascending: true });
+    if (checkErr) throw checkErr;
+    if ((activeNow || []).length > 1 && activeNow[0].id !== created.id) {
+      await supabase.from('user_coupons').delete().eq('id', created.id);
+      return res
+        .status(400)
+        .json({ error: 'Ya tenés un cupón activo. Completalo o canjealo antes de activar otro.' });
+    }
+
     res.status(201).json(created);
   })
 );

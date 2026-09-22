@@ -1,5 +1,7 @@
 import { Loader2, X } from 'lucide-react';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
+
+const FOCUSABLE = 'a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])';
 
 export function Spinner({ label = 'Cargando...' }) {
   return (
@@ -23,14 +25,34 @@ export function EmptyState({ icon: Icon, title, subtitle }) {
 }
 
 export function Modal({ open, onClose, title, children, wide }) {
+  const dialogRef = useRef(null);
+
   useEffect(() => {
     if (!open) return;
-    const onKey = (e) => e.key === 'Escape' && onClose();
+    const onKey = (e) => {
+      if (e.key === 'Escape') return onClose();
+      if (e.key !== 'Tab') return;
+      const focusable = dialogRef.current?.querySelectorAll(FOCUSABLE);
+      if (!focusable || focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
     window.addEventListener('keydown', onKey);
     document.body.style.overflow = 'hidden';
+    const previouslyFocused = document.activeElement;
+    const first = dialogRef.current?.querySelector(FOCUSABLE);
+    first?.focus();
     return () => {
       window.removeEventListener('keydown', onKey);
       document.body.style.overflow = '';
+      previouslyFocused?.focus?.();
     };
   }, [open, onClose]);
 
@@ -39,10 +61,14 @@ export function Modal({ open, onClose, title, children, wide }) {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
       <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="modal-title"
         className={`relative w-full ${wide ? 'max-w-3xl' : 'max-w-lg'} max-h-[90vh] overflow-y-auto rounded-2xl border border-line bg-surface p-6 shadow-2xl`}
       >
         <div className="mb-5 flex items-center justify-between">
-          <h3 className="text-lg font-extrabold text-ink">{title}</h3>
+          <h3 id="modal-title" className="text-lg font-extrabold text-ink">{title}</h3>
           <button className="btn-icon" onClick={onClose} aria-label="Cerrar">
             <X size={20} />
           </button>
@@ -67,6 +93,8 @@ export function ToastHost() {
   return (
     <div
       id="toast-root"
+      role="status"
+      aria-live="polite"
       className="pointer-events-none fixed bottom-6 left-1/2 z-[60] -translate-x-1/2 rounded-xl bg-ink px-4 py-2.5 text-sm font-semibold text-surface-page opacity-0 shadow-soft transition-all duration-300 translate-y-2 dark:border dark:border-line dark:bg-surface dark:text-ink"
     />
   );

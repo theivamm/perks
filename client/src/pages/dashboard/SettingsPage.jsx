@@ -26,6 +26,40 @@ function billingStatus(status) {
   return labels[status] || status || 'Sin suscripción';
 }
 
+function LogoUploader({ kind, label, previewBox, display, inputRef, has, uploading, onPick, onRemove }) {
+  return (
+    <div className="flex flex-wrap items-center gap-4">
+      <div
+        className={`relative flex items-center justify-center overflow-hidden border border-line bg-gradient-to-br from-primary to-primary-strong text-primary-contrast shadow-sm ${previewBox}`}
+      >
+        {has ? (
+          <img src={has} alt={`${label} actual`} className={display} />
+        ) : (
+          <ImagePlus size={24} className="opacity-80" />
+        )}
+        {uploading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+            <Loader2 className="animate-spin text-white" size={18} />
+          </div>
+        )}
+      </div>
+      <div className="flex flex-col gap-2">
+        <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={onPick} />
+        <button className="btn-ghost" onClick={() => inputRef.current?.click()} disabled={uploading}>
+          <ImagePlus size={15} />
+          {has ? 'Cambiar' : `Subir ${label.toLowerCase()}`}
+        </button>
+        {has && (
+          <button className="btn-ghost text-red-500 hover:bg-red-500/10" onClick={onRemove}>
+            <Trash2 size={15} />
+            Quitar {label.toLowerCase()}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function SettingsPage() {
   const { settings, updateSettings } = useTheme();
   const [saving, setSaving] = useState(false);
@@ -35,6 +69,23 @@ export default function SettingsPage() {
   const [cropFor, setCropFor] = useState(null);
   const [biz, setBiz] = useState({ name: settings.businessName || 'Fidelización App', tagline: settings.tagline || '' });
   const [savingBiz, setSavingBiz] = useState(false);
+  const initialBizRef = useRef({ name: settings.businessName, tagline: settings.tagline });
+  const bizSyncedRef = useRef(false);
+
+  // settings llega primero desde caché/valores por defecto y luego se actualiza
+  // de forma asíncrona con el fetch al servidor; resincronizamos biz una sola
+  // vez cuando eso ocurre, sin pisar ediciones que el usuario ya esté haciendo.
+  useEffect(() => {
+    if (bizSyncedRef.current) return;
+    if (
+      settings.businessName === initialBizRef.current.name &&
+      settings.tagline === initialBizRef.current.tagline
+    ) {
+      return;
+    }
+    bizSyncedRef.current = true;
+    setBiz({ name: settings.businessName || 'Fidelización App', tagline: settings.tagline || '' });
+  }, [settings.businessName, settings.tagline]);
 
   const [pwd, setPwd] = useState({ current: '', next: '', confirm: '' });
   const [savingPwd, setSavingPwd] = useState(false);
@@ -54,11 +105,14 @@ export default function SettingsPage() {
   };
 
   const loadOtpStatus = async () => {
+    setOtpBusy(true);
     try {
       const res = await api('/api/auth/admin/otp/status');
       setOtp((o) => ({ ...o, enabled: res.enabled }));
     } catch {
       /* el estado queda null y no se muestra la sección cargada */
+    } finally {
+      setOtpBusy(false);
     }
   };
 
@@ -245,42 +299,6 @@ export default function SettingsPage() {
     toast(kind === 'iso' ? 'ISO eliminado' : 'Logo eliminado');
   };
 
-  const LogoUploader = ({ kind, label, previewBox, display }) => {
-    const ref = kind === 'iso' ? isoInput : logoInput;
-    const has = settings[kind === 'iso' ? 'logoIso' : 'logo'];
-    return (
-      <div className="flex flex-wrap items-center gap-4">
-        <div
-          className={`relative flex items-center justify-center overflow-hidden border border-line bg-gradient-to-br from-primary to-primary-strong text-primary-contrast shadow-sm ${previewBox}`}
-        >
-          {has ? (
-            <img src={has} alt={`${label} actual`} className={display} />
-          ) : (
-            <ImagePlus size={24} className="opacity-80" />
-          )}
-          {uploading && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black/40">
-              <Loader2 className="animate-spin text-white" size={18} />
-            </div>
-          )}
-        </div>
-        <div className="flex flex-col gap-2">
-          <input ref={ref} type="file" accept="image/*" className="hidden" onChange={(e) => pickImage(e, kind)} />
-          <button className="btn-ghost" onClick={() => ref.current?.click()} disabled={uploading}>
-            <ImagePlus size={15} />
-            {has ? 'Cambiar' : `Subir ${label.toLowerCase()}`}
-          </button>
-          {has && (
-            <button className="btn-ghost text-red-500 hover:bg-red-500/10" onClick={() => removeImage(kind)}>
-              <Trash2 size={15} />
-              Quitar {label.toLowerCase()}
-            </button>
-          )}
-        </div>
-      </div>
-    );
-  };
-
   const { h, s, l } = hexToHsl(settings.primaryColor);
 
   return (
@@ -422,7 +440,17 @@ export default function SettingsPage() {
             Imagen horizontal de <span className="font-bold text-ink">400 x 120 px</span> (medida recomendada). Se
             muestra completa en la barra de navegación; el recorte se ajusta automáticamente a ese tamaño.
           </p>
-          <LogoUploader kind="logo" label="Logo" previewBox="h-12 w-40 rounded-xl" display="h-full w-full object-contain" />
+          <LogoUploader
+            kind="logo"
+            label="Logo"
+            previewBox="h-12 w-40 rounded-xl"
+            display="h-full w-full object-contain"
+            inputRef={logoInput}
+            has={settings.logo}
+            uploading={uploading}
+            onPick={(e) => pickImage(e, 'logo')}
+            onRemove={() => removeImage('logo')}
+          />
         </section>
 
         <section className="card p-6">
@@ -433,7 +461,17 @@ export default function SettingsPage() {
           <p className="mb-5 text-sm text-ink-muted">
             Ícono cuadrado que se usa en el sidebar colapsado y como respaldo cuando no hay un logo horizontal cargado.
           </p>
-          <LogoUploader kind="iso" label="ISO" previewBox="h-20 w-20 rounded-2xl" display="h-full w-full object-cover" />
+          <LogoUploader
+            kind="iso"
+            label="ISO"
+            previewBox="h-20 w-20 rounded-2xl"
+            display="h-full w-full object-cover"
+            inputRef={isoInput}
+            has={settings.logoIso}
+            uploading={uploading}
+            onPick={(e) => pickImage(e, 'iso')}
+            onRemove={() => removeImage('iso')}
+          />
           <div className="mt-5 border-t border-line pt-4">
             <p className="mb-1 text-sm font-extrabold text-ink">ISO por defecto</p>
             <p className="mb-3 text-xs text-ink-muted">
@@ -761,12 +799,12 @@ export default function SettingsPage() {
         <div className="flex justify-end">
           <button
             className="btn-primary"
-            onClick={() => {
-              updateSettings(settings);
-              toast('Configuración guardada');
+            onClick={async () => {
+              await saveBiz();
             }}
+            disabled={savingBiz}
           >
-            <Save size={16} />
+            {savingBiz ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
             Guardar configuración
           </button>
         </div>

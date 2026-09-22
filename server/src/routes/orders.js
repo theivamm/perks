@@ -7,6 +7,7 @@ import { notifyAdmins, notifyUser } from '../notify.js';
 const router = Router();
 
 const DONE_STATUS = ['completado', 'entregado'];
+const VALID_ORDER_STATUSES = ['pendiente', 'en camino', 'completado', 'entregado', 'cancelado'];
 
 function formatMoney(n) {
   return `$${Number(n || 0).toFixed(2)}`;
@@ -58,6 +59,9 @@ router.put(
   asyncHandler(async (req, res) => {
     const { status } = req.body || {};
     const id = req.params.id;
+    if (!VALID_ORDER_STATUSES.includes(status)) {
+      return res.status(400).json({ error: 'Estado de pedido inválido' });
+    }
 
     const { data: before } = await supabase
       .from('orders')
