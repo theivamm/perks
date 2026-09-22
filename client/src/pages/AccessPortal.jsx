@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, Building2, KeyRound, Loader2, Mail, ShieldCheck, UserRound } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Building2, KeyRound, Loader2, Mail, Sparkles, ShieldCheck, UserRound } from 'lucide-react';
 import { api } from '../api.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { supabase } from '../lib/supabase.js';
@@ -204,7 +204,26 @@ export default function AccessPortal() {
               </div>
 
               <div className="mt-4 space-y-2">
-                {visibleApps.length === 0 ? (
+                {visibleApps.length === 0 && role === 'admin' ? (
+                  <div
+                    className="relative overflow-hidden rounded-3xl border border-[var(--wt-border)] p-6 text-center"
+                    style={{ background: 'linear-gradient(150deg, #eafff8 0%, #fff7ef 55%, #fff0f8 100%)' }}
+                  >
+                    <div className="wt-bg-blob" style={{ width: 160, height: 160, background: '#bff3ea', top: '-30%', left: '-10%' }} />
+                    <div className="wt-bg-blob" style={{ width: 140, height: 140, background: '#ffd3ea', bottom: '-25%', right: '-8%' }} />
+                    <span className="relative mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[var(--wt-mint)] to-[var(--wt-mint-dark)] text-white shadow-lg">
+                      <Sparkles size={24} />
+                    </span>
+                    <p className="relative mt-4 text-[17px] font-extrabold text-[var(--wt-text)]">¿Tenés un negocio propio?</p>
+                    <p className="relative mx-auto mt-1.5 max-w-xs text-sm text-[var(--wt-muted)]">
+                      Todavía no administrás ninguna app. Creá la tuya y empezá a fidelizar clientes con cupones y puntos.
+                    </p>
+                    <Link to="/checkout" className="wt-btn-mint relative mt-5 inline-flex">
+                      Quiero mi app
+                      <ArrowRight size={16} />
+                    </Link>
+                  </div>
+                ) : visibleApps.length === 0 ? (
                   <p className="rounded-2xl bg-[rgba(20,36,37,0.04)] px-4 py-8 text-center text-sm text-[var(--wt-muted)]">No tenés apps con este rol.</p>
                 ) : visibleApps.map((app) => (
                   <button key={app.id} onClick={() => enter(app)} disabled={Boolean(switching)} className="group flex w-full items-center gap-3 rounded-2xl border border-[var(--wt-border)] p-4 text-left transition hover:border-[var(--wt-mint)] hover:bg-[rgba(0,207,205,0.06)]">
