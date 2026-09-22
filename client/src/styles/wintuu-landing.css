@@ -549,6 +549,24 @@ html:has(.wintuu-landing) {
   animation-iteration-count: infinite, infinite, 1;
 }
 
+/* Carrusel vertical continuo de cupones (ProductBento, card "A"). El track
+   se duplica en el JSX y anima -50% de su propio alto: como ambas mitades
+   son idénticas, el loop no se nota. Se apaga el hue/float individual de
+   cada .wt-coupon para que el único movimiento sea el scroll del track. */
+@keyframes wt-coupon-marquee {
+  from { transform: translateY(0); }
+  to { transform: translateY(-50%); }
+}
+.wintuu-landing .wt-coupon-marquee-track {
+  animation: wt-coupon-marquee 26s linear infinite;
+}
+.wintuu-landing .wt-coupon-marquee-track .wt-coupon {
+  animation: none;
+  /* La sombra elevada de .wt-coupon se corta feo contra el overflow:hidden
+     y el difuminado del contenedor; en una lista apilada no aporta nada. */
+  box-shadow: none;
+}
+
 .wintuu-landing .wt-coupon-dot {
   width: 9px;
   height: 9px;
@@ -561,9 +579,20 @@ html:has(.wintuu-landing) {
   transform: scale(1.25);
 }
 
+/* Transición al cambiar de paso en el panel pegado de "Cómo funciona" */
+@keyframes wt-step-pop {
+  from { opacity: 0; transform: scale(0.94) translateY(10px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+.wintuu-landing .wt-step-visual-enter {
+  animation: wt-step-pop 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .wintuu-landing .wt-step-visual-enter,
   .wintuu-landing .wt-coupon,
   .wintuu-landing .wt-coupon-enter,
+  .wintuu-landing .wt-coupon-marquee-track,
   .wintuu-landing .wt-hero-blob,
   .wintuu-landing .wt-bg-blob,
   .wintuu-landing .wt-candy-text,

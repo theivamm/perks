@@ -7,6 +7,10 @@ const CARDS = [
     title: 'Los beneficios los elegís vos.',
     body: 'Un porcentaje, un monto de descuento o un regalo. Creás el cupón y definís cuántos puntos hacen falta para conseguirlo.',
     Mock: CouponsMock,
+    // El carrusel de cupones queda más bajo que la foto de la card vecina,
+    // así que sobra aire abajo del párrafo; achicamos solo el padding
+    // inferior de esta card (pb-* pisa la parte de abajo de p-7/sm:p-8).
+    tightBottom: true,
   },
   {
     cls: 'wt-card-b',
@@ -34,10 +38,10 @@ export default function ProductBento() {
         </div>
 
         <div className="wt-product-bento mt-14">
-          {CARDS.map(({ cls, delay, title, body, Mock }) => (
+          {CARDS.map(({ cls, delay, title, body, Mock, tightBottom }) => (
             <article
               key={cls}
-              className={`wt-glass wt-card-hover wt-reveal flex flex-col gap-6 p-7 sm:p-8 ${cls}`}
+              className={`wt-glass wt-card-hover wt-reveal flex flex-col ${tightBottom ? 'gap-4' : 'gap-6'} p-7 sm:p-8 ${tightBottom ? 'pb-4 sm:pb-5' : ''} ${cls}`}
               style={{ '--wt-delay': delay }}
             >
               <Mock />
