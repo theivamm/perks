@@ -607,6 +607,7 @@ html:has(.wintuu-landing) {
 .wintuu-dark .wt-btn-ghost-light {
   background: rgba(255, 255, 255, 0.04);
   border-color: rgba(255, 255, 255, 0.14);
+  color: var(--wt-text);
 }
 .wintuu-dark .wt-btn-ghost:hover,
 .wintuu-dark .wt-btn-ghost-light:hover {
