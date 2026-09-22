@@ -99,7 +99,7 @@ export function ThemeProvider({ children }) {
   }, [slug, settings.businessName, settings.tagline]);
 
   useEffect(() => {
-    const href = settings.logoIso || settings.logo || '/favicon.svg';
+    const href = settings.logoIso || settings.logo || '/favicon.png';
     const setIcon = (rel) => {
       let link = document.querySelector(`link[rel="${rel}"]`);
       if (!link) {
