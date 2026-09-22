@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Menu, X } from 'lucide-react';
+import { ChevronDown, LogOut, Menu, User, X } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext.jsx';
 import WintuuLogo from './WintuuLogo.jsx';
 
 const NAV_ITEMS = [
@@ -10,9 +11,75 @@ const NAV_ITEMS = [
   ['#faqs', 'FAQs'],
 ];
 
+function initials(name = '') {
+  return String(name).trim().charAt(0).toUpperCase() || '?';
+}
+
+function AccountMenu({ user }) {
+  const [open, setOpen] = useState(false);
+  const { logout } = useAuth();
+  const ref = useRef(null);
+
+  useEffect(() => {
+    const onClick = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener('mousedown', onClick);
+    return () => document.removeEventListener('mousedown', onClick);
+  }, []);
+
+  const doLogout = async () => {
+    setOpen(false);
+    await logout();
+  };
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        type="button"
+        className="flex items-center gap-2 rounded-full border border-[var(--wt-border)] bg-white px-3 py-1.5 text-sm font-bold text-[var(--wt-text)] transition hover:bg-black/[0.03]"
+        onClick={() => setOpen((o) => !o)}
+        aria-label="Menú de cuenta"
+      >
+        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--wt-mint)] text-xs font-extrabold text-[var(--wt-ink)]">
+          {initials(user.name)}
+        </span>
+        <span className="max-w-32 truncate">{user.name}</span>
+        <ChevronDown size={14} className={`text-[var(--wt-muted)] transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
+
+      {open && (
+        <div className="wt-glass absolute right-0 top-full z-50 mt-2 w-56 overflow-hidden !rounded-2xl p-1.5">
+          <div className="border-b border-[var(--wt-border)] px-3 py-2.5">
+            <p className="truncate text-sm font-extrabold text-[var(--wt-text)]">{user.name}</p>
+            <p className="truncate text-xs text-[var(--wt-muted)]">{user.email}</p>
+          </div>
+          <Link
+            to="/ingresar"
+            onClick={() => setOpen(false)}
+            className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-semibold text-[var(--wt-text)] transition-colors hover:bg-black/[0.04]"
+          >
+            <User size={15} className="shrink-0 text-[var(--wt-muted)]" />
+            Mis apps
+          </Link>
+          <button
+            type="button"
+            onClick={doLogout}
+            className="mt-0.5 flex w-full items-center gap-2 rounded-xl border-t border-[var(--wt-border)] px-3 py-2 text-left text-sm font-semibold text-red-500 transition-colors hover:bg-red-500/10"
+          >
+            <LogOut size={15} />
+            Salir
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function LandingNavbar() {
   const [open, setOpen] = useState(false);
   const menuBtnRef = useRef(null);
+  const { user, logout } = useAuth();
 
   useEffect(() => {
     if (!open) return undefined;
@@ -44,9 +111,13 @@ export default function LandingNavbar() {
         </nav>
 
         <div className="hidden items-center gap-5 lg:flex">
-          <Link to="/ingresar" className="wt-nav-link">
-            Ingresar
-          </Link>
+          {user ? (
+            <AccountMenu user={user} />
+          ) : (
+            <Link to="/ingresar" className="wt-nav-link">
+              Ingresar
+            </Link>
+          )}
           <Link to="/checkout" className="wt-btn-mint-sm">
             Quiero mi app
           </Link>
@@ -79,13 +150,41 @@ export default function LandingNavbar() {
               </a>
             ))}
             <div className="my-1 h-px bg-[var(--wt-border)]" />
-            <Link
-              to="/ingresar"
-              onClick={close}
-              className="rounded-xl px-3 py-3 text-[15px] font-medium text-[var(--wt-text)]/80 transition hover:bg-black/[0.03]"
-            >
-              Ingresar
-            </Link>
+            {user ? (
+              <>
+                <div className="flex items-center gap-2 rounded-xl px-3 py-2">
+                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--wt-mint)] text-xs font-extrabold text-[var(--wt-ink)]">
+                    {initials(user.name)}
+                  </span>
+                  <span className="truncate text-[15px] font-semibold text-[var(--wt-text)]">{user.name}</span>
+                </div>
+                <Link
+                  to="/ingresar"
+                  onClick={close}
+                  className="rounded-xl px-3 py-3 text-[15px] font-medium text-[var(--wt-text)]/80 transition hover:bg-black/[0.03]"
+                >
+                  Mis apps
+                </Link>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    close();
+                    await logout();
+                  }}
+                  className="rounded-xl px-3 py-3 text-left text-[15px] font-medium text-red-500 transition hover:bg-red-500/10"
+                >
+                  Salir
+                </button>
+              </>
+            ) : (
+              <Link
+                to="/ingresar"
+                onClick={close}
+                className="rounded-xl px-3 py-3 text-[15px] font-medium text-[var(--wt-text)]/80 transition hover:bg-black/[0.03]"
+              >
+                Ingresar
+              </Link>
+            )}
             <Link to="/checkout" onClick={close} className="wt-btn-mint-sm mt-2 justify-center">
               Quiero mi app
             </Link>
