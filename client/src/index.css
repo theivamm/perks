@@ -33,6 +33,10 @@
   body {
     @apply bg-surface-page font-sans text-ink antialiased;
   }
+  h1, h2, h3, h4 {
+    @apply font-heading;
+    letter-spacing: -0.01em;
+  }
   ::selection {
     @apply bg-primary/20 text-ink;
   }
@@ -50,22 +54,26 @@
 
 @layer components {
   .btn-primary {
-    @apply inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-contrast shadow-sm transition-all hover:bg-primary-strong hover:shadow-glow disabled:cursor-not-allowed disabled:opacity-50;
+    @apply inline-flex cursor-pointer items-center justify-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-contrast shadow-sm transition-all hover:-translate-y-0.5 hover:bg-primary-strong hover:shadow-glow disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0;
   }
   .btn-ghost {
-    @apply inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-line bg-surface px-4 py-2 text-sm font-semibold text-ink transition-all hover:bg-surface-alt disabled:cursor-not-allowed disabled:opacity-50;
+    @apply inline-flex cursor-pointer items-center justify-center gap-2 rounded-full border border-line bg-surface px-5 py-2.5 text-sm font-semibold text-ink transition-all hover:border-primary/40 hover:bg-surface-alt disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-secondary {
+    @apply inline-flex cursor-pointer items-center justify-center gap-2 rounded-full bg-primary-soft px-5 py-2.5 text-sm font-semibold text-primary-strong transition-all hover:-translate-y-0.5 hover:bg-primary-soft/70 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0;
   }
   .btn-danger {
-    @apply inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50;
+    @apply inline-flex cursor-pointer items-center justify-center gap-2 rounded-full bg-red-600 px-5 py-2.5 text-sm font-semibold text-white transition-all hover:-translate-y-0.5 hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0;
   }
   .btn-icon {
-    @apply inline-flex cursor-pointer items-center justify-center rounded-lg p-2 text-ink-muted transition-colors hover:bg-surface-alt hover:text-ink;
+    @apply inline-flex cursor-pointer items-center justify-center rounded-full p-2 text-ink-muted transition-colors hover:bg-surface-alt hover:text-ink;
   }
   .input {
-    @apply w-full rounded-xl border border-line bg-surface px-3 py-2 text-sm text-ink outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/30;
+    @apply w-full rounded-2xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/30;
   }
   .card {
-    @apply rounded-3xl border border-line bg-surface shadow-sm;
+    @apply rounded-3xl border border-line bg-surface;
+    box-shadow: 0 1px 2px hsl(var(--line) / 0.5), 0 16px 36px -20px hsl(var(--ink) / 0.18);
   }
   .tile {
     border-radius: 1.5rem;
