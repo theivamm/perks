@@ -1,7 +1,8 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ArrowRight } from 'lucide-react';
 
-const FADE_DISTANCE = 520; // px de scroll hasta que el contenido desaparece del todo
+const FADE_DISTANCE_DESKTOP = 520; // px de scroll hasta que el contenido desaparece del todo (desktop)
+const FADE_DISTANCE_MOBILE = 1500; // en mobile el hero tarda más en desvanecerse
 const RISE_DISTANCE = 130; // px que sube el contenido mientras se desvanece
 
 const COUPONS = [
@@ -61,6 +62,15 @@ function Coupon({ cls, bg, icon, title, sub, className = '', rotate }) {
 
 export default function HeroBento() {
   const contentRef = useRef(null);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 1023px)');
+    setIsMobile(mq.matches);
+    const onChange = (e) => setIsMobile(e.matches);
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
 
   // Al hacer scroll, el contenido del hero sube y se desvanece —
   // el fondo (blobs) queda fijo, generando profundidad tipo parallax.
@@ -69,10 +79,11 @@ export default function HeroBento() {
     if (!el) return undefined;
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return undefined;
 
+    const distance = isMobile ? FADE_DISTANCE_MOBILE : FADE_DISTANCE_DESKTOP;
     let ticking = false;
     const apply = () => {
       ticking = false;
-      const progress = Math.min(1, Math.max(0, window.scrollY / FADE_DISTANCE));
+      const progress = Math.min(1, Math.max(0, window.scrollY / distance));
       el.style.transform = `translateY(${-progress * RISE_DISTANCE}px)`;
       el.style.opacity = String(1 - progress);
       el.style.pointerEvents = progress > 0.85 ? 'none' : '';
@@ -87,7 +98,7 @@ export default function HeroBento() {
     apply();
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
-  }, []);
+  }, [isMobile]);
 
   return (
     <section id="inicio" className="wt-hero-light px-4 pb-20 pt-28 sm:px-8 sm:pb-24 sm:pt-32 lg:pb-28 lg:pt-36 xl:pt-40">

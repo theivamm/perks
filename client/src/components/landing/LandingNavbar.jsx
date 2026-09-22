@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
-import { ChevronDown, LayoutGrid, LogOut, Menu, X } from 'lucide-react';
+import { ArrowRight, ChevronDown, LayoutGrid, LogOut, Menu, X } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.jsx';
 import WintuuLogo from './WintuuLogo.jsx';
 
@@ -132,6 +132,7 @@ function AccountMenu({ user }) {
 export default function LandingNavbar() {
   const [open, setOpen] = useState(false);
   const menuBtnRef = useRef(null);
+  const closeBtnRef = useRef(null);
   const { user, logout } = useAuth();
 
   useEffect(() => {
@@ -144,6 +145,31 @@ export default function LandingNavbar() {
     };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
+  }, [open]);
+
+  // Si crece a desktop con el menú abierto, se cierra solo
+  useEffect(() => {
+    if (!open) return undefined;
+    const mq = window.matchMedia('(min-width: 1024px)');
+    const onChange = (e) => {
+      if (e.matches) setOpen(false);
+    };
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, [open]);
+
+  // Bloquea el scroll de fondo mientras el fullscreen está abierto
+  useEffect(() => {
+    if (!open) return undefined;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [open]);
+
+  useEffect(() => {
+    if (open) closeBtnRef.current?.focus();
   }, [open]);
 
   const close = () => setOpen(false);
@@ -190,60 +216,97 @@ export default function LandingNavbar() {
       </div>
 
       {open && (
-        <div id="wt-mobile-menu" className="border-t border-[var(--wt-border)] bg-[var(--wt-bg)] px-4 py-5 lg:hidden">
-          <div className="flex flex-col gap-1">
-            {NAV_ITEMS.map(([href, label]) => (
+        <div
+          id="wt-mobile-menu"
+          className="wt-menu-overlay fixed inset-0 z-50 flex flex-col overflow-y-auto lg:hidden"
+          style={{
+            background:
+              'radial-gradient(80% 55% at 88% 8%, rgba(255,196,225,0.4), transparent 60%), radial-gradient(75% 50% at 8% 95%, rgba(0,207,205,0.16), transparent 55%), linear-gradient(165deg, #ffffff, #fff6ec)',
+          }}
+        >
+          <div className="pointer-events-none absolute inset-0 overflow-hidden">
+            <div className="wt-bg-blob" style={{ width: 280, height: 280, background: '#ffd3ea', top: '6%', right: '-18%', opacity: 0.45 }} />
+            <div className="wt-bg-blob" style={{ width: 320, height: 320, background: '#bff3ea', bottom: '4%', left: '-20%', opacity: 0.45 }} />
+            <div className="wt-bg-blob" style={{ width: 200, height: 200, background: '#e3dbff', top: '45%', left: '55%', opacity: 0.3 }} />
+          </div>
+
+          <div className="relative flex h-16 items-center justify-between px-4 sm:h-[72px] sm:px-8">
+            <a href="#inicio" onClick={close} aria-label="Wintuu, inicio">
+              <WintuuLogo height={22} />
+            </a>
+            <button
+              ref={closeBtnRef}
+              type="button"
+              onClick={close}
+              className="flex h-10 w-10 items-center justify-center rounded-xl text-[var(--wt-ink)]"
+              aria-label="Cerrar menú"
+            >
+              <X size={26} />
+            </button>
+          </div>
+
+          <nav className="relative mt-4 flex flex-1 flex-col justify-center gap-8 px-6 sm:px-10" aria-label="Principal">
+            {NAV_ITEMS.map(([href, label], i) => (
               <a
                 key={href}
                 href={href}
                 onClick={close}
-                className="rounded-xl px-3 py-3 text-[15px] font-medium text-[var(--wt-text)]/80 transition hover:bg-black/[0.03]"
+                className="wt-menu-item group flex items-center gap-4 sm:gap-6"
+                style={{ '--wt-delay': `${120 + i * 80}ms` }}
               >
-                {label}
+                <span className="wt-heading text-[clamp(19px,5.4vw,26px)] font-semibold text-[var(--wt-mint-dark)] transition-colors duration-300 group-hover:text-[var(--wt-mint)]">
+                  {String(i + 1).padStart(2, '0')}
+                </span>
+                <span className="wt-heading text-[clamp(36px,10vw,58px)] font-semibold leading-none text-[var(--wt-ink)] transition-all duration-300 group-hover:translate-x-2 group-hover:text-[var(--wt-mint-dark)]">
+                  {label}
+                </span>
+                <ArrowRight
+                  size={22}
+                  className="ml-auto shrink-0 -translate-x-2 text-[var(--wt-mint-dark)] opacity-0 transition-all duration-300 group-hover:translate-x-0 group-hover:opacity-100"
+                />
               </a>
             ))}
-            <div className="my-1 h-px bg-[var(--wt-border)]" />
-            {user ? (
-              <>
-                <div className="flex items-center gap-2.5 rounded-xl px-3 py-2">
-                  <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-[var(--wt-mint)] to-[var(--wt-mint-dark)] text-xs font-extrabold text-white">
-                    {initials(user.name)}
-                  </span>
-                  <div className="min-w-0">
-                    <p className="truncate text-[15px] font-semibold text-[var(--wt-text)]">{user.name}</p>
-                    <p className="truncate text-xs text-[var(--wt-muted)]">{user.email}</p>
+          </nav>
+
+          <div className="wt-menu-item relative px-6 pb-8 pt-8 sm:px-10" style={{ '--wt-delay': '520ms' }}>
+            <div className="mx-auto flex max-w-md flex-col gap-3">
+              {user ? (
+                <>
+                  <div className="flex items-center gap-3 rounded-2xl border border-[var(--wt-border)] bg-white/75 px-4 py-3">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[var(--wt-mint)] to-[var(--wt-mint-dark)] text-sm font-extrabold text-white">
+                      {initials(user.name)}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="truncate text-[15px] font-semibold text-[var(--wt-text)]">{user.name}</p>
+                      <p className="truncate text-xs text-[var(--wt-muted)]">{user.email}</p>
+                    </div>
                   </div>
-                </div>
-                <Link
-                  to="/ingresar"
-                  onClick={close}
-                  className="rounded-xl px-3 py-3 text-[15px] font-medium text-[var(--wt-text)]/80 transition hover:bg-black/[0.03]"
-                >
-                  Mis apps
+                  <div className="flex gap-3">
+                    <Link to="/ingresar" onClick={close} className="wt-btn-ghost flex-1 justify-center">
+                      Mis apps
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        close();
+                        await logout();
+                      }}
+                      className="wt-btn-ghost flex-1 justify-center text-red-500"
+                    >
+                      Salir
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <Link to="/ingresar" onClick={close} className="wt-btn-ghost w-full justify-center">
+                  Ingresar
                 </Link>
-                <button
-                  type="button"
-                  onClick={async () => {
-                    close();
-                    await logout();
-                  }}
-                  className="rounded-xl px-3 py-3 text-left text-[15px] font-medium text-red-500 transition hover:bg-red-500/10"
-                >
-                  Salir
-                </button>
-              </>
-            ) : (
-              <Link
-                to="/ingresar"
-                onClick={close}
-                className="rounded-xl px-3 py-3 text-[15px] font-medium text-[var(--wt-text)]/80 transition hover:bg-black/[0.03]"
-              >
-                Ingresar
+              )}
+              <Link to="/checkout" onClick={close} className="wt-btn-mint w-full">
+                Quiero mi app <ArrowRight size={16} />
               </Link>
-            )}
-            <Link to="/checkout" onClick={close} className="wt-btn-mint-sm mt-2 justify-center">
-              Quiero mi app
-            </Link>
+              <p className="mt-1 text-center text-[13px] text-[var(--wt-muted)]">Cupones, puntos y tu menú en un mismo lugar.</p>
+            </div>
           </div>
         </div>
       )}
