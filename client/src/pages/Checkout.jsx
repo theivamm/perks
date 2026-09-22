@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, Check, Loader2, MessageCircle, ShieldCheck, Sparkles } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, Loader2, MessageCircle, ShieldCheck } from 'lucide-react';
 import { api } from '../api.js';
+import '../styles/wintuu-landing.css';
+import WintuuLogo from '../components/landing/WintuuLogo.jsx';
 
 const WHATSAPP_URL = 'https://wa.me/541161120433?text=Hola%2C%20quiero%20contratar%20WINTUU%20y%20necesito%20hablar%20con%20un%20agente%20de%20ventas.';
 
@@ -26,30 +28,32 @@ export default function Checkout() {
   const plan = useMemo(() => plans.find((item) => item.id === selected), [plans, selected]);
 
   return (
-    <div className="min-h-screen bg-[#0A0A0C] px-5 py-8 text-white">
-      <div className="mx-auto max-w-5xl">
+    <div className="wintuu-landing relative min-h-screen overflow-hidden px-5 py-8">
+      <div className="wt-bg-blob" style={{ width: 380, height: 380, background: '#bff3ea', top: '-8%', right: '-6%' }} />
+      <div className="wt-bg-blob" style={{ width: 320, height: 320, background: '#ffd3ea', bottom: '-4%', left: '-6%' }} />
+
+      <div className="relative mx-auto max-w-5xl">
         <div className="flex items-center justify-between gap-4">
-          <Link to="/" className="inline-flex items-center gap-2 text-sm font-semibold text-white/60 transition hover:text-white">
+          <Link to="/" className="wt-nav-link inline-flex items-center gap-2 text-[14px] font-semibold">
             <ArrowLeft size={16} /> Volver
           </Link>
-          <span className="inline-flex items-center gap-2 font-extrabold">
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-400 text-[#0A0A0C]"><Sparkles size={16} /></span>
-            WINTUU
-          </span>
+          <WintuuLogo height={22} />
         </div>
 
         <div className="mt-12 text-center">
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-amber-300">Contratá tu app</p>
-          <h1 className="mt-3 text-3xl font-extrabold tracking-tight sm:text-5xl">Elegí tu plan y activá WINTUU</h1>
-          <p className="mx-auto mt-4 max-w-2xl text-white/60">
+          <p className="wt-eyebrow-light justify-center">Contratá tu app</p>
+          <h1 className="wt-h1 mt-5 text-[36px] text-[var(--wt-text)] sm:text-[54px]">Elegí tu plan y activá Wintuu</h1>
+          <p className="wt-body mx-auto mt-4 max-w-2xl">
             Después del pago creás el nombre y el enlace de tu app, y entrás directamente a la bienvenida para configurarla.
           </p>
         </div>
 
-        {error && <div className="mx-auto mt-8 max-w-xl rounded-2xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">{error}</div>}
+        {error && (
+          <div className="mx-auto mt-8 max-w-xl rounded-2xl border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-600">{error}</div>
+        )}
 
         {loading ? (
-          <div className="flex justify-center py-24 text-white/50"><Loader2 className="animate-spin" size={26} /></div>
+          <div className="flex justify-center py-24 text-[var(--wt-muted)]"><Loader2 className="animate-spin" size={26} /></div>
         ) : (
           <div className="mt-12 grid gap-6 lg:grid-cols-[1fr,380px]">
             <div className="space-y-4">
@@ -59,70 +63,77 @@ export default function Checkout() {
                   <button
                     key={item.id}
                     onClick={() => setSelected(item.id)}
-                    className={`flex w-full items-center justify-between gap-5 rounded-3xl border p-6 text-left transition ${active ? 'border-amber-400 bg-amber-400/[0.08]' : 'border-white/10 bg-white/[0.03] hover:border-white/30'}`}
+                    className="wt-glass flex w-full items-center justify-between gap-5 p-6 text-left transition"
+                    style={{ borderColor: active ? 'rgba(0,207,205,0.4)' : undefined, background: active ? 'rgba(0,207,205,0.06)' : undefined }}
                   >
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className={`flex h-5 w-5 items-center justify-center rounded-full border ${active ? 'border-amber-400 bg-amber-400 text-[#0A0A0C]' : 'border-white/30'}`}>
+                        <span
+                          className="flex h-5 w-5 items-center justify-center rounded-full border-2"
+                          style={{ borderColor: active ? 'var(--wt-mint)' : 'rgba(20,36,37,0.2)', background: active ? 'var(--wt-mint)' : 'transparent', color: 'var(--wt-ink)' }}
+                        >
                           {active && <Check size={13} />}
                         </span>
-                        <p className="text-lg font-extrabold">Plan {item.name}</p>
+                        <p className="wt-heading text-[18px] font-semibold text-[var(--wt-text)]">Plan {item.name}</p>
                       </div>
-                      <p className="ml-7 mt-1 text-sm text-white/50">{item.period}</p>
+                      <p className="ml-7 mt-1 text-[13.5px] text-[var(--wt-muted)]">{item.period}</p>
                     </div>
-                    <p className="text-2xl font-extrabold text-amber-300">{formatPrice(item.price)}</p>
+                    <p className="wt-heading text-[24px] font-semibold text-[var(--wt-mint-dark)]">{formatPrice(item.price)}</p>
                   </button>
                 );
               })}
 
-              <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
-                <p className="font-extrabold">Todos los planes incluyen</p>
+              <div className="wt-glass p-6">
+                <p className="wt-heading font-semibold text-[var(--wt-text)]">Todos los planes incluyen</p>
                 <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                  {['App con tu marca y enlace', 'Panel de administración', 'Clientes mediante Google', 'Cupones y recompensas', 'Códigos QR', 'Soporte de WINTUU'].map((item) => (
-                    <span key={item} className="flex items-center gap-2 text-sm text-white/65"><Check size={15} className="text-amber-300" /> {item}</span>
+                  {['App con tu marca y enlace', 'Panel de administración', 'Clientes mediante Google', 'Cupones y recompensas', 'Códigos QR', 'Soporte de Wintuu'].map((item) => (
+                    <span key={item} className="flex items-center gap-2 text-[14px] text-[var(--wt-text)]/75">
+                      <Check size={15} className="text-[var(--wt-mint-dark)]" /> {item}
+                    </span>
                   ))}
                 </div>
               </div>
             </div>
 
-            <aside className="h-fit rounded-3xl border border-amber-400/30 bg-[#111114] p-6 shadow-2xl lg:sticky lg:top-8">
-              <p className="text-xs font-bold uppercase tracking-wider text-white/45">Resumen</p>
-              <div className="mt-4 flex items-end justify-between gap-3 border-b border-white/10 pb-5">
+            <aside className="wt-glass h-fit p-6 lg:sticky lg:top-8">
+              <p className="text-[12px] font-bold uppercase tracking-wider text-[var(--wt-muted)]">Resumen</p>
+              <div className="mt-4 flex items-end justify-between gap-3 border-b border-[var(--wt-border)] pb-5">
                 <div>
-                  <p className="font-extrabold">WINTUU {plan?.name || ''}</p>
-                  <p className="text-sm text-white/50">{plan?.period}</p>
+                  <p className="wt-heading font-semibold text-[var(--wt-text)]">Wintuu {plan?.name || ''}</p>
+                  <p className="text-[13.5px] text-[var(--wt-muted)]">{plan?.period}</p>
                 </div>
-                <p className="text-2xl font-extrabold">{formatPrice(plan?.price)}</p>
+                <p className="wt-heading text-[22px] font-semibold text-[var(--wt-text)]">{formatPrice(plan?.price)}</p>
               </div>
 
-              <div className="mt-5 flex items-start gap-3 rounded-2xl bg-white/[0.04] p-4">
-                <ShieldCheck size={18} className="mt-0.5 shrink-0 text-amber-300" />
-                <p className="text-xs leading-relaxed text-white/55">El próximo paso solicita Google para asociar el pago con el administrador. Luego pagás de forma segura en Mercado Pago.</p>
+              <div className="mt-5 flex items-start gap-3 rounded-2xl bg-[rgba(0,207,205,0.07)] p-4">
+                <ShieldCheck size={18} className="mt-0.5 shrink-0 text-[var(--wt-mint-dark)]" />
+                <p className="text-[12.5px] leading-relaxed text-[var(--wt-text)]/70">
+                  El próximo paso solicita Google para asociar el pago con el administrador. Luego pagás de forma segura en Mercado Pago.
+                </p>
               </div>
 
-              <Link
-                to={`/comenzar?plan=${selected}`}
-                className="mt-5 flex w-full items-center justify-center gap-2 rounded-full bg-amber-400 px-5 py-3 font-extrabold text-[#0A0A0C] transition hover:bg-amber-300"
-              >
+              <Link to={`/comenzar?plan=${selected}`} className="wt-btn-mint mt-5 w-full">
                 Continuar al pago <ArrowRight size={17} />
               </Link>
 
-              <div className="my-5 flex items-center gap-3 text-xs text-white/30"><span className="h-px flex-1 bg-white/10" /> o <span className="h-px flex-1 bg-white/10" /></div>
+              <div className="my-5 flex items-center gap-3 text-[12px] text-[var(--wt-muted)]">
+                <span className="h-px flex-1 bg-[var(--wt-border)]" /> o <span className="h-px flex-1 bg-[var(--wt-border)]" />
+              </div>
 
               <a
                 href={WHATSAPP_URL}
                 target="_blank"
                 rel="noreferrer"
-                className="flex w-full items-center justify-center gap-2 rounded-full border border-emerald-400/40 px-5 py-3 font-bold text-emerald-300 transition hover:bg-emerald-400/10"
+                className="flex w-full items-center justify-center gap-2 rounded-full border-2 border-[#25D366]/40 px-5 py-3 font-bold text-[#0f8a4c] transition hover:bg-[#25D366]/10"
               >
                 <MessageCircle size={17} /> Hablar con ventas
               </a>
-              <p className="mt-3 text-center text-xs text-white/35">WhatsApp: +54 11 6112-0433</p>
+              <p className="mt-3 text-center text-[12px] text-[var(--wt-muted)]">WhatsApp: +54 11 6112-0433</p>
             </aside>
           </div>
         )}
 
-        <div className="mt-12 grid gap-3 text-center text-sm text-white/45 sm:grid-cols-3">
+        <div className="mt-12 grid gap-3 text-center text-[13.5px] text-[var(--wt-muted)] sm:grid-cols-3">
           <p>1. Elegís el plan</p><p>2. Pagás con Mercado Pago</p><p>3. Configurás y activás tu app</p>
         </div>
       </div>

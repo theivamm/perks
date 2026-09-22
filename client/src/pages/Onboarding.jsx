@@ -10,8 +10,6 @@ import {
   Link2,
   Loader2,
   Rocket,
-  ShieldCheck,
-  Sparkles,
   Star,
   Store,
   TrendingDown,
@@ -21,8 +19,8 @@ import {
 import { api } from '../api.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { supabase } from '../lib/supabase.js';
-
-const BG = 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&w=1600&q=85';
+import '../styles/wintuu-landing.css';
+import WintuuLogo from '../components/landing/WintuuLogo.jsx';
 
 function slugify(value) {
   return String(value || '')
@@ -51,26 +49,29 @@ function StepIndicator({ current }) {
         <div key={step.n} className="flex items-center">
           <div className="flex items-center gap-2">
             <span
-              className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-black transition-all ${
+              className="flex h-7 w-7 items-center justify-center rounded-full text-xs font-black transition-all"
+              style={
                 step.n < current
-                  ? 'bg-amber-400 text-[#151515]'
+                  ? { background: 'var(--wt-mint)', color: 'var(--wt-ink)' }
                   : step.n === current
-                  ? 'bg-[#151515] text-white ring-2 ring-[#151515] ring-offset-2'
-                  : 'bg-black/[0.07] text-black/35'
-              }`}
+                  ? { background: 'var(--wt-text)', color: '#fff' }
+                  : { background: 'rgba(20,36,37,0.07)', color: 'rgba(20,36,37,0.35)' }
+              }
             >
               {step.n < current ? <Check size={13} strokeWidth={3} /> : step.n}
             </span>
             <span
-              className={`text-xs font-bold ${
-                step.n === current ? 'text-[#151515]' : step.n < current ? 'text-black/55' : 'text-black/30'
-              }`}
+              className="text-xs font-bold"
+              style={{ color: step.n === current ? 'var(--wt-text)' : step.n < current ? 'var(--wt-muted)' : 'rgba(20,36,37,0.3)' }}
             >
               {step.label}
             </span>
           </div>
           {i < STEPS.length - 1 && (
-            <span className={`mx-3 h-px w-8 transition-all ${step.n < current ? 'bg-amber-400' : 'bg-black/10'}`} />
+            <span
+              className="mx-3 h-px w-8 transition-all"
+              style={{ background: step.n < current ? 'var(--wt-mint)' : 'var(--wt-border)' }}
+            />
           )}
         </div>
       ))}
@@ -265,28 +266,23 @@ export default function Onboarding() {
   const currentStep = !isAuthed ? 1 : !status?.canStart ? 2 : 3;
 
   return (
-    <div className="relative min-h-screen bg-cover bg-center lg:grid lg:grid-cols-2" style={{ backgroundImage: `url(${BG})` }}>
-      <div className="absolute inset-0 bg-[#0A0A0C]/75 backdrop-blur-[2px] lg:hidden" />
-
+    <div className="wintuu-landing relative min-h-screen lg:grid lg:grid-cols-2">
       {/* Panel izquierdo — formulario */}
-      <section className="relative flex min-h-screen items-center justify-center px-5 py-10 lg:bg-[#F5F1E8] lg:text-[#151515]">
-        <div className="w-full max-w-lg rounded-3xl border border-white/20 bg-white/95 p-6 text-[#151515] shadow-2xl backdrop-blur sm:p-8 lg:border-black/10 lg:shadow-xl">
+      <section className="relative flex min-h-screen items-center justify-center overflow-hidden px-5 py-10">
+        <div className="wt-bg-blob" style={{ width: 320, height: 320, background: '#bff3ea', top: '-6%', left: '-8%' }} />
+        <div className="wt-bg-blob" style={{ width: 280, height: 280, background: '#ffd3ea', bottom: '-4%', right: '-6%' }} />
 
+        <div className="wt-glass relative w-full max-w-lg p-6 sm:p-8">
           {/* Header */}
           <div className="flex items-center justify-between">
-            <Link to="/" className="inline-flex items-center gap-2 text-sm font-bold text-black/55 hover:text-black">
+            <Link to="/" className="wt-nav-link inline-flex items-center gap-2 text-[14px] font-semibold">
               <ArrowLeft size={16} /> Volver
             </Link>
-            <span className="inline-flex items-center gap-2 font-black">
-              <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-400">
-                <Sparkles size={16} className="text-[#0A0A0C]" />
-              </span>
-              WINTUU
-            </span>
+            <WintuuLogo height={20} />
           </div>
 
-          <h1 className="mt-7 text-3xl font-black tracking-tight">Creá tu app de fidelización.</h1>
-          <p className="mt-2 text-sm leading-relaxed text-black/55">
+          <h1 className="wt-h2 mt-7 text-[30px] text-[var(--wt-text)]">Creá tu app de fidelización.</h1>
+          <p className="wt-body mt-2 text-[14.5px]">
             {selectedPlan
               ? `Plan ${selectedPlan.name} · ${formatPrice(selectedPlan.price)} ${selectedPlan.period} · Sin comisiones.`
               : 'Fidelizá a tus clientes con cupones, puntos y premios. Sin comisiones.'}
@@ -298,13 +294,13 @@ export default function Onboarding() {
           </div>
 
           {error && (
-            <div className="mb-5 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+            <div className="mb-5 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-600">
               {error}
             </div>
           )}
 
           {loading || paymentLoading ? (
-            <div className="flex flex-col items-center justify-center gap-3 py-10 text-black/40">
+            <div className="flex flex-col items-center justify-center gap-3 py-10 text-[var(--wt-muted)]">
               <Loader2 className="animate-spin" size={26} />
               <p className="text-sm font-semibold">
                 {paymentLoading ? 'Confirmando tu pago...' : 'Cargando...'}
@@ -313,46 +309,45 @@ export default function Onboarding() {
           ) : !isAuthed ? (
             /* PASO 1 — Google */
             <div className="space-y-4">
-              <div className="rounded-2xl bg-black/[0.04] p-4">
-                <p className="text-sm font-bold text-[#151515]">Entrá con tu cuenta de Google</p>
-                <p className="mt-1 text-sm text-black/55">
+              <div className="rounded-2xl bg-[rgba(20,36,37,0.04)] p-4">
+                <p className="text-sm font-bold text-[var(--wt-text)]">Entrá con tu cuenta de Google</p>
+                <p className="mt-1 text-sm text-[var(--wt-muted)]">
                   La misma cuenta que vas a usar para administrar tu app.
                   Si no tenés cuenta de Google, podés crear una gratis.
                 </p>
               </div>
               <button
-                className="flex w-full items-center justify-center gap-3 rounded-2xl border border-black/15 bg-white px-5 py-3.5 font-extrabold transition hover:bg-black/5 disabled:opacity-50"
+                className="flex w-full items-center justify-center gap-3 rounded-2xl border border-[var(--wt-border)] bg-white px-5 py-3.5 font-bold text-[var(--wt-text)] transition hover:bg-black/[0.03] disabled:opacity-50"
                 onClick={startGoogle}
                 disabled={oauthLoading}
               >
                 {oauthLoading ? <Loader2 className="animate-spin" size={19} /> : <GoogleIcon />}
                 Continuar con Google
               </button>
-              <p className="text-center text-xs text-black/35">
-                Al continuar aceptás los términos de uso de WINTUU.
+              <p className="text-center text-xs text-[var(--wt-muted)]">
+                Al continuar aceptás los términos de uso de Wintuu.
               </p>
             </div>
           ) : !status?.canStart ? (
             /* PASO 2 — Pago */
             <div className="space-y-4">
-
               {/* Nudge contextual según plan elegido */}
               {desiredPlan === 'mensual' ? (
-                <div className="flex items-start gap-3 rounded-2xl bg-amber-50 border border-amber-200 p-4">
+                <div className="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4">
                   <Zap size={18} className="mt-0.5 shrink-0 text-amber-500" />
                   <div>
-                    <p className="text-sm font-extrabold text-[#151515]">Tip: el plan de por vida conviene más</p>
-                    <p className="mt-0.5 text-xs text-black/55">
+                    <p className="text-sm font-extrabold text-[var(--wt-text)]">Tip: el plan de por vida conviene más</p>
+                    <p className="mt-0.5 text-xs text-[var(--wt-muted)]">
                       Con 10 meses de plan mensual ya igualás el precio único. A partir del mes 11, todo es ganancia.
                     </p>
                   </div>
                 </div>
               ) : (
-                <div className="flex items-start gap-3 rounded-2xl bg-emerald-50 border border-emerald-200 p-4">
+                <div className="flex items-start gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
                   <Check size={18} className="mt-0.5 shrink-0 text-emerald-500" />
                   <div>
-                    <p className="text-sm font-extrabold text-[#151515]">Excelente elección</p>
-                    <p className="mt-0.5 text-xs text-black/55">
+                    <p className="text-sm font-extrabold text-[var(--wt-text)]">Excelente elección</p>
+                    <p className="mt-0.5 text-xs text-[var(--wt-muted)]">
                       Pagás una sola vez y tu app funciona para siempre. Sin renovaciones, sin sorpresas.
                     </p>
                   </div>
@@ -365,98 +360,100 @@ export default function Onboarding() {
                 <button
                   type="button"
                   onClick={() => setActivePlanId('mensual')}
-                  className={`relative flex flex-col items-start rounded-2xl border-2 p-4 text-left transition ${
+                  className="relative flex flex-col items-start rounded-2xl border-2 p-4 text-left transition"
+                  style={
                     activePlanId === 'mensual'
-                      ? 'border-[#151515] bg-white shadow-md'
-                      : 'border-black/10 bg-white/60 hover:border-black/25'
-                  }`}
+                      ? { borderColor: 'var(--wt-mint)', background: 'rgba(0,207,205,0.06)' }
+                      : { borderColor: 'var(--wt-border)', background: 'rgba(255,255,255,0.6)' }
+                  }
                 >
                   {activePlanId === 'mensual' && (
-                    <span className="absolute right-3 top-3 flex h-5 w-5 items-center justify-center rounded-full bg-[#151515]">
-                      <Check size={11} className="text-white" strokeWidth={3} />
+                    <span className="absolute right-3 top-3 flex h-5 w-5 items-center justify-center rounded-full" style={{ background: 'var(--wt-mint)' }}>
+                      <Check size={11} className="text-[var(--wt-ink)]" strokeWidth={3} />
                     </span>
                   )}
-                  <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-black/[0.06]">
-                    <TrendingDown size={16} className="text-black/50" />
+                  <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[rgba(20,36,37,0.06)]">
+                    <TrendingDown size={16} className="text-[var(--wt-muted)]" />
                   </span>
-                  <p className="mt-2.5 font-extrabold text-[#151515]">Mensual</p>
+                  <p className="wt-heading mt-2.5 font-semibold text-[var(--wt-text)]">Mensual</p>
                   {monthlyPlan && (
-                    <p className="mt-0.5 text-xl font-black text-[#151515]">{formatPrice(monthlyPlan.price)}<span className="text-xs font-bold text-black/40">/mes</span></p>
+                    <p className="wt-heading mt-0.5 text-xl font-semibold text-[var(--wt-text)]">
+                      {formatPrice(monthlyPlan.price)}<span className="text-xs font-bold text-[var(--wt-muted)]">/mes</span>
+                    </p>
                   )}
-                  <p className="mt-2 text-[11px] leading-relaxed text-black/45">Renovación automática. Cancelás cuando querés.</p>
+                  <p className="mt-2 text-[11px] leading-relaxed text-[var(--wt-muted)]">Renovación automática. Cancelás cuando querés.</p>
                 </button>
 
                 {/* Plan Vitalicio — destacado */}
                 <button
                   type="button"
                   onClick={() => setActivePlanId('vitalicia')}
-                  className={`relative flex flex-col items-start rounded-2xl border-2 p-4 text-left transition ${
+                  className="relative flex flex-col items-start rounded-2xl border-2 p-4 text-left transition"
+                  style={
                     activePlanId === 'vitalicia'
-                      ? 'border-amber-400 bg-amber-50 shadow-md'
-                      : 'border-amber-300/60 bg-amber-50/40 hover:border-amber-400/80'
-                  }`}
+                      ? { borderColor: 'var(--wt-lilac)', background: 'rgba(201,187,255,0.14)' }
+                      : { borderColor: 'rgba(201,187,255,0.45)', background: 'rgba(201,187,255,0.06)' }
+                  }
                 >
-                  <span className="absolute -top-2.5 left-3 rounded-full bg-amber-400 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wide text-[#0A0A0C]">
+                  <span className="absolute -top-2.5 left-3 rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wide text-white" style={{ background: 'var(--wt-lilac)' }}>
                     Recomendado
                   </span>
                   {activePlanId === 'vitalicia' && (
-                    <span className="absolute right-3 top-3 flex h-5 w-5 items-center justify-center rounded-full bg-amber-400">
-                      <Check size={11} className="text-[#0A0A0C]" strokeWidth={3} />
+                    <span className="absolute right-3 top-3 flex h-5 w-5 items-center justify-center rounded-full" style={{ background: 'var(--wt-lilac)' }}>
+                      <Check size={11} className="text-white" strokeWidth={3} />
                     </span>
                   )}
-                  <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-400/20">
-                    <Infinity size={16} className="text-amber-600" />
+                  <span className="flex h-8 w-8 items-center justify-center rounded-xl" style={{ background: 'rgba(201,187,255,0.25)' }}>
+                    <Infinity size={16} style={{ color: '#7a63e0' }} />
                   </span>
-                  <p className="mt-2.5 font-extrabold text-[#151515]">De por vida</p>
+                  <p className="wt-heading mt-2.5 font-semibold text-[var(--wt-text)]">De por vida</p>
                   {lifetimePlan && (
-                    <p className="mt-0.5 text-xl font-black text-[#151515]">{formatPrice(lifetimePlan.price)}<span className="text-xs font-bold text-black/40"> único</span></p>
+                    <p className="wt-heading mt-0.5 text-xl font-semibold text-[var(--wt-text)]">
+                      {formatPrice(lifetimePlan.price)}<span className="text-xs font-bold text-[var(--wt-muted)]"> único</span>
+                    </p>
                   )}
                   {monthlyPlan && lifetimePlan && (
-                    <p className="mt-1 text-[11px] font-bold text-amber-600">
+                    <p className="mt-1 text-[11px] font-bold" style={{ color: '#7a63e0' }}>
                       = {Math.round(lifetimePlan.price / monthlyPlan.price)} meses — después $0/mes para siempre
                     </p>
                   )}
-                  <ul className="mt-2 space-y-0.5 text-[11px] text-black/50">
-                    <li className="flex items-center gap-1"><Check size={10} className="text-amber-500" /> Sin renovaciones automáticas</li>
-                    <li className="flex items-center gap-1"><Check size={10} className="text-amber-500" /> Funciona para siempre</li>
+                  <ul className="mt-2 space-y-0.5 text-[11px] text-[var(--wt-muted)]">
+                    <li className="flex items-center gap-1"><Check size={10} style={{ color: '#7a63e0' }} /> Sin renovaciones automáticas</li>
+                    <li className="flex items-center gap-1"><Check size={10} style={{ color: '#7a63e0' }} /> Funciona para siempre</li>
                   </ul>
                 </button>
               </div>
 
               {/* Botón de pago */}
-              <button
-                className="flex w-full items-center justify-center gap-3 rounded-2xl bg-[#151515] px-5 py-3.5 font-extrabold text-white transition hover:bg-black/80 disabled:opacity-50"
-                onClick={startPayment}
-                disabled={paymentLoading || !selectedPlan}
-              >
+              <button className="wt-btn-mint w-full" onClick={startPayment} disabled={paymentLoading || !selectedPlan}>
                 {paymentLoading ? <Loader2 className="animate-spin" size={19} /> : <CreditCard size={19} />}
                 {selectedPlan ? `Pagar ${formatPrice(selectedPlan.price)} con Mercado Pago` : 'Pagar con Mercado Pago'}
               </button>
-              <p className="text-center text-xs text-black/35">
+              <p className="text-center text-xs text-[var(--wt-muted)]">
                 Pago 100% seguro. Volvés acá automáticamente al confirmarse.
               </p>
-              <button className="flex w-full items-center justify-center gap-2 text-xs font-bold text-black/40 hover:text-black/60" onClick={startGoogle}>
+              <button className="flex w-full items-center justify-center gap-2 text-xs font-bold text-[var(--wt-muted)] hover:text-[var(--wt-text)]" onClick={startGoogle}>
                 Cambiar de cuenta Google
               </button>
             </div>
           ) : (
             /* PASO 3 — Crear app */
             <form onSubmit={submit} className="space-y-4">
-              <div className="rounded-2xl bg-black/[0.04] p-4">
-                <p className="text-sm font-bold text-[#151515]">¡Pago confirmado! Último paso.</p>
-                <p className="mt-1 text-sm text-black/55">
+              <div className="rounded-2xl bg-[rgba(20,36,37,0.04)] p-4">
+                <p className="text-sm font-bold text-[var(--wt-text)]">¡Pago confirmado! Último paso.</p>
+                <p className="mt-1 text-sm text-[var(--wt-muted)]">
                   Ponele nombre a tu negocio y elegí el link con el que tus clientes van a encontrarte.
                 </p>
               </div>
 
               <div>
-                <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-black/45">
+                <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-[var(--wt-muted)]">
                   Nombre del negocio
                 </label>
                 <div className="relative">
-                  <Store size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-black/30" />
+                  <Store size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--wt-muted)]" />
                   <input
-                    className="w-full rounded-2xl border border-black/15 bg-white py-3 pl-10 pr-4 text-sm font-semibold outline-none placeholder:text-black/25 focus:border-black/30 focus:ring-2 focus:ring-black/10"
+                    className="w-full rounded-2xl border border-[var(--wt-border)] bg-white py-3 pl-10 pr-4 text-sm font-semibold text-[var(--wt-text)] outline-none placeholder:text-[var(--wt-muted)]/60 focus:border-[var(--wt-mint)] focus:ring-2 focus:ring-[var(--wt-mint)]/15"
                     placeholder="Ej: Cafetería Central"
                     value={businessName}
                     onChange={(e) => setBusinessName(e.target.value)}
@@ -468,13 +465,13 @@ export default function Onboarding() {
               </div>
 
               <div>
-                <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-black/45">
+                <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-[var(--wt-muted)]">
                   Link de tu app
                 </label>
                 <div className="relative">
-                  <Link2 size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-black/30" />
+                  <Link2 size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--wt-muted)]" />
                   <input
-                    className="w-full rounded-2xl border border-black/15 bg-white py-3 pl-10 pr-4 font-mono text-sm font-semibold outline-none placeholder:text-black/25 focus:border-black/30 focus:ring-2 focus:ring-black/10"
+                    className="w-full rounded-2xl border border-[var(--wt-border)] bg-white py-3 pl-10 pr-4 font-mono text-sm font-semibold text-[var(--wt-text)] outline-none placeholder:text-[var(--wt-muted)]/60 focus:border-[var(--wt-mint)] focus:ring-2 focus:ring-[var(--wt-mint)]/15"
                     placeholder="mi-negocio"
                     value={slug}
                     onChange={(e) => { setSlugTouched(true); setSlug(slugify(e.target.value)); }}
@@ -485,22 +482,19 @@ export default function Onboarding() {
                   {slug && slugOk && (
                     <>
                       <Check size={13} className="text-emerald-500" />
-                      <span className="text-black/55">
-                        Tu app en <strong className="text-[#151515]">wintuu.com/{slugInfo?.slug || slug}</strong>
+                      <span className="text-[var(--wt-muted)]">
+                        Tu app en <strong className="text-[var(--wt-text)]">wintuu.com/{slugInfo?.slug || slug}</strong>
                       </span>
                     </>
                   )}
                   {slug && slugInfo && !slugInfo.available && (
                     <span className="text-red-500">{slugInfo.reason}</span>
                   )}
-                  {!slug && <span className="text-black/35">Elegí el link para compartir tu app.</span>}
+                  {!slug && <span className="text-[var(--wt-muted)]/70">Elegí el link para compartir tu app.</span>}
                 </p>
               </div>
 
-              <button
-                className="flex w-full items-center justify-center gap-3 rounded-2xl bg-amber-400 px-5 py-3.5 font-extrabold text-[#0A0A0C] transition hover:bg-amber-300 disabled:opacity-50"
-                disabled={submitting || !businessName || !slugOk}
-              >
+              <button className="wt-btn-mint w-full" disabled={submitting || !businessName || !slugOk}>
                 {submitting ? <Loader2 className="animate-spin" size={19} /> : <Rocket size={19} />}
                 Crear mi app ahora
               </button>
@@ -509,15 +503,17 @@ export default function Onboarding() {
         </div>
       </section>
 
-      {/* Panel derecho — imagen + beneficios */}
-      <aside className="relative hidden min-h-screen overflow-hidden bg-cover bg-center lg:block" style={{ backgroundImage: `url(${BG})` }}>
-        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/20" />
-        <div className="absolute inset-0 flex flex-col justify-end p-12 text-white">
-          <p className="text-xs font-bold uppercase tracking-[0.22em] text-amber-400">Para negocios como el tuyo</p>
-          <p className="mt-3 text-4xl font-black leading-tight">
+      {/* Panel derecho — beneficios */}
+      <aside className="relative hidden min-h-screen items-center overflow-hidden lg:flex" style={{ background: 'linear-gradient(165deg, #fff7ef 0%, #fff1e2 100%)' }}>
+        <div className="wt-bg-blob" style={{ width: 380, height: 380, background: '#ffefae', top: '-8%', right: '-8%' }} />
+        <div className="wt-bg-blob" style={{ width: 320, height: 320, background: '#e3dbff', bottom: '-4%', left: '-6%' }} />
+
+        <div className="relative p-12">
+          <p className="wt-eyebrow-light">Para negocios como el tuyo</p>
+          <p className="wt-heading mt-4 text-[36px] font-semibold leading-tight text-[var(--wt-text)]">
             Tus clientes vuelven cuando los recompensás.
           </p>
-          <p className="mt-4 text-white/65">
+          <p className="wt-body mt-4 max-w-md">
             Creá tu programa de fidelización en minutos. Sin apps que instalar, sin comisiones por venta.
           </p>
 
@@ -528,10 +524,12 @@ export default function Onboarding() {
               { icon: Users, title: 'Clientes que vuelven', desc: 'El programa incentiva visitas repetidas. Fidelizá sin esfuerzo extra.' },
               { icon: Star, title: 'Tu marca, tu estilo', desc: 'Logo, colores y menú propios. Tu app refleja la identidad de tu negocio.' },
             ].map(({ icon: Icon, title, desc }) => (
-              <div key={title} className="rounded-2xl bg-white/10 p-4 backdrop-blur-sm">
-                <Icon size={18} className="text-amber-400" />
-                <p className="mt-2 text-sm font-extrabold">{title}</p>
-                <p className="mt-1 text-xs leading-relaxed text-white/60">{desc}</p>
+              <div key={title} className="wt-glass p-4">
+                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[rgba(0,207,205,0.14)]">
+                  <Icon size={17} className="text-[var(--wt-mint-dark)]" />
+                </span>
+                <p className="wt-heading mt-2.5 text-sm font-semibold text-[var(--wt-text)]">{title}</p>
+                <p className="mt-1 text-xs leading-relaxed text-[var(--wt-muted)]">{desc}</p>
               </div>
             ))}
           </div>
