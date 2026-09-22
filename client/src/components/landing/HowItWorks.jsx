@@ -151,10 +151,6 @@ export default function HowItWorks() {
                 );
               })}
             </div>
-
-            <p className="mt-2 max-w-sm text-[14px] text-[var(--wt-muted)] lg:mt-10">
-              Y mientras tanto, tu menú está ahí: listo para que lo consulten y elijan qué disfrutar.
-            </p>
           </div>
 
           {/* Escena pegada (sticky) — solo desktop */}

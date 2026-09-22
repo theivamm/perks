@@ -33,7 +33,7 @@ export default function LandingFooter() {
             <p className="wt-body mt-6 max-w-sm text-[17px]">Por ese café, ese lugar y esas ganas de volver.</p>
           </div>
 
-          <div className="hidden h-[170px] w-[230px] shrink-0 overflow-hidden rounded-[28px] border border-[var(--wt-border)] lg:block">
+          <div className="hidden h-[420px] w-[300px] shrink-0 overflow-hidden rounded-[36px] border border-[var(--wt-border)] object-cover sm:block sm:mx-auto lg:mx-0 lg:h-[460px] lg:w-[560px]">
             <img
               src={friendsPhoto}
               alt="Dos personas compartiendo un café y riendo en una mesa"

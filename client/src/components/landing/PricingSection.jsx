@@ -89,7 +89,7 @@ export default function PricingSection() {
                     borderColor: featured ? 'rgba(0,207,205,0.38)' : undefined,
                   }}
                 >
-                  <p className="wt-heading text-[16px] font-semibold text-[var(--wt-text)]">{plan?.name || (id === 'mensual' ? 'Mensual' : 'De por vida')}</p>
+                  <p className="wt-h3 text-[var(--wt-text)]">{plan?.name || (id === 'mensual' ? 'Mensual' : 'De por vida')}</p>
                   <p className="mt-1 text-[13px] text-[var(--wt-muted)]">{copy.aclaracion}</p>
 
                   <div className="mt-6 h-[56px]">

@@ -29,8 +29,8 @@ export default function ProductBento() {
 
       <div className="relative mx-auto max-w-[1280px]">
         <div className="wt-reveal max-w-2xl">
-          <p className="wt-eyebrow">Producto</p>
-          <h2 className="wt-h2 mt-5 text-[var(--wt-text)]">Lo de tu negocio, en un mismo lugar.</h2>
+          <p className="wt-eyebrow">Pequeños detalles que hacen grande a tu local.</p>
+          <h2 className="wt-h2 mt-5 text-[var(--wt-text)]">Cuidar a los que vienen siempre, de forma simple.</h2>
           <p className="wt-body mt-5">
             Un perfil con tu identidad, beneficios que elegís vos y un panel para llevarlos al día. Del otro lado,
             tus clientes encuentran sus puntos, sus premios y tu menú.
