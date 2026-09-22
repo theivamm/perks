@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
-import { ChevronDown, LogOut, Menu, User, X } from 'lucide-react';
+import { ChevronDown, LayoutGrid, LogOut, Menu, X } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.jsx';
 import WintuuLogo from './WintuuLogo.jsx';
 
@@ -15,62 +16,114 @@ function initials(name = '') {
   return String(name).trim().charAt(0).toUpperCase() || '?';
 }
 
-function AccountMenu({ user }) {
-  const [open, setOpen] = useState(false);
+// Se porta al contenedor .wintuu-landing (no a document.body) con posición
+// fixed calculada desde el botón: así nunca queda recortado por overflow o
+// stacking-context de secciones de la landing (blobs, parallax del hero...),
+// pero sigue teniendo acceso a las variables CSS del tema (--wt-mint, etc.),
+// que solo están definidas dentro de .wintuu-landing.
+function AccountDropdown({ user, anchorRect, onClose }) {
   const { logout } = useAuth();
-  const ref = useRef(null);
+  const panelRef = useRef(null);
 
   useEffect(() => {
     const onClick = (e) => {
-      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+      if (panelRef.current && !panelRef.current.contains(e.target)) onClose();
     };
+    const onKey = (e) => e.key === 'Escape' && onClose();
     document.addEventListener('mousedown', onClick);
-    return () => document.removeEventListener('mousedown', onClick);
-  }, []);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onClick);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [onClose]);
 
   const doLogout = async () => {
-    setOpen(false);
+    onClose();
     await logout();
   };
 
-  return (
-    <div className="relative" ref={ref}>
-      <button
-        type="button"
-        className="flex items-center gap-2 rounded-full border border-[var(--wt-border)] bg-white px-3 py-1.5 text-sm font-bold text-[var(--wt-text)] transition hover:bg-black/[0.03]"
-        onClick={() => setOpen((o) => !o)}
-        aria-label="Menú de cuenta"
-      >
-        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--wt-mint)] text-xs font-extrabold text-[var(--wt-ink)]">
+  const style = {
+    position: 'fixed',
+    top: anchorRect.bottom + 10,
+    right: Math.max(16, window.innerWidth - anchorRect.right),
+    zIndex: 999,
+  };
+
+  return createPortal(
+    <div ref={panelRef} style={style} className="wt-glass wt-glass-strong w-64 overflow-hidden !rounded-3xl">
+      <div className="flex items-center gap-3 bg-gradient-to-br from-[var(--wt-mint)]/20 via-transparent to-transparent px-4 py-4">
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[var(--wt-mint)] to-[var(--wt-mint-dark)] text-base font-extrabold text-white shadow-sm">
           {initials(user.name)}
         </span>
-        <span className="max-w-32 truncate">{user.name}</span>
+        <div className="min-w-0">
+          <p className="truncate text-[14.5px] font-extrabold text-[var(--wt-text)]">{user.name}</p>
+          <p className="truncate text-xs text-[var(--wt-muted)]">{user.email}</p>
+        </div>
+      </div>
+      <div className="p-1.5">
+        <Link
+          to="/ingresar"
+          onClick={onClose}
+          className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-[var(--wt-text)] transition-colors hover:bg-black/[0.04]"
+        >
+          <LayoutGrid size={16} className="shrink-0 text-[var(--wt-mint-dark)]" />
+          Mis apps
+        </Link>
+        <button
+          type="button"
+          onClick={doLogout}
+          className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-red-500 transition-colors hover:bg-red-500/10"
+        >
+          <LogOut size={16} />
+          Salir
+        </button>
+      </div>
+    </div>,
+    document.querySelector('.wintuu-landing') || document.body
+  );
+}
+
+function AccountMenu({ user }) {
+  const [open, setOpen] = useState(false);
+  const [anchorRect, setAnchorRect] = useState(null);
+  const btnRef = useRef(null);
+
+  const toggle = () => {
+    if (!open) setAnchorRect(btnRef.current?.getBoundingClientRect() || null);
+    setOpen((o) => !o);
+  };
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const reposition = () => setAnchorRect(btnRef.current?.getBoundingClientRect() || null);
+    window.addEventListener('resize', reposition);
+    window.addEventListener('scroll', reposition, true);
+    return () => {
+      window.removeEventListener('resize', reposition);
+      window.removeEventListener('scroll', reposition, true);
+    };
+  }, [open]);
+
+  return (
+    <div className="relative">
+      <button
+        ref={btnRef}
+        type="button"
+        className="flex items-center gap-2 rounded-full border border-[var(--wt-border)] bg-white px-2.5 py-1.5 text-sm font-bold text-[var(--wt-text)] transition hover:border-[var(--wt-mint)] hover:bg-black/[0.02]"
+        onClick={toggle}
+        aria-label="Menú de cuenta"
+        aria-expanded={open}
+      >
+        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-[var(--wt-mint)] to-[var(--wt-mint-dark)] text-xs font-extrabold text-white">
+          {initials(user.name)}
+        </span>
+        <span className="max-w-28 truncate">{user.name}</span>
         <ChevronDown size={14} className={`text-[var(--wt-muted)] transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
 
-      {open && (
-        <div className="wt-glass absolute right-0 top-full z-50 mt-2 w-56 overflow-hidden !rounded-2xl p-1.5">
-          <div className="border-b border-[var(--wt-border)] px-3 py-2.5">
-            <p className="truncate text-sm font-extrabold text-[var(--wt-text)]">{user.name}</p>
-            <p className="truncate text-xs text-[var(--wt-muted)]">{user.email}</p>
-          </div>
-          <Link
-            to="/ingresar"
-            onClick={() => setOpen(false)}
-            className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-semibold text-[var(--wt-text)] transition-colors hover:bg-black/[0.04]"
-          >
-            <User size={15} className="shrink-0 text-[var(--wt-muted)]" />
-            Mis apps
-          </Link>
-          <button
-            type="button"
-            onClick={doLogout}
-            className="mt-0.5 flex w-full items-center gap-2 rounded-xl border-t border-[var(--wt-border)] px-3 py-2 text-left text-sm font-semibold text-red-500 transition-colors hover:bg-red-500/10"
-          >
-            <LogOut size={15} />
-            Salir
-          </button>
-        </div>
+      {open && anchorRect && (
+        <AccountDropdown user={user} anchorRect={anchorRect} onClose={() => setOpen(false)} />
       )}
     </div>
   );
@@ -152,11 +205,14 @@ export default function LandingNavbar() {
             <div className="my-1 h-px bg-[var(--wt-border)]" />
             {user ? (
               <>
-                <div className="flex items-center gap-2 rounded-xl px-3 py-2">
-                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--wt-mint)] text-xs font-extrabold text-[var(--wt-ink)]">
+                <div className="flex items-center gap-2.5 rounded-xl px-3 py-2">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-[var(--wt-mint)] to-[var(--wt-mint-dark)] text-xs font-extrabold text-white">
                     {initials(user.name)}
                   </span>
-                  <span className="truncate text-[15px] font-semibold text-[var(--wt-text)]">{user.name}</span>
+                  <div className="min-w-0">
+                    <p className="truncate text-[15px] font-semibold text-[var(--wt-text)]">{user.name}</p>
+                    <p className="truncate text-xs text-[var(--wt-muted)]">{user.email}</p>
+                  </div>
                 </div>
                 <Link
                   to="/ingresar"

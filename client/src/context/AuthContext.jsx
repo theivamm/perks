@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react';
-import { api, getToken, setToken } from '../api.js';
+import { useLocation } from 'react-router-dom';
+import { api, getToken, isSuperAdminRoute, setToken } from '../api.js';
 import { supabase } from '../lib/supabase.js';
 import { useTenant } from './TenantContext.jsx';
 
@@ -7,7 +8,12 @@ const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const { slug } = useTenant();
-  const userKey = slug ? `wintuu:user:${slug}` : 'wintuu:user:_global';
+  // El panel de superadmin (/wintuu/admin) y el portal global de clientes
+  // (/ingresar) viven ambos con slug='', así que sin este chequeo comparten
+  // la misma identidad guardada y una sesión pisa a la otra.
+  useLocation();
+  const onSuperAdmin = isSuperAdminRoute();
+  const userKey = onSuperAdmin ? 'wintuu:user:_superadmin' : slug ? `wintuu:user:${slug}` : 'wintuu:user:_global';
 
   const [user, setUser] = useState(() => {
     try {
@@ -53,10 +59,17 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(false);
 
   const finishAuth = (data, targetSlug) => {
-    // El backend nos puede avisar explícitamente a qué app pertenece la sesión
-    const slugToUse = data.user?.tenant_slug !== undefined ? data.user.tenant_slug : (targetSlug !== undefined ? targetSlug : slug);
+    // El login de superadmin siempre debe guardarse en su propia identidad,
+    // nunca en la del portal global (ambos comparten slug='').
+    const slugToUse = onSuperAdmin
+      ? '_superadmin'
+      : data.user?.tenant_slug !== undefined
+      ? data.user.tenant_slug
+      : targetSlug !== undefined
+      ? targetSlug
+      : slug;
     const finalUserKey = slugToUse ? `wintuu:user:${slugToUse}` : 'wintuu:user:_global';
-    
+
     setToken(data.token, slugToUse);
     setUser(data.user);
     localStorage.setItem(finalUserKey, JSON.stringify(data.user));

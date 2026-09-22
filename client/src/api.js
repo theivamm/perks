@@ -1,5 +1,13 @@
+// El panel de superadmin vive en /wintuu/admin, fuera de cualquier tenant
+// (slug=''), igual que el portal global /ingresar. Sin este chequeo, ambas
+// identidades (superadmin y el login global de un cliente) terminan
+// compartiendo la misma clave "_global" y una pisa a la otra.
+export function isSuperAdminRoute() {
+  return typeof window !== 'undefined' && window.location.pathname.startsWith('/wintuu/admin');
+}
+
 function getTokenKey(targetSlug) {
-  const slug = targetSlug !== undefined ? targetSlug : currentTenantSlug;
+  const slug = targetSlug !== undefined ? targetSlug : (isSuperAdminRoute() ? '_superadmin' : currentTenantSlug);
   return slug ? `wintuu:token:${slug}` : 'wintuu:token:_global';
 }
 
