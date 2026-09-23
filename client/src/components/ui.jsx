@@ -100,13 +100,18 @@ export function Segmented({ value, onChange, options, className = '' }) {
  */
 export function Modal({ open, onClose, title, subtitle, icon: Icon, footer, children, wide, size }) {
   const dialogRef = useRef(null);
+  // onClose suele venir inline desde el padre (cambia en cada tecla). Lo guardamos
+  // en un ref para que el efecto de abajo corra SOLO al abrir/cerrar; si no, cada
+  // render volvía a enfocar el primer elemento (la X) y el input perdía el foco.
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
   const sz = size || (wide ? 'lg' : 'md');
   const maxW = sz === 'xl' ? 'sm:max-w-4xl' : sz === 'lg' ? 'sm:max-w-3xl' : 'sm:max-w-lg';
 
   useEffect(() => {
     if (!open) return;
     const onKey = (e) => {
-      if (e.key === 'Escape') return onClose();
+      if (e.key === 'Escape') return onCloseRef.current?.();
       if (e.key !== 'Tab') return;
       const focusable = dialogRef.current?.querySelectorAll(FOCUSABLE);
       if (!focusable || focusable.length === 0) return;
@@ -123,14 +128,21 @@ export function Modal({ open, onClose, title, subtitle, icon: Icon, footer, chil
     window.addEventListener('keydown', onKey);
     document.body.style.overflow = 'hidden';
     const previouslyFocused = document.activeElement;
-    const first = dialogRef.current?.querySelector('[autofocus]') || dialogRef.current?.querySelector(FOCUSABLE);
-    first?.focus();
+    // Si algo dentro del modal ya tiene foco (p. ej. un input con autoFocus), lo respetamos.
+    // Si no, enfocamos el primer campo; la X queda como último recurso.
+    if (!dialogRef.current?.contains(document.activeElement)) {
+      const target =
+        dialogRef.current?.querySelector('[autofocus], [data-autofocus]') ||
+        dialogRef.current?.querySelector('input:not([type="hidden"]):not([disabled]), textarea:not([disabled]), select:not([disabled])') ||
+        dialogRef.current?.querySelector(FOCUSABLE);
+      target?.focus();
+    }
     return () => {
       window.removeEventListener('keydown', onKey);
       document.body.style.overflow = '';
       previouslyFocused?.focus?.();
     };
-  }, [open, onClose]);
+  }, [open]);
 
   if (!open) return null;
   return (
