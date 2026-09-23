@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight, Flame, Loader2, Search, SearchX, Star, UtensilsCrossed, X } from 'lucide-react';
 import { api } from '../api.js';
 import { useTheme } from '../context/ThemeContext.jsx';
+import { getVocab, priceLabel, durationLabel, whatsappBookingUrl } from '../lib/businessTypes.js';
 import { EmptyState } from './ui.jsx';
 
 const normalize = (s) =>
@@ -48,6 +49,7 @@ function OfferBadge({ item, big = false }) {
 
 // Ofertas destacadas: 1 = tarjeta ancha; 2+ = carrusel de tarjetas verticales (2–3 visibles en desktop).
 function Featured({ items, currency, ring }) {
+  const { settings } = useTheme();
   const track = useRef(null);
   const [edge, setEdge] = useState({ start: true, end: false });
 
@@ -112,10 +114,8 @@ function Featured({ items, currency, ring }) {
             {item.featured_label && <p className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-amber-700 dark:text-amber-400">{item.featured_label}</p>}
             <h4 className="font-heading text-2xl font-bold leading-tight text-ink sm:text-[30px]">{item.title}</h4>
             {item.description && <p className="max-w-md text-sm leading-relaxed text-ink-muted">{item.description}</p>}
-            <p className="mt-1.5 flex items-baseline gap-2">
-              <span className="font-heading text-3xl font-bold text-primary-strong">{money(finalPrice(item), currency)}</span>
-              {disc && <span className="text-base font-semibold text-ink-muted line-through">{money(item.price, currency)}</span>}
-            </p>
+            <p className="mt-1.5"><ItemPrice item={item} currency={currency} size="lg" /></p>
+            <ServiceMeta item={item} settings={settings} />
           </div>
         </article>
       </section>
@@ -149,10 +149,8 @@ function Featured({ items, currency, ring }) {
                   )}
                   <h4 className="font-heading text-lg font-bold leading-tight text-ink lg:text-xl">{item.title}</h4>
                   {item.description && <p className="line-clamp-2 text-[13px] leading-snug text-ink-muted">{item.description}</p>}
-                  <p className="mt-auto flex items-baseline gap-2 pt-2">
-                    <span className="font-heading text-2xl font-bold text-primary-strong">{money(finalPrice(item), currency)}</span>
-                    {disc && <span className="text-sm font-semibold text-ink-muted line-through">{money(item.price, currency)}</span>}
-                  </p>
+                  <ServiceMeta item={item} settings={settings} />
+                  <p className="mt-auto pt-2"><ItemPrice item={item} currency={currency} /></p>
                 </div>
               </article>
             );
@@ -164,10 +162,249 @@ function Featured({ items, currency, ring }) {
   );
 }
 
+// Precio + duración + profesional + reservar, según el tipo de ítem.
+function ItemPrice({ item, currency, size = 'md' }) {
+  const disc = Number(item.discount) > 0 && item.price_mode !== 'ask';
+  const cls = size === 'lg' ? 'text-3xl' : size === 'sm' ? 'text-[15px]' : 'text-2xl';
+  return (
+    <span className="inline-flex items-baseline gap-2">
+      <span className={`font-heading ${cls} font-bold text-primary-strong`}>{priceLabel(item, money(finalPrice(item), currency))}</span>
+      {disc && <span className="text-sm font-semibold text-ink-muted line-through">{money(item.price, currency)}</span>}
+    </span>
+  );
+}
+
+function ServiceMeta({ item, settings }) {
+  const dur = durationLabel(item.duration_min);
+  const url = item.bookable ? whatsappBookingUrl(settings.whatsapp || settings.phone, item, settings.businessName) : '';
+  if (!dur && !item.professional && !url) return null;
+  return (
+    <span className="mt-1 flex flex-wrap items-center gap-1.5 text-xs font-semibold text-ink-muted">
+      {dur && <span className="rounded-full bg-surface-alt px-2 py-0.5">{dur}</span>}
+      {item.professional && <span className="rounded-full bg-surface-alt px-2 py-0.5">con {item.professional}</span>}
+      {url && (
+        <a href={url} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} className="rounded-full bg-[#25D366] px-2.5 py-1 font-bold text-white transition hover:brightness-95">
+          Reservar por WhatsApp
+        </a>
+      )}
+    </span>
+  );
+}
+
 export default function PublicMenu({ query: extQuery, onQueryChange }) {
   const controlled = typeof onQueryChange === 'function';
   const { settings } = useTheme();
-  const currency = settings.currency || '$';
+  const currency = settings.currency || ' = useState({ items: [], categories: [] });
+  const [loading, setLoading] = useState(true);
+  const [ownQuery, setOwnQuery] = useState('');
+  const query = controlled ? extQuery || '' : ownQuery;
+  const setQuery = controlled ? onQueryChange : setOwnQuery;
+  const [catFilter, setCatFilter] = useState('Todas');
+  const [highlightId, setHighlightId] = useState(null);
+  const highlightTimer = useRef(null);
+
+  useEffect(() => {
+    let alive = true;
+    api('/api/menu')
+      .then((d) => alive && setData(d))
+      .catch(() => alive && setData({ items: [], categories: [] }))
+      .finally(() => alive && setLoading(false));
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  const visible = useMemo(() => (data.items || []).filter((it) => it.available), [data.items]);
+
+  const categories = useMemo(() => {
+    const counts = new Map();
+    for (const it of visible) if (it.category) counts.set(it.category, (counts.get(it.category) || 0) + 1);
+    return [...counts.entries()].map(([name, count]) => ({ name, count }));
+  }, [visible]);
+
+  const filtered = useMemo(() => {
+    const q = normalize(query.trim());
+    return visible.filter((it) => {
+      const okCat = catFilter === 'Todas' || it.category === catFilter;
+      const okSearch =
+        !q || normalize(it.title).includes(q) || normalize(it.description).includes(q) || normalize(it.category).includes(q);
+      return okCat && okSearch;
+    });
+  }, [visible, catFilter, query]);
+
+  const featured = useMemo(() => filtered.filter((it) => it.featured), [filtered]);
+
+  const grouped = useMemo(() => {
+    const map = {};
+    for (const it of filtered) if (!it.featured) (map[it.category || 'General'] ||= []).push(it);
+    return map;
+  }, [filtered]);
+
+  useEffect(() => {
+    if (controlled) highlightMatch(query);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query]);
+
+  const handleSearch = (value) => {
+    setQuery(value);
+    highlightMatch(value);
+  };
+
+  const highlightMatch = (value) => {
+    const q = normalize(value.trim());
+    if (!q) return;
+    const match = visible.find((it) => {
+      const okCat = catFilter === 'Todas' || it.category === catFilter;
+      if (!okCat) return false;
+      return normalize(it.title).includes(q) || normalize(it.description).includes(q) || normalize(it.category).includes(q);
+    });
+    if (!match) return;
+    setHighlightId(match.id);
+    clearTimeout(highlightTimer.current);
+    highlightTimer.current = setTimeout(() => setHighlightId((h) => (h === match.id ? null : h)), 2200);
+  };
+
+  const pickCat = (cat) => {
+    setCatFilter(cat);
+    const el = document.getElementById('menu-top');
+    if (el && el.getBoundingClientRect().top < 0) window.scrollTo({ top: window.scrollY + el.getBoundingClientRect().top - 72, behavior: 'smooth' });
+  };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center py-12">
+        <Loader2 className="animate-spin text-primary-strong" size={26} />
+      </div>
+    );
+  }
+
+  if (visible.length === 0) {
+    return (
+      <section className="mt-10">
+        <EmptyState icon={UtensilsCrossed} title={`${v.section}: muy pronto`} subtitle={`Muy pronto vas a poder ver todos los ${v.items} del local acá.`} />
+      </section>
+    );
+  }
+
+  const tabs = [{ name: 'Todas', label: v.all, count: visible.length }, ...categories.map((c) => ({ ...c, label: c.name }))];
+  const ring = (id) => (highlightId === id ? 'ring-2 ring-primary ring-offset-2 ring-offset-surface-page' : '');
+
+  return (
+    <div id="menu-top" className="min-w-0 mt-6 lg:mt-8 lg:grid lg:grid-cols-[240px_minmax(0,1fr)] lg:items-start lg:gap-9">
+      {/* Escritorio: categorías fijas a la izquierda */}
+      <aside className="hidden lg:sticky lg:top-24 lg:block">
+        {controlled && query && (
+          <p className="mb-3 rounded-xl bg-primary-softer px-3 py-2 text-xs font-semibold text-primary-strong">
+            {filtered.length} resultado{filtered.length === 1 ? '' : 's'} para “{query}”
+          </p>
+        )}
+        <p className="px-3 pb-2.5 text-[10px] font-extrabold uppercase tracking-[0.18em] text-ink-muted">Categorías</p>
+        <div className="space-y-0.5">
+          {tabs.map((t) => {
+            const on = catFilter === t.name;
+            return (
+              <button
+                key={t.name}
+                onClick={() => pickCat(t.name)}
+                aria-current={on ? 'true' : undefined}
+                className={`flex w-full items-center justify-between gap-2 rounded-xl px-3 py-2.5 text-left text-sm font-semibold transition ${
+                  on ? 'bg-primary text-primary-contrast shadow-sm' : 'text-ink hover:bg-surface-alt'
+                }`}
+              >
+                <span className="leading-snug">{t.label}</span>
+                <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${on ? 'bg-white/20' : 'bg-primary-softer text-ink-muted'}`}>{t.count}</span>
+              </button>
+            );
+          })}
+        </div>
+      </aside>
+
+      <div className="min-w-0 space-y-8">
+        {/* Buscador (+ chips en mobile). Queda fijo bajo el Navbar en mobile. */}
+        <div className={`sticky z-30 -mx-4 space-y-2.5 bg-surface-page/95 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6 lg:mx-0 lg:bg-transparent lg:p-0 lg:backdrop-blur-none ${
+          controlled ? 'top-[128px] lg:hidden' : 'top-[72px] lg:static'
+        }`}>
+          {controlled && query && (
+            <p className="text-xs font-semibold text-ink-muted lg:hidden">
+              {filtered.length} resultado{filtered.length === 1 ? '' : 's'} para “{query}”
+            </p>
+          )}
+          <div className={`relative ${controlled ? 'hidden' : ''}`}>
+            <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-muted" />
+            <input
+              id="menu-search"
+              className="input w-full rounded-2xl py-3 pl-11 pr-10"
+              placeholder="Buscar plato, bebida, postre..."
+              value={query}
+              onChange={(e) => handleSearch(e.target.value)}
+            />
+            {query && (
+              <button className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-muted hover:text-ink" onClick={() => setQuery('')} aria-label="Limpiar búsqueda">
+                <X size={16} />
+              </button>
+            )}
+          </div>
+          <div className={`-mx-4 flex gap-2 overflow-x-auto px-4 lg:hidden ${NO_SCROLLBAR}`}>
+            {tabs.map((t) => {
+              const on = catFilter === t.name;
+              return (
+                <button
+                  key={t.name}
+                  onClick={() => pickCat(t.name)}
+                  className={`shrink-0 whitespace-nowrap rounded-full border px-3.5 py-2 text-xs font-semibold transition ${
+                    on ? 'border-primary bg-primary text-primary-contrast' : 'border-line bg-surface text-ink'
+                  }`}
+                >
+                  {t.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {filtered.length === 0 ? (
+          <EmptyState icon={SearchX} title="Sin resultados" subtitle="Probá con otra búsqueda o elegí otra categoría." />
+        ) : (
+          <>
+            {featured.length > 0 && <Featured items={featured} currency={currency} ring={ring} />}
+
+            <div className="space-y-8 lg:space-y-10">
+              {Object.entries(grouped).map(([category, list]) => (
+                <section key={category}>
+                  <div className="mb-1 flex items-center gap-3 lg:mb-3.5">
+                    <h3 className="font-heading text-[17px] font-bold text-ink lg:text-[21px]">{category}</h3>
+                    <span className="hidden text-xs font-semibold text-ink-muted lg:inline">{list.length}</span>
+                    <div className="hidden h-px flex-1 bg-line lg:block" />
+                  </div>
+                  <div className="grid grid-cols-[minmax(0,1fr)] lg:grid-cols-2 lg:gap-3 2xl:grid-cols-3">
+                    {list.map((item) => (
+                      <article
+                        key={item.id}
+                        id={`menu-item-${item.id}`}
+                        className={`group flex min-w-0 items-center gap-3 border-b border-line py-3 lg:gap-3.5 lg:rounded-[18px] lg:border lg:bg-surface lg:p-3 lg:transition lg:hover:border-primary/40 ${ring(item.id)}`}
+                      >
+                        <Thumb item={item} className="order-last h-16 w-16 shrink-0 rounded-xl lg:order-first lg:h-[76px] lg:w-[76px] lg:rounded-2xl" />
+                        <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                          <h4 className="text-sm font-semibold text-ink lg:text-[15px]">{item.title}</h4>
+                          {item.description && <p className="line-clamp-2 text-xs leading-snug text-ink-muted lg:text-[13px]">{item.description}</p>}
+                          <ServiceMeta item={item} settings={settings} />
+                          <p className="mt-1 font-heading text-[15px] font-bold text-primary-strong lg:hidden">{priceLabel(item, money(item.price, currency))}</p>
+                        </div>
+                        <p className="hidden shrink-0 pr-1.5 font-heading text-[17px] font-bold text-primary-strong lg:block">{priceLabel(item, money(item.price, currency))}</p>
+                      </article>
+                    ))}
+                  </div>
+                </section>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+;
+  const v = getVocab(settings);
   const [data, setData] = useState({ items: [], categories: [] });
   const [loading, setLoading] = useState(true);
   const [ownQuery, setOwnQuery] = useState('');
@@ -361,9 +598,10 @@ export default function PublicMenu({ query: extQuery, onQueryChange }) {
                         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                           <h4 className="text-sm font-semibold text-ink lg:text-[15px]">{item.title}</h4>
                           {item.description && <p className="line-clamp-2 text-xs leading-snug text-ink-muted lg:text-[13px]">{item.description}</p>}
-                          <p className="mt-1 font-heading text-[15px] font-bold text-primary-strong lg:hidden">{money(item.price, currency)}</p>
+                          <ServiceMeta item={item} settings={settings} />
+                          <p className="mt-1 font-heading text-[15px] font-bold text-primary-strong lg:hidden">{priceLabel(item, money(item.price, currency))}</p>
                         </div>
-                        <p className="hidden shrink-0 pr-1.5 font-heading text-[17px] font-bold text-primary-strong lg:block">{money(item.price, currency)}</p>
+                        <p className="hidden shrink-0 pr-1.5 font-heading text-[17px] font-bold text-primary-strong lg:block">{priceLabel(item, money(item.price, currency))}</p>
                       </article>
                     ))}
                   </div>

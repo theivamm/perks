@@ -20,6 +20,9 @@ const DEFAULT_SETTINGS = {
 // Datos de contacto del local (footer + botón flotante). Se guardan en la misma tabla settings.
 const CONTACT_KEYS = ["businessDescription", "address", "mapsUrl", "phone", "whatsapp", "email", "website", "instagram", "facebook", "tiktok", "hours", "contactButton", "contactMessage"];
 
+// Tipo de negocio y vocabulario del catálogo (ver lib/businessTypes.js).
+const VOCAB_KEYS = ['businessType', 'businessTypeOther', 'catalogKind', 'catalogLabel', 'itemLabel', 'itemLabelPlural'];
+
 const settingsKey = (slug = '') => `wintuu:settings:${slug || '_wintuu'}`;
 
 function normalize(data) {
@@ -34,6 +37,7 @@ function normalize(data) {
     tagline: data.tagline || '',
     setupCompleted: String(data.setupCompleted ?? DEFAULT_SETTINGS.setupCompleted),
     ...Object.fromEntries(CONTACT_KEYS.map((k) => [k, data[k] || ''])),
+    ...Object.fromEntries(VOCAB_KEYS.map((k) => [k, data[k] || ''])),
   };
 }
 

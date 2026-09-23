@@ -10,6 +10,21 @@ import { imageUpload, excelUpload, uploadsDir } from '../upload.js';
 
 const router = Router();
 
+// Campos de servicios (migración 13). Se normalizan acá para POST y PUT.
+const PRICE_MODES = ['fixed', 'from', 'ask'];
+function serviceFields(body, partial = false) {
+  const out = {};
+  const has = (k) => body[k] !== undefined;
+  if (!partial || has('price_mode')) out.price_mode = PRICE_MODES.includes(body.price_mode) ? body.price_mode : 'fixed';
+  if (!partial || has('duration_min')) {
+    const n = Math.round(Number(body.duration_min));
+    out.duration_min = Number.isFinite(n) && n > 0 ? Math.min(n, 24 * 60) : null;
+  }
+  if (!partial || has('professional')) out.professional = String(body.professional || '').trim().slice(0, 60);
+  if (!partial || has('bookable')) out.bookable = !!body.bookable && body.bookable !== '0';
+  return out;
+}
+
 router.get(
   '/',
   asyncHandler(async (req, res) => {
@@ -46,6 +61,7 @@ router.post(
         featured: featured ? true : false,
         featured_label: String(featured_label || '').trim(),
         discount: Math.max(0, Math.min(100, Number(discount) || 0)),
+        ...serviceFields(req.body || {}),
       })
       .select()
       .single();
@@ -78,6 +94,7 @@ router.put(
     if (featured !== undefined) patch.featured = featured ? true : false;
     if (featured_label !== undefined) patch.featured_label = String(featured_label || '').trim();
     if (discount !== undefined) patch.discount = Math.max(0, Math.min(100, Number(discount) || 0));
+    Object.assign(patch, serviceFields(req.body || {}, true));
 
     const { data, error } = await supabase
       .from('menu_items')

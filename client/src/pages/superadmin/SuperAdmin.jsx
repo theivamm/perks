@@ -7,6 +7,7 @@ import '../../styles/wintuu-landing.css';
 import '../../styles/wintuu-landing-v2.css';
 import WintuuLogo from '../../components/landing/WintuuLogo.jsx';
 import AuthShell, { inputCls, primaryBtn } from '../../components/landing/AuthShell.jsx';
+import { BUSINESS_TYPES } from '../../lib/businessTypes.js';
 
 /* ── Estilos compartidos del panel ── */
 export const CARD = 'rounded-[22px] border border-[rgba(20,36,37,0.08)] bg-white';
@@ -745,6 +746,7 @@ function CreateModal({ onClose, onDone }) {
   const [touched, setTouched] = useState(false);
   const [plan, setPlan] = useState('mensual');
   const [ownerEmail, setOwnerEmail] = useState('');
+  const [businessType, setBusinessType] = useState('cafeteria');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
@@ -757,7 +759,7 @@ function CreateModal({ onClose, onDone }) {
     setBusy(true);
     setError('');
     try {
-      await api('/api/superadmin/tenants', { method: 'POST', body: { businessName, slug, plan, ownerEmail: ownerEmail || undefined } });
+      await api('/api/superadmin/tenants', { method: 'POST', body: { businessName, slug, plan, businessType, ownerEmail: ownerEmail || undefined } });
       onDone();
     } catch (err) {
       setError(err.message);
@@ -799,6 +801,15 @@ function CreateModal({ onClose, onDone }) {
           Email del dueño (opcional)
           <input className={FIELD} type="email" placeholder="dueno@gmail.com" value={ownerEmail} onChange={(e) => setOwnerEmail(e.target.value)} />
           <span className="text-xs font-medium text-[var(--wt-muted)]">Tiene que haber ingresado al menos una vez con Google.</span>
+        </label>
+        <label className={LABEL}>
+          Tipo de negocio
+          <select className={FIELD} value={businessType} onChange={(e) => setBusinessType(e.target.value)}>
+            {BUSINESS_TYPES.map((t) => (
+              <option key={t.id} value={t.id}>{t.label}</option>
+            ))}
+          </select>
+          <span className="text-xs font-medium text-[var(--wt-muted)]">El dueño lo puede cambiar en primeros pasos o en Configuración.</span>
         </label>
         <PlanPicker value={plan} onChange={setPlan} />
         {error && <p className="text-sm font-semibold text-red-600">{error}</p>}

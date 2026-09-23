@@ -25,11 +25,14 @@ import ImageCropper from '../../components/ImageCropper.jsx';
 import '../../styles/wintuu-landing.css';
 import '../../styles/wintuu-landing-v2.css';
 import WintuuLogo from '../../components/landing/WintuuLogo.jsx';
+import { BusinessTypePicker } from '../../components/BusinessTypeSettings.jsx';
+import { getVocab } from '../../lib/businessTypes.js';
 
-const STEPS = ['Bienvenida', 'Tu negocio', 'Tu marca', 'Tu logo', 'Tu menú', 'Listo'];
+const STEPS = ['Bienvenida', 'Tu negocio', 'Tu marca', 'Tu logo', 'Tu catálogo', 'Listo'];
 
 export default function SetupWizard() {
   const { settings, updateSettings } = useTheme();
+  const vocab = getVocab(settings);
   const { t } = useTenant();
   const navigate = useNavigate();
 
@@ -37,6 +40,9 @@ export default function SetupWizard() {
   const [biz, setBiz] = useState({
     name: settings.businessName === 'Mi negocio' ? '' : settings.businessName || '',
     tagline: settings.tagline || '',
+    // Negocios nuevos: sin elegir hasta que el dueño toque uno.
+    type: settings.businessType && settings.businessType !== 'cafeteria' ? settings.businessType : '',
+    other: settings.businessTypeOther || '',
   });
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -65,6 +71,8 @@ export default function SetupWizard() {
       await updateSettings({
         businessName: biz.name.trim() || 'Mi negocio',
         tagline: biz.tagline.trim(),
+        businessType: biz.type || 'cafeteria',
+        businessTypeOther: biz.type === 'otro' ? biz.other.trim() : '',
       });
       next();
     } finally {
@@ -217,6 +225,20 @@ export default function SetupWizard() {
                   placeholder="Por ej. Sumá visitas, ganá premios"
                 />
               </label>
+              <div>
+                <span className="mb-1.5 block text-[13px] font-semibold text-[var(--wt-ink)]">¿Qué tipo de negocio es?</span>
+                <p className="mb-2.5 text-[12.5px] text-[var(--wt-muted)]">Así nombramos tu catálogo y te mostramos los campos correctos. Lo podés cambiar en Configuración.</p>
+                <BusinessTypePicker tone="landing" value={biz.type} onChange={(type) => setBiz((b) => ({ ...b, type }))} />
+                {biz.type === 'otro' && (
+                  <input
+                    className="mt-3 w-full rounded-2xl border-[1.5px] border-[var(--wt-border)] bg-[var(--wt-surface)] px-4 py-3 text-[15px] font-medium text-[var(--wt-text)] outline-none transition placeholder:text-[var(--wt-muted)]/60 focus:border-[var(--wt-mint)] focus:ring-4 focus:ring-[var(--wt-mint)]/15"
+                    value={biz.other}
+                    onChange={(e) => setBiz((b) => ({ ...b, other: e.target.value }))}
+                    maxLength={40}
+                    placeholder="Contanos cuál, por ej. Florería"
+                  />
+                )}
+              </div>
             </div>
             <StepFooter onSkip={next} onNext={saveBiz} nextLabel="Guardar y continuar" busy={saving} />
           </div>
@@ -357,7 +379,7 @@ export default function SetupWizard() {
 
         {step === 4 && (
           <div className="rounded-[32px] border border-[var(--wt-border)] bg-[var(--wt-surface)] p-6 shadow-[0_24px_60px_-40px_rgba(8,40,44,0.5)] sm:p-9">
-            <StepHeader icon={UtensilsCrossed} title="Tu menú y recompensas" subtitle="Cargá lo que tus clientes pueden consumir y qué premios ganan." />
+            <StepHeader icon={UtensilsCrossed} title={`${vocab.section} y recompensas`} subtitle={`Cargá tus ${vocab.items} y qué premios ganan tus clientes.`} />
             <div className="grid gap-3 sm:grid-cols-2">
               <button
                 onClick={() => finish(t('/dashboard/menu'))}
@@ -367,9 +389,9 @@ export default function SetupWizard() {
                 <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[rgba(0,207,205,0.14)] text-[var(--wt-mint-dark)]">
                   <UtensilsCrossed size={20} />
                 </span>
-                <span className="wt-heading font-semibold text-[var(--wt-text)]">Cargar productos</span>
+                <span className="wt-heading font-semibold text-[var(--wt-text)]">Cargar {vocab.items}</span>
                 <span className="text-xs text-[var(--wt-muted)]">
-                  Café, comidas o servicios con su precio. Es lo que acumula puntos por compra.
+                  {vocab.Items} con su precio, por ej. {vocab.ph.title}. Es lo que acumula puntos por compra.
                 </span>
               </button>
               <button

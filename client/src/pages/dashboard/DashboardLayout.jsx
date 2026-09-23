@@ -22,6 +22,7 @@ import {
 import { api } from '../../api.js';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { useTheme } from '../../context/ThemeContext.jsx';
+import { getVocab } from '../../lib/businessTypes.js';
 import { useTenant } from '../../context/TenantContext.jsx';
 import NotificationsBell from '../../components/NotificationsBell.jsx';
 import Logo from '../../components/Logo.jsx';
@@ -36,7 +37,6 @@ function initials(name = '') {
 }
 
 const TITLES = [
-  ['/dashboard/menu', 'Menú'],
   ['/dashboard/clientes', 'Clientes'],
   ['/dashboard/cliente', 'Clientes'],
   ['/dashboard/cupones', 'Cupones'],
@@ -55,6 +55,7 @@ export default function DashboardLayout() {
   const [moreOpen, setMoreOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem('sidebar-collapsed') === '1');
   const menuRef = useRef(null);
+  const vocab = getVocab(settings);
   const [supportUnread, setSupportUnread] = useState(0);
 
   // Globo de Soporte: consulta liviana cada 20 s, al cambiar de página y
@@ -78,7 +79,7 @@ export default function DashboardLayout() {
   }, [pathname]);
 
   const NAV = [
-    { to: t('/dashboard/menu'), label: 'Menú', icon: UtensilsCrossed },
+    { to: t('/dashboard/menu'), label: vocab.section, icon: UtensilsCrossed },
     { to: t('/dashboard/clientes'), label: 'Clientes', icon: Users },
     { to: t('/dashboard/cupones'), label: 'Cupones', icon: BadgePercent },
     { to: t('/dashboard/soporte'), label: 'Soporte', icon: LifeBuoy, badge: supportUnread },
@@ -90,7 +91,7 @@ export default function DashboardLayout() {
     { to: home(), label: 'Ver página de inicio', icon: ExternalLink, external: true },
   ];
 
-  const pageTitle = TITLES.find(([p]) => pathname.includes(p))?.[1] || 'Panel';
+  const pageTitle = pathname.includes('/dashboard/menu') ? vocab.section : TITLES.find(([p]) => pathname.includes(p))?.[1] || 'Panel';
 
   const toggleCollapsed = () => {
     setCollapsed((c) => {

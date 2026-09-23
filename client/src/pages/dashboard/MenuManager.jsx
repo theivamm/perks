@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import {
+import { MessageCircle,
   FileSpreadsheet,
   HelpCircle,
   ImagePlus,
@@ -15,14 +15,17 @@ import {
 } from 'lucide-react';
 import { api } from '../../api.js';
 import { money } from '../../lib/money.js';
+import { useVocab, priceLabel, durationLabel } from '../../lib/businessTypes.js';
 import { useTheme } from '../../context/ThemeContext.jsx';
 import { EmptyState, Field, Modal, Select, Spinner, SwitchRow, confirmDialog, toast } from '../../components/ui.jsx';
 import ImageCropper from '../../components/ImageCropper.jsx';
 
-const EMPTY_FORM = { title: '', description: '', price: '', category: 'General', image: '', available: 1, featured: 0, featured_label: '', discount: 0 };
+const EMPTY_FORM = { title: '', description: '', price: '', category: 'General', image: '', available: 1, featured: 0, featured_label: '', discount: 0, price_mode: 'fixed', duration_min: '', professional: '', bookable: 0 };
+const PRICE_MODES = [['fixed', 'Precio fijo'], ['from', 'Desde'], ['ask', 'A consultar']];
 
 export default function MenuManager() {
   const { settings } = useTheme();
+  const v = useVocab();
   const [data, setData] = useState({ items: [], categories: [] });
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('Todas');
@@ -109,7 +112,7 @@ export default function MenuManager() {
     try {
       if (editing) await api(`/api/menu/${editing.id}`, { method: 'PUT', body: form });
       else await api('/api/menu', { method: 'POST', body: form });
-      toast(editing ? 'Producto actualizado' : 'Producto creado');
+      toast(editing ? v.updated : v.created);
       setModalOpen(false);
       await load();
     } catch (err) {
@@ -120,10 +123,10 @@ export default function MenuManager() {
   };
 
   const remove = async (item) => {
-    if (!(await confirmDialog({ title: `¿Eliminar "${item.title}"?`, message: 'El producto se borra del menú y tus clientes dejan de verlo. No se puede deshacer.', confirmLabel: 'Eliminar producto' }))) return;
+    if (!(await confirmDialog({ title: `¿Eliminar "${item.title}"?`, message: `${v.the} se borra de ${v.sectionLower} y tus clientes dejan de verlo. No se puede deshacer.`, confirmLabel: `Eliminar ${v.item}` }))) return;
     try {
       await api(`/api/menu/${item.id}`, { method: 'DELETE' });
-      toast('Producto eliminado');
+      toast(v.deleted);
       await load();
     } catch (err) {
       toast(err.message);
@@ -188,7 +191,7 @@ export default function MenuManager() {
         method: 'PUT',
         body: { available: item.available ? 0 : 1 },
       });
-      toast(item.available ? 'Oculto del menú público' : 'Visible en el menú');
+      toast(item.available ? `${v.Item} ${v.hidden}` : `Visible en ${v.sectionLower}`);
       await load();
     } catch (err) {
       toast(err.message);
@@ -242,7 +245,7 @@ export default function MenuManager() {
       const fd = new FormData();
       fd.append('file', file);
       const res = await api('/api/menu/import-excel', { method: 'POST', body: fd });
-      toast(`¡Excel importado! ${res.imported} productos${res.skipped ? ` (${res.skipped} fila(s) ignorada(s))` : ''}`);
+      toast(`¡Excel importado! ${res.imported} ${v.items}${res.skipped ? ` (${res.skipped} fila(s) ignorada(s))` : ''}`);
       await load();
     } catch (err) {
       toast(err.message);
@@ -257,9 +260,9 @@ export default function MenuManager() {
     <div>
       <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-ink">Menú</h1>
+          <h1 className="text-3xl font-bold text-ink">{v.section}</h1>
           <p className="mt-1 text-sm text-ink-muted">
-            {data.items.length} productos
+            {data.items.length} {v.items}
             {hiddenCount > 0 && ` · ${hiddenCount} oculto${hiddenCount > 1 ? 's' : ''}`}
             {missingPhotos > 0 && ` · ${missingPhotos} sin foto`}
           </p>
@@ -294,16 +297,16 @@ export default function MenuManager() {
                     El archivo debe ser <strong>.xlsx</strong> o <strong>.xls</strong> con <strong>4 columnas</strong> en este orden:
                   </p>
                   <ol className="mt-2 space-y-1 text-xs font-medium text-ink">
-                    <li><strong>1.</strong> Título del producto (obligatorio)</li>
+                    <li><strong>1.</strong> Nombre del {v.item} (obligatorio)</li>
                     <li><strong>2.</strong> Precio (ej: <code>1500</code> o <code>1.500,50</code>)</li>
-                    <li><strong>3.</strong> Categoría (ej: Bebidas, Postres)</li>
+                    <li><strong>3.</strong> Categoría (ej: {v.categories.slice(0, 2).join(', ')})</li>
                     <li><strong>4.</strong> Descripción (opcional)</li>
                   </ol>
                   <p className="mt-2 text-xs leading-relaxed text-ink-muted">
                     Las <strong>imágenes se agregan manualmente</strong> después de importar. Si la primera fila es un encabezado (Título / Precio / ...), se ignora automáticamente.
                   </p>
                   <div className="mt-3 rounded-xl border border-amber-300/60 bg-amber-50 px-3 py-2.5 text-[11px] leading-relaxed text-amber-800 dark:border-amber-400/40 dark:bg-amber-400/10 dark:text-amber-200">
-                    <strong>Importante:</strong> si el archivo no respeta esta estructura exacta (4 columnas en el orden indicado), los productos se importarán mal (título, precio o categoría quedarán cruzados).
+                    <strong>Importante:</strong> si el archivo no respeta esta estructura exacta (4 columnas en el orden indicado), los {v.items} se importarán mal (título, precio o categoría quedarán cruzados).
                   </div>
                 </div>
               </>
@@ -319,7 +322,7 @@ export default function MenuManager() {
           </div>
           <button className="btn-primary" onClick={openNew}>
             <Plus size={16} />
-            Nuevo producto
+            {v.newItem}
           </button>
         </div>
       </div>
@@ -336,7 +339,7 @@ export default function MenuManager() {
                   filter === name ? 'bg-surface-alt font-bold text-primary-strong' : 'font-medium text-ink hover:bg-surface-alt'
                 }`}
               >
-                <span className="truncate">{name === 'Todas' ? 'Todo el menú' : name}</span>
+                <span className="truncate">{name === 'Todas' ? v.all : name}</span>
                 <span className="text-[11px] font-bold text-ink-muted">{count}</span>
               </button>
             ))}
@@ -352,7 +355,7 @@ export default function MenuManager() {
             {missingPhotos > 0 && (
               <span className="inline-flex items-center gap-1.5 rounded-2xl border border-dashed border-primary/50 px-3.5 py-2.5 text-xs font-semibold text-primary-strong">
                 <Sparkles size={14} />
-                {missingPhotos} sin foto · tocá ✦ en cada producto para generarla con IA
+                {missingPhotos} sin foto · tocá ✦ en cada {v.item} para generarla con IA
               </span>
             )}
           </div>
@@ -372,9 +375,9 @@ export default function MenuManager() {
           </div>
 
           {loading ? (
-            <Spinner label="Cargando menú..." />
+            <Spinner label={`Cargando ${v.sectionLower}...`} />
           ) : items.length === 0 ? (
-            <EmptyState icon={UtensilsCrossed} title="Sin productos" subtitle="Crea uno nuevo o importa un archivo Excel." />
+            <EmptyState icon={UtensilsCrossed} title={`Sin ${v.items} todavía`} subtitle="Creá el primero o importá un archivo Excel." />
           ) : (
             <div className="space-y-5">
               {Object.entries(grouped).map(([category, list]) => (
@@ -433,8 +436,9 @@ export default function MenuManager() {
 
                           <div className="col-span-2 flex items-center justify-between gap-3 md:contents">
                             <div className={`flex items-baseline gap-2 md:justify-end ${!item.available ? 'opacity-50' : ''}`}>
-                              {disc && <span className="text-xs text-ink-muted line-through">{money(item.price, settings.currency)}</span>}
-                              <span className="font-heading text-base font-bold text-primary-strong">{money(final, settings.currency)}</span>
+                              {disc && item.price_mode !== 'ask' && <span className="text-xs text-ink-muted line-through">{money(item.price, settings.currency)}</span>}
+                              <span className="font-heading text-base font-bold text-primary-strong">{priceLabel(item, money(final, settings.currency))}</span>
+                          {v.isService && item.duration_min > 0 && <span className="text-[11px] font-semibold text-ink-muted">· {durationLabel(item.duration_min)}</span>}
                             </div>
 
                             <button
@@ -499,8 +503,8 @@ export default function MenuManager() {
         onClose={() => setModalOpen(false)}
         size="lg"
         icon={editing ? Pencil : Plus}
-        title={editing ? 'Editar producto' : 'Nuevo producto'}
-        subtitle={editing ? editing.title : 'Se agrega a tu menú público al guardarlo.'}
+        title={editing ? `Editar ${v.item}` : v.newItem}
+        subtitle={editing ? editing.title : `Se agrega a ${v.sectionLower} en tu página al guardarlo.`}
         footer={
           <>
             <button type="button" className="btn-ghost" onClick={() => setModalOpen(false)}>
@@ -508,7 +512,7 @@ export default function MenuManager() {
             </button>
             <button type="submit" form="product-form" className="btn-primary" disabled={saving || uploading}>
               {saving ? <Loader2 className="animate-spin" size={16} /> : editing ? <Pencil size={15} /> : <Plus size={16} />}
-              {editing ? 'Guardar cambios' : 'Crear producto'}
+              {editing ? 'Guardar cambios' : `Crear ${v.item}`}
             </button>
           </>
         }
@@ -561,16 +565,20 @@ export default function MenuManager() {
 
           {/* Datos */}
           <div className="space-y-4">
-            <Field label="Nombre del producto" htmlFor="p-title" required>
-              <input id="p-title" className="input" required value={form.title} onChange={set('title')} placeholder="Ej: Flat White" autoFocus />
+            <Field label={`Nombre del ${v.item}`} htmlFor="p-title" required>
+              <input id="p-title" className="input" required value={form.title} onChange={set('title')} placeholder={`Ej: ${v.ph.title}`} autoFocus />
             </Field>
 
             <div className="grid gap-3 sm:grid-cols-2">
-              <Field label="Precio" htmlFor="p-price" required>
-                <div className="relative">
-                  <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-ink-muted">{settings.currency || '$'}</span>
-                  <input id="p-price" className="input !pl-9" required type="number" min="0" step="0.01" value={form.price} onChange={set('price')} placeholder="0" />
-                </div>
+              <Field label={form.price_mode === 'from' ? 'Precio desde' : 'Precio'} htmlFor="p-price" required={form.price_mode !== 'ask'}>
+                {form.price_mode === 'ask' ? (
+                  <div className="input flex items-center text-ink-muted">A consultar</div>
+                ) : (
+                  <div className="relative">
+                    <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-ink-muted">{settings.currency || '$'}</span>
+                    <input id="p-price" className="input !pl-9" required type="number" min="0" step="0.01" value={form.price} onChange={set('price')} placeholder="0" />
+                  </div>
+                )}
               </Field>
               <Field label="Categoría" htmlFor="p-cat">
                 <Select
@@ -579,7 +587,7 @@ export default function MenuManager() {
                   onChange={(v) => onCategoryChange({ target: { value: v } })}
                   options={[
                     { value: '', label: 'General' },
-                    ...data.categories.filter((c) => c && c !== 'General').map((c) => ({ value: c, label: c })),
+                    ...[...new Set([...data.categories, ...(data.categories.length ? [] : v.categories)])].filter((c) => c && c !== 'General').map((c) => ({ value: c, label: c })),
                     { value: '__new__', label: 'Nueva categoría', icon: Plus, accent: true, divider: true },
                   ]}
                 />
@@ -589,15 +597,53 @@ export default function MenuManager() {
               </Field>
             </div>
 
-            <Field label="Descripción" htmlFor="p-desc" hint="Ingredientes, tamaño o lo que ayude a elegir.">
-              <textarea id="p-desc" className="input min-h-20 resize-y" value={form.description} onChange={set('description')} placeholder="Doble ristretto con leche texturizada…" />
+            {v.isService && (
+              <div className="space-y-3 rounded-2xl border border-line bg-surface-alt/60 p-4">
+                <div>
+                  <span className="mb-1.5 block text-sm font-bold text-ink">Cómo mostrar el precio</span>
+                  <div className="grid grid-cols-3 gap-1 rounded-2xl border border-line bg-surface p-1">
+                    {PRICE_MODES.map(([id, label]) => (
+                      <button
+                        key={id}
+                        type="button"
+                        onClick={() => setForm((f) => ({ ...f, price_mode: id }))}
+                        className={`rounded-xl py-2 text-xs font-bold transition ${(form.price_mode || 'fixed') === id ? 'bg-primary text-primary-contrast shadow-sm' : 'text-ink-muted hover:text-ink'}`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Field label="Duración" htmlFor="p-dur" hint={durationLabel(form.duration_min) || 'Opcional'}>
+                    <div className="relative">
+                      <input id="p-dur" className="input !pr-12" type="number" min="0" step="5" value={form.duration_min ?? ''} onChange={set('duration_min')} placeholder="45" />
+                      <span className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-ink-muted">min</span>
+                    </div>
+                  </Field>
+                  <Field label="Profesional" htmlFor="p-pro" hint="Quién lo realiza (opcional)">
+                    <input id="p-pro" className="input" value={form.professional || ''} onChange={set('professional')} placeholder="Ej: Martín" maxLength={60} />
+                  </Field>
+                </div>
+                <SwitchRow
+                  checked={Boolean(form.bookable)}
+                  onChange={(on) => setForm((f) => ({ ...f, bookable: on ? 1 : 0 }))}
+                  icon={MessageCircle}
+                  title="Botón Reservar por WhatsApp"
+                  subtitle={settings.whatsapp ? 'Tus clientes te escriben con el servicio ya elegido.' : 'Cargá tu WhatsApp en Configuración → Contacto para activarlo.'}
+                />
+              </div>
+            )}
+
+            <Field label="Descripción" htmlFor="p-desc" hint={v.ph.hint}>
+              <textarea id="p-desc" className="input min-h-20 resize-y" value={form.description} onChange={set('description')} placeholder={v.ph.description} />
             </Field>
 
             <SwitchRow
               checked={Boolean(form.available)}
               onChange={(v) => setForm((f) => ({ ...f, available: v ? 1 : 0 }))}
               icon={Eye}
-              title="Visible en el menú público"
+              title={`Visible en ${v.sectionLower}`}
               subtitle="Si lo apagás, queda guardado pero tus clientes no lo ven."
             />
 
@@ -607,7 +653,7 @@ export default function MenuManager() {
               icon={Star}
               tone="amber"
               title="Oferta especial"
-              subtitle="Se destaca arriba del menú en tu página."
+              subtitle={`Se destaca arriba de ${v.sectionLower} en tu página.`}
             >
               <div className="grid gap-3 sm:grid-cols-2">
                 <Field label="Descuento" htmlFor="p-disc">

@@ -19,6 +19,13 @@ const DEFAULTS = {
   businessName: 'Fidelización App',
   tagline: '',
   setupCompleted: 'true',
+  // Tipo de negocio y vocabulario del catálogo (migración 13)
+  businessType: 'cafeteria',
+  businessTypeOther: '',
+  catalogKind: '',
+  catalogLabel: '',
+  itemLabel: '',
+  itemLabelPlural: '',
   // Contacto del local (footer + botón flotante)
   businessDescription: '',
   address: '',
@@ -36,6 +43,7 @@ const DEFAULTS = {
 };
 
 const ALLOWED = ['primaryColor', 'theme', 'currency', 'logo', 'logoIso', 'isoIcon', 'businessName', 'tagline', 'setupCompleted',
+  'businessType', 'businessTypeOther', 'catalogKind', 'catalogLabel', 'itemLabel', 'itemLabelPlural',
   'businessDescription', 'address', 'mapsUrl', 'phone', 'whatsapp', 'email', 'website', 'instagram', 'facebook', 'tiktok', 'hours', 'contactButton', 'contactMessage',
 ];
 

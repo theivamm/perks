@@ -12,7 +12,7 @@ const router = Router();
 
 router.use(requireSuperAdmin);
 
-function defaultSettings(name) {
+function defaultSettings(name, businessType = 'cafeteria') {
   return {
     primaryColor: '#2563eb',
     theme: 'light',
@@ -26,6 +26,7 @@ function defaultSettings(name) {
     adminOtpSecret: '',
     adminOtpEnabled: 'false',
     setupCompleted: 'false',
+    businessType,
   };
 }
 
@@ -131,7 +132,7 @@ router.get(
 router.post(
   '/tenants',
   asyncHandler(async (req, res) => {
-    const { businessName, slug, plan, ownerEmail, status, tagline } = req.body || {};
+    const { businessName, slug, plan, ownerEmail, status, tagline, businessType } = req.body || {};
     const name = String(businessName || '').trim();
     if (!name) return res.status(400).json({ error: 'Nombre del negocio requerido' });
 
@@ -169,7 +170,7 @@ router.post(
       .single();
     if (error) throw error;
 
-    const rows = Object.entries(defaultSettings(name)).map(([key, value]) => ({
+    const rows = Object.entries(defaultSettings(name, /^[a-z]{3,20}$/.test(String(businessType || '')) ? businessType : 'cafeteria')).map(([key, value]) => ({
       tenant_id: tenant.id,
       key,
       value: String(value),

@@ -8,6 +8,7 @@ import ImageCropper from '../../components/ImageCropper.jsx';
 import ContactSettings from '../../components/ContactSettings.jsx';
 import { SYSTEM_ISOS } from '../../components/SystemIsos.jsx';
 import QRCode from 'qrcode';
+import BusinessTypeSettings from '../../components/BusinessTypeSettings.jsx';
 
 const CURRENCIES = ['$', '€', 'Bs', 'S/', 'Q', 'L', 'C$'];
 const TABS = [
@@ -570,6 +571,8 @@ export default function SettingsPage() {
             </div>
           </div>
         </section>
+
+        <BusinessTypeSettings />
 
         <section className="card p-6">
           <h2 className="mb-4 flex items-center gap-2 text-lg font-extrabold text-ink">
