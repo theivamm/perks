@@ -21,7 +21,7 @@ const DEFAULT_SETTINGS = {
 const CONTACT_KEYS = ["businessDescription", "address", "mapsUrl", "phone", "whatsapp", "email", "website", "instagram", "facebook", "tiktok", "hours", "contactButton", "contactMessage"];
 
 // Tipo de negocio y vocabulario del catálogo (ver lib/businessTypes.js).
-const VOCAB_KEYS = ['businessType', 'businessTypeOther', 'catalogKind', 'catalogLabel', 'itemLabel', 'itemLabelPlural'];
+const VOCAB_KEYS = ['businessType', 'businessTypeOther', 'catalogKind', 'catalogLabel', 'itemLabel', 'itemLabelPlural', 'catalogIcon'];
 
 const settingsKey = (slug = '') => `wintuu:settings:${slug || '_wintuu'}`;
 

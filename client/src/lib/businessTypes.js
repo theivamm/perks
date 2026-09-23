@@ -1,6 +1,6 @@
 // Tipos de negocio: definen cómo se llama el catálogo, cada ítem, los ejemplos
 // del formulario y si los ítems son productos o servicios.
-// Settings usados: businessType, businessTypeOther, catalogKind, catalogLabel, itemLabel, itemLabelPlural.
+// Settings usados: businessType, businessTypeOther, catalogKind, catalogLabel, itemLabel, itemLabelPlural, catalogIcon.
 import { useTheme } from '../context/ThemeContext.jsx';
 
 export const BUSINESS_TYPES = [
@@ -116,7 +116,8 @@ export function getVocab(settings = {}) {
     all: 'Todo',
     ph: preset.ph,
     categories: preset.categories,
-    icon: preset.icon,
+    icon: settings.catalogIcon || preset.icon,
+    defaultIcon: preset.icon,
   };
 }
 

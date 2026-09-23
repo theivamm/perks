@@ -23,6 +23,7 @@ import { api } from '../../api.js';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { useTheme } from '../../context/ThemeContext.jsx';
 import { getVocab } from '../../lib/businessTypes.js';
+import { iconFor } from '../../components/CatalogIcon.jsx';
 import { useTenant } from '../../context/TenantContext.jsx';
 import NotificationsBell from '../../components/NotificationsBell.jsx';
 import Logo from '../../components/Logo.jsx';
@@ -56,6 +57,7 @@ export default function DashboardLayout() {
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem('sidebar-collapsed') === '1');
   const menuRef = useRef(null);
   const vocab = getVocab(settings);
+  const CatalogIconCmp = iconFor(vocab.icon);
   const [supportUnread, setSupportUnread] = useState(0);
 
   // Globo de Soporte: consulta liviana cada 20 s, al cambiar de página y
@@ -79,7 +81,7 @@ export default function DashboardLayout() {
   }, [pathname]);
 
   const NAV = [
-    { to: t('/dashboard/menu'), label: vocab.section, icon: UtensilsCrossed },
+    { to: t('/dashboard/menu'), label: vocab.section, icon: iconFor(vocab.icon) },
     { to: t('/dashboard/clientes'), label: 'Clientes', icon: Users },
     { to: t('/dashboard/cupones'), label: 'Cupones', icon: BadgePercent },
     { to: t('/dashboard/soporte'), label: 'Soporte', icon: LifeBuoy, badge: supportUnread },

@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight, Flame, Loader2, Search, SearchX, Star, Utens
 import { api } from '../api.js';
 import { useTheme } from '../context/ThemeContext.jsx';
 import { getVocab, priceLabel, durationLabel, whatsappBookingUrl } from '../lib/businessTypes.js';
+import { CatalogIcon, iconFor } from './CatalogIcon.jsx';
 import { EmptyState } from './ui.jsx';
 
 const normalize = (s) =>
@@ -26,7 +27,7 @@ function Thumb({ item, className = '' }) {
         <img src={item.image} alt={item.title} loading="lazy" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
       ) : (
         <div className="flex h-full w-full items-center justify-center text-primary/35">
-          <UtensilsCrossed size={20} />
+          <CatalogIcon size={20} />
         </div>
       )}
     </div>
@@ -283,7 +284,7 @@ export default function PublicMenu({ query: extQuery, onQueryChange }) {
   if (visible.length === 0) {
     return (
       <section className="mt-10">
-        <EmptyState icon={UtensilsCrossed} title={`${v.section}: muy pronto`} subtitle={`Muy pronto vas a poder ver todos los ${v.items} del local acá.`} />
+        <EmptyState icon={iconFor(v.icon)} title={`${v.section}: muy pronto`} subtitle={`Muy pronto vas a poder ver todos los ${v.items} del local acá.`} />
       </section>
     );
   }

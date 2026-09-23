@@ -1,13 +1,11 @@
 import { useState } from 'react';
-import { Briefcase, Cake, Coffee, Dumbbell, Loader2, PawPrint, Scissors, Shirt, Sparkles, Store, Tag, UtensilsCrossed, Wrench } from 'lucide-react';
+import { Briefcase, Check, Loader2, Shapes, Store, Tag } from 'lucide-react';
+import { TYPE_ICONS, iconFor } from './CatalogIcon.jsx';
 import { useTheme } from '../context/ThemeContext.jsx';
 import { BUSINESS_TYPES, DEFAULT_TYPE, KINDS, getBusinessType, getVocab } from '../lib/businessTypes.js';
 import { toast } from './ui.jsx';
 
-export const TYPE_ICONS = {
-  coffee: Coffee, utensils: UtensilsCrossed, cake: Cake, scissors: Scissors, sparkles: Sparkles,
-  shirt: Shirt, store: Store, dumbbell: Dumbbell, wrench: Wrench, paw: PawPrint,
-};
+export { TYPE_ICONS };
 
 /**
  * Grilla de tipos de negocio (controlada). Se usa en Configuración y en Primeros pasos.
@@ -18,7 +16,7 @@ export function BusinessTypePicker({ value, onChange, tone = 'app' }) {
   return (
     <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
       {BUSINESS_TYPES.map((t) => {
-        const Icon = TYPE_ICONS[t.icon] || Store;
+        const Icon = iconFor(t.icon);
         const on = value === t.id;
         return (
           <button
@@ -55,6 +53,7 @@ export default function BusinessTypeSettings() {
     catalogLabel: settings.catalogLabel || '',
     itemLabel: settings.itemLabel || '',
     itemLabelPlural: settings.itemLabelPlural || '',
+    catalogIcon: settings.catalogIcon || '',
   }));
   const [saving, setSaving] = useState(false);
   const preset = getBusinessType(form.businessType);
@@ -81,7 +80,7 @@ export default function BusinessTypeSettings() {
       </h2>
       <p className="mb-4 text-sm text-ink-muted">Cambia cómo se llama tu catálogo, los ejemplos al cargar y los campos disponibles.</p>
 
-      <BusinessTypePicker value={form.businessType} onChange={(id) => setForm((f) => ({ ...f, businessType: id }))} />
+      <BusinessTypePicker value={form.businessType} onChange={(id) => setForm((f) => ({ ...f, businessType: id, catalogIcon: '' }))} />
 
       {form.businessType === 'otro' && (
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
@@ -104,6 +103,31 @@ export default function BusinessTypeSettings() {
           </div>
         </div>
       )}
+
+      <div className="mt-6 border-t border-line pt-5">
+        <p className="mb-1 flex items-center gap-2 text-sm font-extrabold text-ink"><Shapes size={15} /> Ícono del catálogo</p>
+        <p className="mb-3 text-xs text-ink-muted">Se ve en el menú del panel y en tu página. Por defecto usamos el de tu tipo de negocio.</p>
+        <div className="flex flex-wrap gap-1.5">
+          {Object.keys(TYPE_ICONS).map((id) => {
+            const Icon = iconFor(id);
+            const on = (form.catalogIcon || preview.defaultIcon) === id;
+            const isDefault = id === preview.defaultIcon;
+            return (
+              <button
+                key={id}
+                type="button"
+                title={isDefault ? 'Ícono del tipo de negocio' : undefined}
+                aria-pressed={on}
+                onClick={() => setForm((f) => ({ ...f, catalogIcon: isDefault ? '' : id }))}
+                className={`relative flex h-11 w-11 items-center justify-center rounded-xl border-[1.5px] transition ${on ? 'border-primary bg-primary-softer text-primary-strong' : 'border-line bg-surface text-ink-muted hover:border-ink-muted hover:text-ink'}`}
+              >
+                <Icon size={19} />
+                {isDefault && <span className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full bg-primary ring-2 ring-surface" />}
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
       <div className="mt-6 border-t border-line pt-5">
         <p className="mb-1 flex items-center gap-2 text-sm font-extrabold text-ink"><Tag size={15} /> Nombres personalizados</p>

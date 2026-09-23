@@ -16,6 +16,7 @@ import { MessageCircle,
 import { api } from '../../api.js';
 import { money } from '../../lib/money.js';
 import { useVocab, priceLabel, durationLabel } from '../../lib/businessTypes.js';
+import { iconFor } from '../../components/CatalogIcon.jsx';
 import { useTheme } from '../../context/ThemeContext.jsx';
 import { EmptyState, Field, Modal, Select, Spinner, SwitchRow, confirmDialog, toast } from '../../components/ui.jsx';
 import ImageCropper from '../../components/ImageCropper.jsx';
@@ -377,7 +378,7 @@ export default function MenuManager() {
           {loading ? (
             <Spinner label={`Cargando ${v.sectionLower}...`} />
           ) : items.length === 0 ? (
-            <EmptyState icon={UtensilsCrossed} title={`Sin ${v.items} todavía`} subtitle="Creá el primero o importá un archivo Excel." />
+            <EmptyState icon={iconFor(v.icon)} title={`Sin ${v.items} todavía`} subtitle="Creá el primero o importá un archivo Excel." />
           ) : (
             <div className="space-y-5">
               {Object.entries(grouped).map(([category, list]) => (
