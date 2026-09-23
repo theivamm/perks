@@ -5,6 +5,7 @@ import { api } from '../../api.js';
 import { PRESET_COLORS, hexToHsl } from '../../color.js';
 import { toast, confirmDialog } from '../../components/ui.jsx';
 import ImageCropper from '../../components/ImageCropper.jsx';
+import ContactSettings from '../../components/ContactSettings.jsx';
 import { SYSTEM_ISOS } from '../../components/SystemIsos.jsx';
 import QRCode from 'qrcode';
 
@@ -12,6 +13,7 @@ const CURRENCIES = ['$', '€', 'Bs', 'S/', 'Q', 'L', 'C$'];
 const TABS = [
   { id: 'apariencia', label: 'Apariencia' },
   { id: 'negocio', label: 'Negocio' },
+  { id: 'contacto', label: 'Contacto' },
   { id: 'plan', label: 'Plan y facturación' },
   { id: 'cuenta', label: 'Cuenta y seguridad' },
 ];
@@ -70,7 +72,7 @@ export default function SettingsPage() {
   const { settings, updateSettings } = useTheme();
   const [saving, setSaving] = useState(false);
   const [tab, setTab] = useState(() =>
-    new URLSearchParams(window.location.search).get('subscription') === 'success' ? 'plan' : 'apariencia'
+    new URLSearchParams(window.location.search).get('subscription') === 'success' ? 'plan' : new URLSearchParams(window.location.search).get('tab') || 'apariencia'
   );
   const [uploading, setUploading] = useState(false);
   const logoInput = useRef(null);
@@ -516,6 +518,11 @@ export default function SettingsPage() {
         </section>
 
           </div>
+          </div>
+        )}
+        {tab === 'contacto' && (
+          <div className="animate-fade-up">
+            <ContactSettings />
           </div>
         )}
         {tab === 'negocio' && (

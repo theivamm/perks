@@ -19,9 +19,25 @@ const DEFAULTS = {
   businessName: 'Fidelización App',
   tagline: '',
   setupCompleted: 'true',
+  // Contacto del local (footer + botón flotante)
+  businessDescription: '',
+  address: '',
+  mapsUrl: '',
+  phone: '',
+  whatsapp: '',
+  email: '',
+  website: '',
+  instagram: '',
+  facebook: '',
+  tiktok: '',
+  hours: '',
+  contactButton: '',
+  contactMessage: '',
 };
 
-const ALLOWED = ['primaryColor', 'theme', 'currency', 'logo', 'logoIso', 'isoIcon', 'businessName', 'tagline', 'setupCompleted'];
+const ALLOWED = ['primaryColor', 'theme', 'currency', 'logo', 'logoIso', 'isoIcon', 'businessName', 'tagline', 'setupCompleted',
+  'businessDescription', 'address', 'mapsUrl', 'phone', 'whatsapp', 'email', 'website', 'instagram', 'facebook', 'tiktok', 'hours', 'contactButton', 'contactMessage',
+];
 
 async function readSettings(tenantId) {
   const { data, error } = await supabase

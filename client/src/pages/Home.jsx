@@ -10,6 +10,7 @@ import { couponValue, useProgressBar } from '../components/CouponCards.jsx';
 import Navbar from '../components/Navbar.jsx';
 import Logo from '../components/Logo.jsx';
 import PublicMenu from '../components/PublicMenu.jsx';
+import { ContactFab, SiteFooter } from '../components/SiteFooter.jsx';
 import { toast, Modal } from '../components/ui.jsx';
 
 // Colores por tipo de cupón (mismos matices que tile-sky / tile-rose / tile-lemon)
@@ -297,15 +298,8 @@ export default function Home() {
         <PublicMenu query={query} onQueryChange={setQuery} />
       </main>
 
-      <footer className="border-t border-line py-6">
-        <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
-          <Logo size="md" showText={false} />
-          <p className="min-w-0 truncate text-sm text-ink-muted">
-            <span className="font-extrabold text-ink">{settings.businessName || 'Fidelización App'}</span>
-            {settings.tagline && <span> · {settings.tagline}</span>}
-          </p>
-        </div>
-      </footer>
+      <SiteFooter />
+      <ContactFab raised={Boolean(isAuthed && activeCoupon)} />
 
       {/* Mobile: píldora fija con el cupón activo + acceso al QR */}
       {isAuthed && activeCoupon && (
