@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { ChevronLeft, LifeBuoy, Loader2, Plus, Send, Ticket, X } from 'lucide-react';
 import { api, formatDate } from '../../api.js';
 
@@ -14,7 +15,9 @@ function StatusBadge({ status }) {
 
 export default function SupportPage() {
   const [tickets, setTickets] = useState([]);
-  const [selected, setSelected] = useState(null);
+  const [params, setParams] = useSearchParams();
+  // Si venimos desde una notificación (?ticket=ID), abrimos ese ticket.
+  const [selected, setSelected] = useState(() => params.get('ticket') || null);
   const [messages, setMessages] = useState([]);
   const [creating, setCreating] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -35,10 +38,20 @@ export default function SupportPage() {
     try {
       const data = await api(`/api/support/tickets/${id}`);
       setMessages(data.messages || []);
+      // Avisamos al sidebar que bajó la cantidad de no leídos.
+      window.dispatchEvent(new Event('support:read'));
     } catch (err) {
       setError(err.message);
     }
   }, []);
+
+  useEffect(() => {
+    const fromLink = params.get('ticket');
+    if (fromLink) {
+      setSelected(fromLink);
+      setParams({}, { replace: true });
+    }
+  }, [params, setParams]);
 
   useEffect(() => {
     loadTickets();

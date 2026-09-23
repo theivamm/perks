@@ -4,6 +4,7 @@ import {
   Bell,
   CheckCircle2,
   Gift,
+  LifeBuoy,
   ShoppingBag,
   ShoppingCart,
   Sparkles,
@@ -23,6 +24,7 @@ const META = {
   coupons_available: { icon: BadgePercent, style: 'bg-amber-500/15 text-amber-500 dark:text-amber-400' },
   reward_progress: { icon: Sparkles, style: 'bg-purple-500/15 text-purple-500 dark:text-purple-300' },
   milestone_reached: { icon: Gift, style: 'bg-primary-soft text-primary-strong' },
+  support_reply: { icon: LifeBuoy, style: 'bg-sky-500/15 text-sky-600 dark:text-sky-300' },
 };
 
 export function notificationMeta(type) {
@@ -77,5 +79,6 @@ export function notificationGroup(type = '') {
   if (['reward_progress', 'milestone_reached'].includes(type)) return 'puntos';
   if (['coupon_won', 'coupon_used', 'coupons_available'].includes(type)) return 'cupones';
   if (type.startsWith('order_') || ['new_order', 'purchase_added'].includes(type)) return 'compras';
+  if (type === 'support_reply') return 'soporte';
   return 'otras';
 }

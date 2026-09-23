@@ -19,6 +19,7 @@ import {
   UtensilsCrossed,
   X,
 } from 'lucide-react';
+import { api } from '../../api.js';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { useTheme } from '../../context/ThemeContext.jsx';
 import { useTenant } from '../../context/TenantContext.jsx';
@@ -54,16 +55,37 @@ export default function DashboardLayout() {
   const [moreOpen, setMoreOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem('sidebar-collapsed') === '1');
   const menuRef = useRef(null);
+  const [supportUnread, setSupportUnread] = useState(0);
+
+  // Globo de Soporte: consulta liviana cada 20 s, al cambiar de página y
+  // cuando la página de soporte avisa que se leyó un ticket.
+  useEffect(() => {
+    let alive = true;
+    const load = () =>
+      api('/api/support/unread')
+        .then((r) => alive && setSupportUnread(r.unread || 0))
+        .catch(() => {});
+    load();
+    const timer = setInterval(load, 20000);
+    window.addEventListener('support:read', load);
+    window.addEventListener('focus', load);
+    return () => {
+      alive = false;
+      clearInterval(timer);
+      window.removeEventListener('support:read', load);
+      window.removeEventListener('focus', load);
+    };
+  }, [pathname]);
 
   const NAV = [
     { to: t('/dashboard/menu'), label: 'Menú', icon: UtensilsCrossed },
     { to: t('/dashboard/clientes'), label: 'Clientes', icon: Users },
     { to: t('/dashboard/cupones'), label: 'Cupones', icon: BadgePercent },
-    { to: t('/dashboard/soporte'), label: 'Soporte', icon: LifeBuoy },
+    { to: t('/dashboard/soporte'), label: 'Soporte', icon: LifeBuoy, badge: supportUnread },
   ];
 
   const MORE_ITEMS = [
-    { to: t('/dashboard/soporte'), label: 'Soporte', icon: LifeBuoy },
+    { to: t('/dashboard/soporte'), label: 'Soporte', icon: LifeBuoy, badge: supportUnread },
     { to: t('/dashboard/configuracion'), label: 'Configuración', icon: SettingsIcon },
     { to: home(), label: 'Ver página de inicio', icon: ExternalLink, external: true },
   ];
@@ -122,6 +144,14 @@ export default function DashboardLayout() {
           {isActive && <span className={`absolute top-1/2 h-5 w-1 -translate-y-1/2 rounded-full bg-primary ${collapsed ? '-left-[15px]' : '-left-4'}`} />}
           <item.icon size={19} strokeWidth={isActive ? 2.5 : 2.1} className="shrink-0" />
           {!collapsed && <span className="truncate">{item.label}</span>}
+          {item.badge > 0 &&
+            (collapsed ? (
+              <span className="absolute right-1.5 top-1.5 h-2.5 w-2.5 rounded-full bg-primary ring-2 ring-surface" aria-label={`${item.badge} sin leer`} />
+            ) : (
+              <span key={item.badge} className="animate-pop ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-[11px] font-bold text-primary-contrast" aria-label={`${item.badge} sin leer`}>
+                {item.badge > 99 ? '99+' : item.badge}
+              </span>
+            ))}
           <Tip label={item.label} />
         </>
       )}
@@ -345,6 +375,9 @@ export default function DashboardLayout() {
             <NavLink key={item.label} to={item.to} className="flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-bold text-ink hover:bg-surface-alt">
               <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary-softer text-primary-strong"><item.icon size={18} /></span>
               {item.label}
+              {item.badge > 0 && (
+                <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-[11px] font-bold text-primary-contrast">{item.badge}</span>
+              )}
             </NavLink>
           )
         )}
@@ -368,8 +401,9 @@ export default function DashboardLayout() {
           <BadgePercent size={21} strokeWidth={2.3} />
           Cupones
         </NavLink>
-        <button onClick={() => setMoreOpen((v) => !v)} className={`flex flex-col items-center gap-1 py-1 text-[11px] font-bold ${moreOpen ? 'text-primary-strong' : 'text-ink-muted'}`} aria-label={moreOpen ? 'Cerrar' : 'Más opciones'}>
+        <button onClick={() => setMoreOpen((v) => !v)} className={`relative flex flex-col items-center gap-1 py-1 text-[11px] font-bold ${moreOpen ? 'text-primary-strong' : 'text-ink-muted'}`} aria-label={moreOpen ? 'Cerrar' : 'Más opciones'}>
           {moreOpen ? <X size={21} /> : <MoreHorizontal size={21} />}
+          {!moreOpen && supportUnread > 0 && <span className="absolute left-1/2 top-0 ml-2 h-2.5 w-2.5 rounded-full bg-primary ring-2 ring-surface" />}
           Más
         </button>
       </nav>

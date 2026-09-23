@@ -113,6 +113,25 @@ router.post(
   })
 );
 
+// Cantidad de respuestas de soporte sin leer (globo del sidebar).
+router.get(
+  '/unread',
+  requireAdmin,
+  asyncHandler(async (req, res) => {
+    const { count, error } = await supabase
+      .from('support_messages')
+      .select('id', { count: 'exact', head: true })
+      .eq('tenant_id', req.tenant.id)
+      .eq('sender_role', 'superadmin')
+      .eq('read_by_admin', false);
+    if (error) {
+      if (isMissingTable(error)) return res.json({ unread: 0 });
+      throw error;
+    }
+    res.json({ unread: count || 0 });
+  })
+);
+
 router.get(
   '/tickets/:id',
   requireAdmin,
@@ -133,6 +152,16 @@ router.get(
       .eq('ticket_id', ticket.id)
       .eq('sender_role', 'superadmin')
       .eq('read_by_admin', false);
+
+    // Las notificaciones de este ticket también quedan leídas.
+    await supabase
+      .from('notifications')
+      .update({ read: true })
+      .eq('tenant_id', req.tenant.id)
+      .eq('user_id', req.user.id)
+      .eq('type', 'support_reply')
+      .eq('data->>ticket_id', String(ticket.id))
+      .then(() => {}, () => {});
 
     res.json({ ticket, messages });
   })

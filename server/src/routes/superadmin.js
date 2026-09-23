@@ -6,6 +6,7 @@ import { resetTenancyCache } from '../tenancy.js';
 import { isValidPlan, DEFAULT_PLAN } from '../plans.js';
 import { slugify, slugError, slugTaken, CENTRAL_TENANT_SLUG } from '../slug.js';
 import { ensureMembership } from '../memberships.js';
+import { notifyAdmins } from '../notify.js';
 
 const router = Router();
 
@@ -546,6 +547,21 @@ router.post(
       .from('support_tickets')
       .update({ status: 'respondido', updated_at: new Date().toISOString() })
       .eq('id', ticket.id);
+
+    // Aviso a los administradores del negocio (campana + tiempo real).
+    // Si falla, la respuesta igual queda guardada.
+    notifyAdmins(
+      {
+        type: 'support_reply',
+        title: `Soporte respondió: ${ticket.subject}`,
+        body: body.length > 140 ? `${body.slice(0, 137)}…` : body,
+        icon: 'life-buoy',
+        link: `/dashboard/soporte?ticket=${ticket.id}`,
+        data: { ticket_id: ticket.id, code: ticket.code },
+      },
+      ticket.tenant_id
+    ).catch((e) => console.error('[Soporte] No se pudo notificar al admin:', e.message));
+
     res.status(201).json({ message: data });
   })
 );
