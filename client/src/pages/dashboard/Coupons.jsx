@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import {
   BadgePercent,
   CheckCircle2,
+  Coins,
+  Percent,
   Eye,
   Gift,
   Loader2,
@@ -15,7 +17,7 @@ import {
 } from 'lucide-react';
 import { api, formatDate } from '../../api.js';
 import { useTheme } from '../../context/ThemeContext.jsx';
-import { EmptyState, Modal, Spinner, SwitchRow, toast } from '../../components/ui.jsx';
+import { EmptyState, Field, Modal, Spinner, Stepper, SwitchRow, confirmDialog, toast } from '../../components/ui.jsx';
 import { couponValue } from '../../components/CouponCards.jsx';
 
 const EMPTY = { title: '', description: '', type: 'monto', value: '', target_points: '10', active: true };
@@ -112,7 +114,7 @@ export default function Coupons() {
   };
 
   const remove = async (c) => {
-    if (!confirm(`¿Eliminar el cupón "${c.title}"?`)) return;
+    if (!(await confirmDialog({ title: `¿Eliminar "${c.title}"?`, message: 'Los clientes que lo tengan activo conservan su progreso, pero nadie más podrá activarlo.', confirmLabel: 'Eliminar cupón' }))) return;
     try {
       await api(`/api/coupons/catalog/${c.id}`, { method: 'DELETE' });
       toast('Cupón eliminado');
@@ -255,70 +257,121 @@ export default function Coupons() {
             </ul>
           )}
 
-          <Modal open={modalOpen} onClose={() => setModalOpen(false)} icon={Gift} title={editing ? 'Editar cupón' : 'Nuevo cupón'} subtitle="Definí el premio y cuántos puntos hacen falta.">
-            <form onSubmit={save} className="space-y-4">
-              <div>
-                <label className="label">Nombre del cupón *</label>
+          <Modal
+            open={modalOpen}
+            onClose={() => setModalOpen(false)}
+            icon={Gift}
+            title={editing ? 'Editar cupón' : 'Nuevo cupón'}
+            subtitle="Definí el premio y cuántos puntos hacen falta."
+            footer={
+              <>
+                <button type="button" className="btn-ghost" onClick={() => setModalOpen(false)}>
+                  Cancelar
+                </button>
+                <button type="submit" form="coupon-form" className="btn-primary" disabled={saving}>
+                  {saving ? <Loader2 className="animate-spin" size={16} /> : <Gift size={16} />}
+                  {editing ? 'Guardar cambios' : 'Crear cupón'}
+                </button>
+              </>
+            }
+          >
+            <form id="coupon-form" onSubmit={save} className="space-y-5">
+              <Field label="Tipo de premio">
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    ['monto', `Monto ${currency}`, 'Descuenta un valor fijo', Coins, 'text-amber-700 dark:text-amber-300', 'bg-amber-100 dark:bg-amber-500/15'],
+                    ['descuento', 'Descuento %', 'Un porcentaje de la compra', Percent, 'text-sky-700 dark:text-sky-300', 'bg-sky-100 dark:bg-sky-500/15'],
+                    ['regalo', 'Regalo', 'Un producto gratis', Gift, 'text-rose-700 dark:text-rose-300', 'bg-rose-100 dark:bg-rose-500/15'],
+                  ].map(([v, label, hint, Icon, fg, bg]) => {
+                    const on = form.type === v;
+                    return (
+                      <button
+                        key={v}
+                        type="button"
+                        onClick={() => setForm({ ...form, type: v })}
+                        aria-pressed={on}
+                        className={`flex flex-col items-start gap-2 rounded-2xl border-2 p-3 text-left transition ${
+                          on ? 'border-primary bg-primary-softer' : 'border-line bg-surface hover:border-primary/40'
+                        }`}
+                      >
+                        <span className={`flex h-8 w-8 items-center justify-center rounded-xl ${bg} ${fg}`}>
+                          <Icon size={16} />
+                        </span>
+                        <span className="text-sm font-bold text-ink">{label}</span>
+                        <span className="hidden text-[11px] leading-snug text-ink-muted sm:block">{hint}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </Field>
+
+              <Field label="Nombre del cupón" htmlFor="c-title" required>
                 <input
+                  id="c-title"
                   className="input"
                   value={form.title}
                   onChange={(e) => setForm({ ...form, title: e.target.value })}
-                  placeholder="Ej: Café de regalo"
+                  placeholder={form.type === 'regalo' ? 'Ej: Café de regalo' : form.type === 'descuento' ? 'Ej: 25% OFF' : 'Ej: $5.000 de descuento'}
                   required
                 />
-              </div>
-              <div>
-                <label className="label">Descripción</label>
+              </Field>
+
+              <Field label="Descripción" htmlFor="c-desc" hint="Lo ve el cliente: explicá qué gana y cuándo suma un punto.">
                 <textarea
+                  id="c-desc"
                   className="input min-h-20 resize-y"
                   value={form.description}
                   onChange={(e) => setForm({ ...form, description: e.target.value })}
-                  placeholder="Detalle del premio para el cliente"
+                  placeholder="Ej: Con cada compra mayor a $35.000 sumás un punto."
                 />
+              </Field>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field
+                  label={form.type === 'descuento' ? 'Porcentaje' : form.type === 'monto' ? 'Valor' : 'Valor (opcional)'}
+                  htmlFor="c-value"
+                >
+                  <div className="relative">
+                    {form.type !== 'descuento' && (
+                      <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-ink-muted">{currency}</span>
+                    )}
+                    <input
+                      id="c-value"
+                      className={`input ${form.type === 'descuento' ? '!pr-9' : '!pl-9'}`}
+                      type="number"
+                      min="0"
+                      max={form.type === 'descuento' ? 100 : undefined}
+                      step="any"
+                      value={form.value}
+                      onChange={(e) => setForm({ ...form, value: e.target.value })}
+                      placeholder={form.type === 'regalo' ? '—' : '0'}
+                    />
+                    {form.type === 'descuento' && (
+                      <span className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-ink-muted">%</span>
+                    )}
+                  </div>
+                </Field>
+                <Field label="Puntos para completarlo" htmlFor="c-points" required>
+                  <Stepper id="c-points" value={form.target_points} onChange={(v) => setForm({ ...form, target_points: v })} min={1} max={100} suffix="pts" />
+                </Field>
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="label">Tipo de premio</label>
-                  <select className="input" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>
-                    <option value="monto">Monto ({currency})</option>
-                    <option value="descuento">Descuento (%)</option>
-                    <option value="regalo">Regalo</option>
-                  </select>
+
+              <div className="flex items-center gap-4 rounded-2xl border border-dashed border-line bg-surface-alt/60 p-4">
+                <div className="min-w-0 flex-1">
+                  <p className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-ink-muted">Así lo ve el cliente</p>
+                  <p className="mt-1 truncate font-heading text-2xl font-bold text-ink">
+                    {couponValue({ ...form, value: Number(form.value) || 0 }, currency) || form.title || '—'}
+                  </p>
+                  <p className="truncate text-xs text-ink-muted">{form.description || 'Agregá una descripción'}</p>
                 </div>
-                <div>
-                  <label className="label">
-                    {form.type === 'descuento'
-                      ? 'Porcentaje (%)'
-                      : form.type === 'monto'
-                        ? `Valor (${currency})`
-                        : 'Valor (opcional)'}
-                  </label>
-                  <input
-                    className="input"
-                    type="number"
-                    min="0"
-                    step="any"
-                    value={form.value}
-                    onChange={(e) => setForm({ ...form, value: e.target.value })}
-                    placeholder={form.type === 'regalo' ? '—' : '0'}
-                  />
+                <div className="flex shrink-0 gap-1">
+                  {Array.from({ length: Math.min(Number(form.target_points) || 1, 8) }, (_, i) => (
+                    <span key={i} className={`h-3 w-3 rounded-full ${i === 0 ? 'bg-primary' : 'border-2 border-primary/30'}`} />
+                  ))}
+                  {Number(form.target_points) > 8 && <span className="ml-0.5 text-[11px] font-bold text-ink-muted">+{Number(form.target_points) - 8}</span>}
                 </div>
               </div>
-              <div>
-                <label className="label">Puntos objetivo *</label>
-                <input
-                  className="input"
-                  type="number"
-                  min="1"
-                  value={form.target_points}
-                  onChange={(e) => setForm({ ...form, target_points: e.target.value })}
-                  placeholder="Ej: 10"
-                  required
-                />
-                <p className="mt-1 text-xs text-ink-muted">
-                  Cuántos puntos debe sumar el cliente para completar este cupón.
-                </p>
-              </div>
+
               <SwitchRow
                 checked={form.active}
                 onChange={(v) => setForm({ ...form, active: v })}
@@ -326,15 +379,6 @@ export default function Coupons() {
                 title="Visible para los clientes"
                 subtitle="Si lo apagás, queda pausado y nadie puede activarlo."
               />
-              <div className="flex justify-end gap-2 pt-1">
-                <button type="button" className="btn-ghost" onClick={() => setModalOpen(false)}>
-                  Cancelar
-                </button>
-                <button type="submit" className="btn-primary" disabled={saving}>
-                  {saving ? <Loader2 className="animate-spin" size={16} /> : <Gift size={16} />}
-                  {editing ? 'Guardar cambios' : 'Crear cupón'}
-                </button>
-              </div>
             </form>
           </Modal>
         </>

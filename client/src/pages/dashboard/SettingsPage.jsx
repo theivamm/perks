@@ -3,7 +3,7 @@ import { CalendarClock, Check, CreditCard, FileImage, ImagePlus, KeyRound, Loade
 import { useTheme } from '../../context/ThemeContext.jsx';
 import { api } from '../../api.js';
 import { PRESET_COLORS, hexToHsl } from '../../color.js';
-import { toast } from '../../components/ui.jsx';
+import { toast, confirmDialog } from '../../components/ui.jsx';
 import ImageCropper from '../../components/ImageCropper.jsx';
 import { SYSTEM_ISOS } from '../../components/SystemIsos.jsx';
 import QRCode from 'qrcode';
@@ -154,7 +154,7 @@ export default function SettingsPage() {
   };
 
   const cancelSubscription = async () => {
-    if (!confirm('¿Cancelar la renovación automática? La app seguirá activa hasta el final del período abonado.')) return;
+    if (!(await confirmDialog({ title: '¿Cancelar la renovación automática?', message: 'Tu app sigue activa hasta el final del período abonado. Podés volver a suscribirte cuando quieras.', confirmLabel: 'Sí, cancelar', cancelLabel: 'Volver' }))) return;
     setBillingBusy(true);
     try {
       const data = await api('/api/payments/subscription/cancel', { method: 'POST' });

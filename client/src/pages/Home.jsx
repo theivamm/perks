@@ -344,24 +344,37 @@ export default function Home() {
         </div>
       </Modal>
 
-      <Modal open={howOpen} onClose={() => setHowOpen(false)} title="Cómo funciona">
-        <ol className="space-y-4">
+      <Modal open={howOpen} onClose={() => setHowOpen(false)} title="Cómo funciona" subtitle="Tres pasos, sin tarjetas de papel.">
+        <ol className="relative space-y-1">
+          <span className="absolute bottom-8 left-[21px] top-8 w-0.5 rounded-full bg-gradient-to-b from-primary via-primary/50 to-emerald-400" />
           {[
-            [QrCode, 'Mostrá tu QR al pagar', 'Un código único que te identifica en el local.'],
-            [CircleCheck, 'El local suma tus puntos', 'Verifica los requisitos y suma a tu cupón activo.'],
-            [Zap, 'Completá y canjeá', 'Al llegar al objetivo recibís un código y activás el siguiente.'],
+            [QrCode, 'Mostrá tu QR al pagar', 'Es único y te identifica en el local. Lo tenés siempre en “Mi QR”.'],
+            [CircleCheck, 'El local suma tus puntos', 'Cada compra que cumpla los requisitos suma 1 punto a tu cupón activo.'],
+            [Zap, 'Completá y canjeá', 'Al llegar al objetivo recibís un código para canjear y ya podés activar el siguiente.'],
           ].map(([Icon, title, sub], i) => (
-            <li key={i} className="flex items-start gap-3">
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-primary-soft text-primary-strong">
-                <Icon size={18} />
+            <li key={title} className="relative flex items-start gap-4 rounded-2xl p-1.5">
+              <span
+                className={`relative z-10 flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ring-4 ring-surface ${
+                  i === 2 ? 'bg-emerald-500 text-white' : 'bg-gradient-to-br from-primary to-primary-strong text-primary-contrast'
+                }`}
+              >
+                <Icon size={19} />
               </span>
-              <div>
-                <p className="font-bold text-ink">{i + 1}. {title}</p>
-                <p className="text-sm text-ink-muted">{sub}</p>
+              <div className="min-w-0 pb-4 pt-0.5">
+                <p className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-ink-muted">Paso {i + 1}</p>
+                <p className="font-heading text-lg font-bold leading-tight text-ink">{title}</p>
+                <p className="mt-1 text-sm leading-relaxed text-ink-muted">{sub}</p>
               </div>
             </li>
           ))}
         </ol>
+        <div className="mt-2 flex items-center gap-3 rounded-2xl bg-primary-softer px-4 py-3">
+          <Ticket size={18} className="shrink-0 text-primary-strong" />
+          <p className="text-sm text-ink">Podés tener <strong>un cupón activo a la vez</strong>. Cuando lo completás, elegís el próximo.</p>
+        </div>
+        <button className="btn-primary mt-4 w-full justify-center" onClick={() => setHowOpen(false)}>
+          Entendido
+        </button>
       </Modal>
 
       <Modal

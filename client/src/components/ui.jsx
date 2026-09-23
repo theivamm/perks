@@ -1,5 +1,6 @@
-import { Loader2, X } from 'lucide-react';
-import { useEffect, useRef } from 'react';
+import { AlertTriangle, Check, ChevronDown, HelpCircle, Loader2, Minus, Plus, X } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { createRoot } from 'react-dom/client';
 
 const FOCUSABLE = 'a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])';
 
@@ -184,5 +185,176 @@ export function ToastHost() {
       aria-live="polite"
       className="pointer-events-none fixed bottom-24 left-1/2 z-[60] -translate-x-1/2 rounded-full bg-ink px-5 py-3 text-sm font-semibold text-surface-page opacity-0 shadow-soft transition-all duration-300 translate-y-2 lg:bottom-8 dark:border dark:border-line dark:bg-surface dark:text-ink"
     />
+  );
+}
+
+/**
+ * Dropdown propio (reemplaza <select> nativo).
+ * options: [{ value, label, hint?, icon? }]. Opción con `divider: true` dibuja una línea antes.
+ */
+export function Select({ id, value, onChange, options, placeholder = 'Elegí una opción', className = '' }) {
+  const [open, setOpen] = useState(false);
+  const [hi, setHi] = useState(-1);
+  const ref = useRef(null);
+  const current = options.find((o) => o.value === value);
+
+  useEffect(() => {
+    if (!open) return;
+    setHi(Math.max(0, options.findIndex((o) => o.value === value)));
+    const onDoc = (e) => ref.current && !ref.current.contains(e.target) && setOpen(false);
+    document.addEventListener('mousedown', onDoc);
+    return () => document.removeEventListener('mousedown', onDoc);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
+  const pick = (o) => {
+    onChange(o.value);
+    setOpen(false);
+  };
+
+  const onKey = (e) => {
+    if (e.key === 'Escape') { e.stopPropagation(); setOpen(false); return; }
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (!open) return setOpen(true);
+      setHi((h) => (h + (e.key === 'ArrowDown' ? 1 : -1) + options.length) % options.length);
+    }
+    if ((e.key === 'Enter' || e.key === ' ') && open && hi >= 0) { e.preventDefault(); pick(options[hi]); }
+  };
+
+  return (
+    <div ref={ref} className={`relative ${className}`}>
+      <button
+        id={id}
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        onKeyDown={onKey}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        className={`input flex items-center justify-between gap-2 text-left ${open ? '!border-primary ring-4 ring-primary/15' : ''}`}
+      >
+        <span className={`flex min-w-0 items-center gap-2 truncate ${current ? 'text-ink' : 'text-ink-muted'}`}>
+          {current?.icon && <current.icon size={15} className="shrink-0 text-primary-strong" />}
+          <span className="truncate">{current ? current.label : placeholder}</span>
+        </span>
+        <ChevronDown size={16} className={`shrink-0 text-ink-muted transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
+      {open && (
+        <ul role="listbox" className="animate-fade-up absolute left-0 right-0 top-full z-[70] mt-2 max-h-64 overflow-y-auto rounded-2xl border border-line bg-surface p-1.5 shadow-2xl">
+          {options.map((o, i) => {
+            const sel = o.value === value;
+            return (
+              <li key={o.value} role="option" aria-selected={sel}>
+                {o.divider && <div className="mx-2 my-1 h-px bg-line" />}
+                <button
+                  type="button"
+                  onMouseEnter={() => setHi(i)}
+                  onClick={() => pick(o)}
+                  className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-sm transition-colors ${
+                    i === hi ? 'bg-surface-alt' : ''
+                  } ${sel ? 'font-bold text-primary-strong' : o.accent ? 'font-semibold text-primary-strong' : 'font-medium text-ink'}`}
+                >
+                  {o.icon && <o.icon size={15} className="shrink-0" />}
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate">{o.label}</span>
+                    {o.hint && <span className="block truncate text-[11px] font-normal text-ink-muted">{o.hint}</span>}
+                  </span>
+                  {sel && <Check size={15} className="shrink-0" />}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+// Número con botones − / +.
+export function Stepper({ id, value, onChange, min = 1, max = 999, suffix }) {
+  const n = Number(value) || 0;
+  const set = (v) => onChange(String(Math.min(max, Math.max(min, v))));
+  const btn = 'flex h-full w-11 shrink-0 items-center justify-center text-ink-muted transition-colors hover:bg-surface-alt hover:text-ink disabled:opacity-30';
+  return (
+    <div className="flex h-[46px] items-stretch overflow-hidden rounded-2xl border border-line bg-surface focus-within:border-primary focus-within:ring-4 focus-within:ring-primary/15">
+      <button type="button" className={btn} onClick={() => set(n - 1)} disabled={n <= min} aria-label="Restar">
+        <Minus size={16} />
+      </button>
+      <div className="flex flex-1 items-center justify-center gap-1.5 border-x border-line">
+        <input
+          id={id}
+          type="number"
+          min={min}
+          max={max}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="w-14 bg-transparent text-center font-heading text-lg font-bold text-ink outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none"
+        />
+        {suffix && <span className="text-sm font-semibold text-ink-muted">{suffix}</span>}
+      </div>
+      <button type="button" className={btn} onClick={() => set(n + 1)} disabled={n >= max} aria-label="Sumar">
+        <Plus size={16} />
+      </button>
+    </div>
+  );
+}
+
+/**
+ * Reemplazo de window.confirm(): `if (!(await confirmDialog({ title, message }))) return;`
+ * tone: 'danger' (rojo, por defecto) | 'default'.
+ */
+export function confirmDialog({ title = '¿Estás seguro?', message = '', confirmLabel = 'Eliminar', cancelLabel = 'Cancelar', tone = 'danger' } = {}) {
+  return new Promise((resolve) => {
+    const host = document.createElement('div');
+    document.body.appendChild(host);
+    const root = createRoot(host);
+    const done = (v) => {
+      resolve(v);
+      root.unmount();
+      host.remove();
+    };
+    root.render(<ConfirmBox {...{ title, message, confirmLabel, cancelLabel, tone }} onDone={done} />);
+  });
+}
+
+function ConfirmBox({ title, message, confirmLabel, cancelLabel, tone, onDone }) {
+  const okRef = useRef(null);
+  useEffect(() => {
+    okRef.current?.focus();
+    const onKey = (e) => e.key === 'Escape' && onDone(false);
+    window.addEventListener('keydown', onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prev;
+    };
+  }, [onDone]);
+  const danger = tone === 'danger';
+  const Icon = danger ? AlertTriangle : HelpCircle;
+  return (
+    <div className="fixed inset-0 z-[80] flex items-end justify-center p-3 sm:items-center sm:p-6">
+      <div className="animate-fade-in absolute inset-0 bg-ink/40 backdrop-blur-[3px] dark:bg-black/60" onClick={() => onDone(false)} />
+      <div role="alertdialog" aria-modal="true" aria-labelledby="confirm-title" className="animate-fade-up relative w-full max-w-sm rounded-[28px] border border-line bg-surface p-6 text-center shadow-2xl">
+        <span className={`mx-auto flex h-14 w-14 items-center justify-center rounded-2xl ${danger ? 'bg-red-500/10 text-red-500' : 'bg-primary-softer text-primary-strong'}`}>
+          <Icon size={26} />
+        </span>
+        <h3 id="confirm-title" className="mt-4 font-heading text-xl font-bold leading-tight text-ink">{title}</h3>
+        {message && <p className="mt-1.5 text-sm leading-relaxed text-ink-muted">{message}</p>}
+        <div className="mt-6 grid grid-cols-2 gap-2">
+          <button type="button" className="btn-ghost justify-center" onClick={() => onDone(false)}>
+            {cancelLabel}
+          </button>
+          <button
+            ref={okRef}
+            type="button"
+            onClick={() => onDone(true)}
+            className={danger ? 'btn-danger justify-center' : 'btn-primary justify-center'}
+          >
+            {confirmLabel}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }

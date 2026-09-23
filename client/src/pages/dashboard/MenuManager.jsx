@@ -16,7 +16,7 @@ import {
 import { api } from '../../api.js';
 import { money } from '../../lib/money.js';
 import { useTheme } from '../../context/ThemeContext.jsx';
-import { EmptyState, Field, Modal, Spinner, SwitchRow, toast } from '../../components/ui.jsx';
+import { EmptyState, Field, Modal, Select, Spinner, SwitchRow, confirmDialog, toast } from '../../components/ui.jsx';
 import ImageCropper from '../../components/ImageCropper.jsx';
 
 const EMPTY_FORM = { title: '', description: '', price: '', category: 'General', image: '', available: 1, featured: 0, featured_label: '', discount: 0 };
@@ -120,7 +120,7 @@ export default function MenuManager() {
   };
 
   const remove = async (item) => {
-    if (!confirm(`¿Eliminar "${item.title}"?`)) return;
+    if (!(await confirmDialog({ title: `¿Eliminar "${item.title}"?`, message: 'El producto se borra del menú y tus clientes dejan de verlo. No se puede deshacer.', confirmLabel: 'Eliminar producto' }))) return;
     try {
       await api(`/api/menu/${item.id}`, { method: 'DELETE' });
       toast('Producto eliminado');
@@ -573,13 +573,16 @@ export default function MenuManager() {
                 </div>
               </Field>
               <Field label="Categoría" htmlFor="p-cat">
-                <select id="p-cat" className="input" value={isNewCat ? '__new__' : form.category || ''} onChange={onCategoryChange}>
-                  <option value="">General</option>
-                  {data.categories.map((c) => (
-                    <option key={c} value={c}>{c}</option>
-                  ))}
-                  <option value="__new__">+ Nueva categoría…</option>
-                </select>
+                <Select
+                  id="p-cat"
+                  value={isNewCat ? '__new__' : form.category || ''}
+                  onChange={(v) => onCategoryChange({ target: { value: v } })}
+                  options={[
+                    { value: '', label: 'General' },
+                    ...data.categories.filter((c) => c && c !== 'General').map((c) => ({ value: c, label: c })),
+                    { value: '__new__', label: 'Nueva categoría', icon: Plus, accent: true, divider: true },
+                  ]}
+                />
                 {isNewCat && (
                   <input className="input mt-2" value={form.category} onChange={set('category')} placeholder="Nombre de la nueva categoría" autoFocus />
                 )}
