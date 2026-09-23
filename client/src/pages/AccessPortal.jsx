@@ -1,11 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, Building2, KeyRound, Loader2, Mail, Sparkles, ShieldCheck, UserRound } from 'lucide-react';
+import { ArrowRight, KeyRound, Loader2, Mail, Sparkles, ShieldCheck, UserRound } from 'lucide-react';
 import { api } from '../api.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { supabase } from '../lib/supabase.js';
-import '../styles/wintuu-landing.css';
-import WintuuLogo from '../components/landing/WintuuLogo.jsx';
+import AuthShell, { GoogleIcon, googleBtn, inputCls, mintBtn, primaryBtn } from '../components/landing/AuthShell.jsx';
 
 export default function AccessPortal() {
   const { user, loginGoogle, loginEmailGlobal, switchApp } = useAuth();
@@ -20,6 +19,7 @@ export default function AccessPortal() {
   const [error, setError] = useState('');
   const [adminEmail, setAdminEmail] = useState('');
   const [adminPassword, setAdminPassword] = useState('');
+  const [showPwd, setShowPwd] = useState(false);
 
   const loadApps = async () => {
     setLoading(true);
@@ -116,172 +116,162 @@ export default function AccessPortal() {
   }), [apps]);
   const visibleApps = roles[role];
 
+  const signedIn = Boolean(user);
+  const variant = (signedIn ? role : loginMode) === 'admin' ? 'admin' : 'client';
+
   return (
-    <div className="wintuu-landing relative min-h-screen lg:grid lg:grid-cols-2">
-      <section className="relative flex min-h-screen items-center justify-center overflow-hidden px-5 py-10">
-        <div className="wt-bg-blob" style={{ width: 320, height: 320, background: '#bff3ea', top: '-6%', left: '-8%' }} />
-        <div className="wt-bg-blob" style={{ width: 280, height: 280, background: '#ffd3ea', bottom: '-4%', right: '-6%' }} />
+    <AuthShell variant={variant}>
+      <h1 className="wt-heading text-balance text-[clamp(36px,4vw,48px)] font-bold leading-[1.02] text-[var(--wt-ink)]">
+        {signedIn ? `Hola, ${String(user.name || '').split(' ')[0] || 'de nuevo'}.` : 'Ingresá a Wintuu.'}
+      </h1>
+      <p className="mt-3 text-[16px] leading-relaxed text-[var(--wt-muted)]">
+        {signedIn ? 'Elegí a qué app querés entrar.' : loginMode === 'admin' ? 'Entrá al panel de tu negocio.' : 'Tus puntos y cupones en todos los negocios, con tu cuenta de Google.'}
+      </p>
 
-        <div className="wt-glass relative w-full max-w-lg p-6 sm:p-8">
-          <div className="flex items-center justify-between">
-            <Link to="/" className="wt-nav-link inline-flex items-center gap-2 text-[14px] font-semibold"><ArrowLeft size={16} /> Volver</Link>
-            <WintuuLogo height={20} />
-          </div>
+      {error && <div className="mt-5 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-600">{error}</div>}
 
-          <h1 className="wt-h2 mt-8 text-[32px] text-[var(--wt-text)]">Ingresá a tus beneficios.</h1>
-          <p className="wt-body mt-2 text-[14.5px]">Clientes ingresan con Google. Administradores pueden usar email y contraseña o Google.</p>
+      {!signedIn ? (
+        <div className="mt-8">
+          <RoleTabs
+            value={loginMode}
+            onChange={(v) => { setLoginMode(v); setError(''); }}
+            options={[['cliente', UserRound, 'Soy cliente'], ['admin', ShieldCheck, 'Tengo un negocio']]}
+          />
 
-          {error && <div className="mt-5 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-600">{error}</div>}
-
-          {!user ? (
-            <div className="mt-7">
-              <div className="grid grid-cols-2 gap-1 rounded-2xl bg-[rgba(20,36,37,0.05)] p-1 mb-6">
-                <RoleButton active={loginMode === 'cliente'} icon={UserRound} label="Clientes" onClick={() => { setLoginMode('cliente'); setError(''); }} />
-                <RoleButton active={loginMode === 'admin'} icon={ShieldCheck} label="Administradores" onClick={() => { setLoginMode('admin'); setError(''); }} />
-              </div>
-
-              {loginMode === 'cliente' ? (
-                <>
-                  <button className="flex w-full items-center justify-center gap-3 rounded-2xl border border-[var(--wt-border)] bg-white px-5 py-3.5 font-bold text-[var(--wt-text)] transition hover:bg-black/[0.03]" onClick={startGoogle} disabled={googleLoading}>
-                    {googleLoading ? <Loader2 className="animate-spin" size={19} /> : <GoogleIcon />}
-                    Continuar con Google
-                  </button>
-                  <p className="mt-4 text-center text-[12px] text-[var(--wt-muted)]">Usá el mismo email con el que te registraste en cada negocio.</p>
-                </>
-              ) : (
-                <>
-                  <form onSubmit={submitAdminEmail} className="space-y-3">
-                    <div className="relative">
-                      <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--wt-muted)]" />
-                      <input
-                        className="w-full rounded-2xl border border-[var(--wt-border)] bg-white py-3 pl-10 pr-4 text-sm font-semibold text-[var(--wt-text)] outline-none placeholder:text-[var(--wt-muted)]/70 focus:border-[var(--wt-mint)] focus:ring-2 focus:ring-[var(--wt-mint)]/15"
-                        type="email"
-                        placeholder="admin@tulocal.com"
-                        value={adminEmail}
-                        onChange={(e) => setAdminEmail(e.target.value)}
-                        required
-                        autoFocus
-                      />
-                    </div>
-                    <div className="relative">
-                      <KeyRound size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--wt-muted)]" />
-                      <input
-                        className="w-full rounded-2xl border border-[var(--wt-border)] bg-white py-3 pl-10 pr-4 text-sm font-semibold text-[var(--wt-text)] outline-none placeholder:text-[var(--wt-muted)]/70 focus:border-[var(--wt-mint)] focus:ring-2 focus:ring-[var(--wt-mint)]/15"
-                        type="password"
-                        placeholder="Contraseña"
-                        value={adminPassword}
-                        onChange={(e) => setAdminPassword(e.target.value)}
-                        required
-                      />
-                    </div>
-                    <button type="submit" className="wt-btn-mint w-full" disabled={emailBusy || !adminEmail || !adminPassword}>
-                      {emailBusy ? <Loader2 className="animate-spin" size={18} /> : <ShieldCheck size={18} />}
-                      Ingresar como administrador
-                    </button>
-                  </form>
-                  <div className="my-5 flex items-center gap-3 text-xs font-bold text-[var(--wt-muted)]">
-                    <span className="h-px flex-1 bg-[var(--wt-border)]" />o también<span className="h-px flex-1 bg-[var(--wt-border)]" />
-                  </div>
-                  <button className="flex w-full items-center justify-center gap-3 rounded-2xl border border-[var(--wt-border)] bg-white px-5 py-3.5 font-bold text-[var(--wt-text)] transition hover:bg-black/[0.03]" onClick={() => startGoogle()} disabled={googleLoading}>
-                    {googleLoading ? <Loader2 className="animate-spin" size={19} /> : <GoogleIcon />}
-                    Continuar con Google
-                  </button>
-                </>
-              )}
-            </div>
-          ) : loading ? (
-            <div className="flex justify-center py-16 text-[var(--wt-muted)]"><Loader2 className="animate-spin" size={24} /></div>
-          ) : apps.length === 0 ? (
-            <div className="mt-7 rounded-2xl bg-[rgba(20,36,37,0.04)] p-5 text-center">
-              <p className="font-bold text-[var(--wt-text)]">Esta cuenta todavía no pertenece a ninguna app.</p>
-              <Link to="/checkout" className="wt-btn-mint mt-4 inline-flex">Quiero mi app <ArrowRight size={16} /></Link>
+          {loginMode === 'cliente' ? (
+            <div key="cli" className="wt2-rise mt-6 space-y-4">
+              <button className={googleBtn} onClick={startGoogle} disabled={googleLoading}>
+                {googleLoading ? <Loader2 className="animate-spin" size={19} /> : <GoogleIcon />}
+                Continuar con Google
+              </button>
+              <p className="text-center text-[12.5px] text-[var(--wt-muted)]">Usá el mismo email con el que te registraste en cada negocio.</p>
             </div>
           ) : (
-            <div className="mt-7">
-              <div className="grid grid-cols-2 gap-1 rounded-2xl bg-[rgba(20,36,37,0.05)] p-1">
-                <RoleButton active={role === 'cliente'} icon={UserRound} label={`Cliente (${roles.cliente.length})`} onClick={() => setRole('cliente')} />
-                <RoleButton active={role === 'admin'} icon={ShieldCheck} label={`Administrador (${roles.admin.length})`} onClick={() => setRole('admin')} />
+            <div key="adm" className="wt2-rise mt-6">
+              <form onSubmit={submitAdminEmail} className="space-y-3">
+                <label className="block">
+                  <span className="mb-1.5 block text-[13px] font-semibold text-[var(--wt-ink)]">Email</span>
+                  <span className="relative block">
+                    <Mail size={17} className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--wt-muted)]" />
+                    <input className={inputCls} type="email" placeholder="admin@tulocal.com" value={adminEmail} onChange={(e) => setAdminEmail(e.target.value)} required autoFocus />
+                  </span>
+                </label>
+                <label className="block">
+                  <span className="mb-1.5 block text-[13px] font-semibold text-[var(--wt-ink)]">Contraseña</span>
+                  <span className="relative block">
+                    <KeyRound size={17} className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--wt-muted)]" />
+                    <input className={`${inputCls} !pr-20`} type={showPwd ? 'text' : 'password'} placeholder="••••••••" value={adminPassword} onChange={(e) => setAdminPassword(e.target.value)} required />
+                    <button type="button" onClick={() => setShowPwd((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg px-2 py-1 text-[12px] font-bold text-[var(--wt-mint-dark)] hover:bg-[var(--wt-surface-raised)]">
+                      {showPwd ? 'Ocultar' : 'Mostrar'}
+                    </button>
+                  </span>
+                </label>
+                <button type="submit" className={`${primaryBtn} !mt-5`} disabled={emailBusy || !adminEmail || !adminPassword}>
+                  {emailBusy ? <Loader2 className="animate-spin" size={18} /> : <ShieldCheck size={18} />}
+                  Entrar al panel
+                </button>
+              </form>
+              <div className="my-5 flex items-center gap-3 text-[12px] font-bold text-[var(--wt-muted)]">
+                <span className="h-px flex-1 bg-[var(--wt-border)]" />o<span className="h-px flex-1 bg-[var(--wt-border)]" />
               </div>
-
-              <div className="mt-4 space-y-2">
-                {visibleApps.length === 0 && role === 'admin' ? (
-                  <div
-                    className="relative overflow-hidden rounded-3xl border border-[var(--wt-border)] p-6 text-center"
-                    style={{ background: 'linear-gradient(150deg, #eafff8 0%, #fff7ef 55%, #fff0f8 100%)' }}
-                  >
-                    <div className="wt-bg-blob" style={{ width: 160, height: 160, background: '#bff3ea', top: '-30%', left: '-10%' }} />
-                    <div className="wt-bg-blob" style={{ width: 140, height: 140, background: '#ffd3ea', bottom: '-25%', right: '-8%' }} />
-                    <span className="relative mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[var(--wt-mint)] to-[var(--wt-mint-dark)] text-white shadow-lg">
-                      <Sparkles size={24} />
-                    </span>
-                    <p className="relative mt-4 text-[17px] font-extrabold text-[var(--wt-text)]">¿Tenés un negocio propio?</p>
-                    <p className="relative mx-auto mt-1.5 max-w-xs text-sm text-[var(--wt-muted)]">
-                      Todavía no administrás ninguna app. Creá la tuya y empezá a fidelizar clientes con cupones y puntos.
-                    </p>
-                    <Link to="/checkout" className="wt-btn-mint relative mt-5 inline-flex">
-                      Quiero mi app
-                      <ArrowRight size={16} />
-                    </Link>
-                  </div>
-                ) : visibleApps.length === 0 ? (
-                  <p className="rounded-2xl bg-[rgba(20,36,37,0.04)] px-4 py-8 text-center text-sm text-[var(--wt-muted)]">No tenés apps con este rol.</p>
-                ) : visibleApps.map((app) => (
-                  <button key={app.id} onClick={() => enter(app)} disabled={Boolean(switching)} className="group flex w-full items-center gap-3 rounded-2xl border border-[var(--wt-border)] p-4 text-left transition hover:border-[var(--wt-mint)] hover:bg-[rgba(0,207,205,0.06)]">
-                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[rgba(20,36,37,0.05)]"><Building2 size={19} className="text-[var(--wt-text)]" /></span>
-                    <span className="min-w-0 flex-1"><span className="block truncate font-bold text-[var(--wt-text)]">{app.business_name}</span><span className="block truncate text-xs text-[var(--wt-muted)]">/{app.slug} · {app.status}</span></span>
-                    {switching === app.slug ? <Loader2 className="animate-spin" size={18} /> : <ArrowRight className="text-[var(--wt-muted)] transition group-hover:translate-x-1 group-hover:text-[var(--wt-text)]" size={18} />}
-                  </button>
-                ))}
-              </div>
+              <button className={googleBtn} onClick={() => startGoogle()} disabled={googleLoading}>
+                {googleLoading ? <Loader2 className="animate-spin" size={19} /> : <GoogleIcon />}
+                Continuar con Google
+              </button>
+              <p className="mt-6 text-center text-[13.5px] text-[var(--wt-muted)]">
+                ¿Todavía no tenés tu app?{' '}
+                <Link to="/checkout" className="font-bold text-[var(--wt-mint-dark)] underline underline-offset-4">Creala acá</Link>
+              </p>
             </div>
           )}
         </div>
-      </section>
-
-      <aside className="relative hidden min-h-screen items-center justify-center overflow-hidden lg:flex" style={{ background: 'linear-gradient(165deg, #fff7ef 0%, #fff1e2 100%)' }}>
-        <div className="wt-bg-blob" style={{ width: 380, height: 380, background: '#ffefae', top: '-8%', right: '-8%' }} />
-        <div className="wt-bg-blob" style={{ width: 340, height: 340, background: '#e3dbff', bottom: '-6%', left: '-4%' }} />
-
-        <div className="relative max-w-sm px-10 text-center">
-          <div className="wt-coupon wt-coupon-lg wt-coupon-2 mx-auto w-full" style={{ background: 'linear-gradient(120deg, #ffd3ea, #fff0f8, #ffc2e0, #ffd3ea)' }}>
-            <div className="flex items-center gap-4">
-              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-white/55 text-[22px]">🎉</span>
-              <div className="min-w-0 border-l-2 border-dashed border-[rgba(8,40,44,0.16)] pl-4 text-left">
-                <p className="wt-heading text-[16px] font-semibold text-[var(--wt-ink)]">Premio activado</p>
-                <p className="mt-0.5 text-[12.5px] text-[var(--wt-ink)]/65">Cupón de 15% off</p>
-              </div>
-            </div>
-          </div>
-
-          <p className="wt-heading mt-10 text-[28px] font-semibold leading-snug text-[var(--wt-text)]">
-            Tus premios y negocios, siempre en un mismo lugar.
-          </p>
-          <p className="wt-body mt-3">Consultá puntos, cupones y beneficios sin instalar ninguna aplicación.</p>
+      ) : loading ? (
+        <div className="mt-8 space-y-2.5">
+          {[0, 1, 2].map((i) => <div key={i} className="h-[76px] animate-pulse rounded-[22px] bg-[var(--wt-surface-raised)]" />)}
         </div>
-      </aside>
+      ) : apps.length === 0 ? (
+        <NoAppCard />
+      ) : (
+        <div className="mt-8">
+          <RoleTabs
+            value={role}
+            onChange={setRole}
+            options={[['cliente', UserRound, `Cliente · ${roles.cliente.length}`], ['admin', ShieldCheck, `Administrador · ${roles.admin.length}`]]}
+          />
+          <div className="mt-4 space-y-2.5">
+            {visibleApps.length === 0 && role === 'admin' ? (
+              <NoAppCard />
+            ) : visibleApps.length === 0 ? (
+              <p className="rounded-[22px] border-2 border-dashed border-[var(--wt-border)] px-4 py-8 text-center text-sm text-[var(--wt-muted)]">No tenés apps con este rol.</p>
+            ) : (
+              visibleApps.map((app, i) => (
+                <button
+                  key={app.id}
+                  onClick={() => enter(app)}
+                  disabled={Boolean(switching)}
+                  className="wt2-rise wt2-lift group flex w-full items-center gap-3.5 rounded-[22px] border border-[var(--wt-border)] bg-[var(--wt-surface)] p-4 text-left hover:border-[var(--wt-mint)]"
+                  style={{ '--d': `${i * 60}ms` }}
+                >
+                  <span className="wt-heading flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[var(--wt-mint)] to-[var(--wt-mint-dark)] text-[16px] font-bold text-white">
+                    {String(app.business_name || '?').trim().slice(0, 2).toUpperCase()}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate font-bold text-[var(--wt-ink)]">{app.business_name}</span>
+                    <span className="flex items-center gap-2 truncate text-[12.5px] text-[var(--wt-muted)]">
+                      wintuu.com/{app.slug}
+                      <span className={`rounded-full px-2 py-0.5 text-[10.5px] font-bold ${app.status === 'active' || app.status === 'activa' ? 'bg-emerald-100 text-emerald-700' : 'bg-[var(--wt-surface-raised)] text-[var(--wt-muted)]'}`}>{app.status}</span>
+                    </span>
+                  </span>
+                  {switching === app.slug ? (
+                    <Loader2 className="animate-spin text-[var(--wt-mint-dark)]" size={18} />
+                  ) : (
+                    <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--wt-surface-raised)] text-[var(--wt-ink)] transition group-hover:translate-x-1 group-hover:bg-[var(--wt-mint)]">
+                      <ArrowRight size={17} />
+                    </span>
+                  )}
+                </button>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+    </AuthShell>
+  );
+}
+
+function NoAppCard() {
+  return (
+    <div className="wt2-pop-in relative mt-6 overflow-hidden rounded-[28px] bg-[#08282c] p-7 text-center text-white">
+      <div className="wt-bg-blob" style={{ width: 200, height: 200, background: '#00cfcd', top: '-40%', right: '-20%', opacity: 0.35 }} />
+      <span className="relative mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--wt-mint)] text-[#08282c]">
+        <Sparkles size={24} />
+      </span>
+      <p className="wt-heading relative mt-4 text-[22px] font-bold">¿Tenés un negocio propio?</p>
+      <p className="relative mx-auto mt-1.5 max-w-xs text-[14px] text-white/70">Todavía no administrás ninguna app. Creá la tuya y empezá a fidelizar clientes con cupones y puntos.</p>
+      <Link to="/checkout" className={`${mintBtn} relative mt-5 !w-auto`}>
+        Crear mi app <ArrowRight size={16} className="wt2-arrow" />
+      </Link>
     </div>
   );
 }
 
-function RoleButton({ active, icon: Icon, label, onClick }) {
+function RoleTabs({ value, onChange, options }) {
   return (
-    <button
-      onClick={onClick}
-      className="flex items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-sm font-bold transition"
-      style={{ background: active ? '#fff' : 'transparent', color: active ? 'var(--wt-text)' : 'var(--wt-muted)', boxShadow: active ? '0 2px 8px rgba(60,40,20,0.1)' : 'none' }}
-    >
-      <Icon size={15} /> {label}
-    </button>
-  );
-}
-
-function GoogleIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
-      <path fill="#FFC107" d="M43.6 20.1H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3l5.7-5.7C34.3 6.1 29.4 4 24 4 13 4 4 13 4 24s9 20 20 20 20-9 20-20c0-1.3-.1-2.6-.4-3.9z" />
-      <path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.9 1.2 8 3l5.7-5.7C34.3 6.1 29.4 4 24 4 16.3 4 9.7 8.3 6.3 14.7z" />
-      <path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z" />
-      <path fill="#1976D2" d="M43.6 20.1H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37.4 39.4 44 34 44 24c0-1.3-.1-2.6-.4-3.9z" />
-    </svg>
+    <div className="relative grid grid-cols-2 gap-1 rounded-full bg-[var(--wt-surface-raised)] p-1.5">
+      <span
+        className="absolute bottom-1.5 top-1.5 w-[calc(50%-8px)] rounded-full bg-[var(--wt-surface)] shadow-[0_4px_14px_-6px_rgba(8,40,44,0.35)] transition-transform duration-300 ease-out"
+        style={{ left: 6, transform: value === options[1][0] ? 'translateX(calc(100% + 4px))' : 'none' }}
+      />
+      {options.map(([v, Icon, label]) => (
+        <button
+          key={v}
+          type="button"
+          onClick={() => onChange(v)}
+          className={`relative z-10 flex items-center justify-center gap-2 rounded-full px-3 py-2.5 text-[13.5px] font-bold transition-colors ${value === v ? 'text-[var(--wt-ink)]' : 'text-[var(--wt-muted)] hover:text-[var(--wt-ink)]'}`}
+        >
+          <Icon size={15} /> {label}
+        </button>
+      ))}
+    </div>
   );
 }
