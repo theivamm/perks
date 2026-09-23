@@ -23,6 +23,7 @@ import { PRESET_COLORS, hexToHsl } from '../../color.js';
 import { toast } from '../../components/ui.jsx';
 import ImageCropper from '../../components/ImageCropper.jsx';
 import '../../styles/wintuu-landing.css';
+import '../../styles/wintuu-landing-v2.css';
 import WintuuLogo from '../../components/landing/WintuuLogo.jsx';
 
 const STEPS = ['Bienvenida', 'Tu negocio', 'Tu marca', 'Tu logo', 'Tu menú', 'Listo'];
@@ -121,51 +122,67 @@ export default function SetupWizard() {
   const progress = Math.round((step / (STEPS.length - 1)) * 100);
 
   return (
-    <div className="wintuu-landing relative min-h-screen overflow-hidden">
-      <div className="wt-bg-blob" style={{ width: 340, height: 340, background: '#bff3ea', top: '-8%', right: '-6%' }} />
-      <div className="wt-bg-blob" style={{ width: 300, height: 300, background: '#ffd3ea', bottom: '-6%', left: '-6%' }} />
+    <div className="wintuu-landing relative min-h-screen overflow-hidden bg-[var(--wt-bg)]">
+      <div className="wt-bg-blob" style={{ width: 380, height: 380, background: '#bff3ea', top: '-10%', left: '-8%', opacity: 0.55 }} />
 
-      <header className="relative mx-auto flex max-w-3xl items-center justify-between gap-3 px-5 py-6">
-        <div className="flex items-center gap-2.5">
-          <WintuuLogo height={18} />
-          <span className="text-[13px] font-semibold text-[var(--wt-muted)]">Primeros pasos</span>
+      <header className="wt2-rise relative mx-auto flex max-w-[1180px] items-center justify-between gap-3 px-5 py-5 sm:px-8">
+        <div className="flex items-center gap-3">
+          <WintuuLogo height={20} />
+          <span className="hidden h-5 w-px bg-[var(--wt-border)] sm:block" />
+          <span className="hidden text-[13px] font-semibold text-[var(--wt-muted)] sm:block">Primeros pasos</span>
         </div>
         <button
           onClick={() => finish()}
           disabled={saving}
-          className="wt-nav-link inline-flex items-center gap-1.5 text-sm font-semibold"
+          className="wt2-btn inline-flex items-center gap-1.5 rounded-full border border-[var(--wt-border)] bg-[var(--wt-surface)] px-4 py-2 text-[13px] font-semibold text-[var(--wt-ink)] hover:border-[var(--wt-ink)]"
         >
-          <SkipForward size={15} />
+          <SkipForward size={14} />
           Saltar todo
         </button>
       </header>
 
-      <div className="relative mx-auto max-w-3xl px-5">
-        <div className="mb-1 flex items-center justify-between text-xs font-bold uppercase tracking-wide text-[var(--wt-muted)]">
-          <span>Paso {step + 1} de {STEPS.length}</span>
-          <span>{STEPS[step]}</span>
-        </div>
-        <div className="h-2 overflow-hidden rounded-full bg-[rgba(20,36,37,0.08)]">
-          <div
-            className="h-full rounded-full transition-all duration-500"
-            style={{ width: `${Math.max(progress, 4)}%`, background: 'linear-gradient(90deg, var(--wt-mint), var(--wt-mint-light))' }}
-          />
-        </div>
-      </div>
+      <div className="relative mx-auto grid max-w-[1180px] gap-6 px-5 pb-12 sm:px-8 lg:grid-cols-[220px_minmax(0,1fr)_320px] lg:items-start">
+        {/* Pasos */}
+        <aside className="lg:sticky lg:top-6">
+          <div className="mb-3 flex items-center justify-between text-[12px] font-bold text-[var(--wt-muted)] lg:hidden">
+            <span>Paso {step + 1} de {STEPS.length}</span>
+            <span>{STEPS[step]}</span>
+          </div>
+          <div className="h-1.5 overflow-hidden rounded-full bg-[var(--wt-border)] lg:hidden">
+            <div className="h-full rounded-full bg-[var(--wt-mint)] transition-all duration-500" style={{ width: `${Math.max(progress, 4)}%` }} />
+          </div>
+          <ol className="hidden flex-col gap-1 lg:flex">
+            {STEPS.map((label, i) => {
+              const done = i < step;
+              const on = i === step;
+              return (
+                <li key={label} className={`relative flex items-center gap-3 rounded-2xl px-3 py-2.5 transition-colors ${on ? 'bg-[var(--wt-surface)] shadow-[0_8px_24px_-18px_rgba(8,40,44,0.5)]' : ''}`}>
+                  {i < STEPS.length - 1 && <span className={`absolute left-[25px] top-[38px] h-[18px] w-[2px] ${done ? 'bg-[var(--wt-mint)]' : 'bg-[var(--wt-border)]'}`} />}
+                  <span className={`relative flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[12px] font-extrabold transition ${
+                    done ? 'bg-[var(--wt-mint)] text-[#08282c]' : on ? 'bg-[#08282c] text-white' : 'border-[1.5px] border-[var(--wt-border)] text-[var(--wt-muted)]'
+                  }`}>
+                    {done ? <Check size={14} strokeWidth={3} /> : i + 1}
+                  </span>
+                  <span className={`text-[14px] font-bold ${on ? 'text-[var(--wt-ink)]' : done ? 'text-[var(--wt-text)]' : 'text-[var(--wt-muted)]'}`}>{label}</span>
+                </li>
+              );
+            })}
+          </ol>
+        </aside>
 
-      <main className="relative mx-auto max-w-3xl px-5 py-8">
+        <main key={step} className="wt2-rise min-w-0">
         {step === 0 && (
-          <div className="wt-glass p-8 text-center">
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl text-[var(--wt-ink)]" style={{ background: 'linear-gradient(135deg, var(--wt-mint), var(--wt-mint-light))', boxShadow: '0 10px 26px rgba(0,207,205,0.32)' }}>
+          <div className="rounded-[32px] border border-[var(--wt-border)] bg-[var(--wt-surface)] p-8 text-center shadow-[0_24px_60px_-40px_rgba(8,40,44,0.5)] sm:p-12">
+            <div className="wt2-pop-in mx-auto flex h-20 w-20 items-center justify-center rounded-[28px] text-[var(--wt-ink)]" style={{ background: 'linear-gradient(135deg, var(--wt-mint), var(--wt-mint-light))', boxShadow: '0 10px 26px rgba(0,207,205,0.32)' }}>
               <Rocket size={28} />
             </div>
-            <h1 className="wt-h2 mt-5 text-[28px] text-[var(--wt-text)]">¡Bienvenido a tu app!</h1>
+            <h1 className="wt-heading mt-6 text-[clamp(32px,3.6vw,44px)] font-bold leading-tight text-[var(--wt-ink)]">¡Bienvenido a tu app!</h1>
             <p className="wt-body mx-auto mt-2 max-w-md text-[15px]">
               En unos minutos vas a dejar todo listo para empezar a fidelizar clientes. Te
               acompañamos paso a paso: podés completar cada uno o saltearlo y hacerlo más tarde
               desde el panel.
             </p>
-            <button className="wt-btn-mint mx-auto mt-6" onClick={next}>
+            <button className="wt2-btn wt2-shine mx-auto mt-7 inline-flex items-center gap-2 rounded-full bg-[#08282c] px-7 py-4 text-[15px] font-bold text-white hover:bg-[var(--wt-mint-dark)]" onClick={next}>
               Empezar
               <ArrowRight size={16} />
             </button>
@@ -173,15 +190,15 @@ export default function SetupWizard() {
         )}
 
         {step === 1 && (
-          <div className="wt-glass p-8">
+          <div className="rounded-[32px] border border-[var(--wt-border)] bg-[var(--wt-surface)] p-6 shadow-[0_24px_60px_-40px_rgba(8,40,44,0.5)] sm:p-9">
             <StepHeader icon={Store} title="Tu negocio" subtitle="¿Cómo se llama y qué lo hace especial?" />
             <div className="space-y-4">
               <label className="block">
-                <span className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-[var(--wt-muted)]">
+                <span className="mb-1.5 block text-[13px] font-semibold text-[var(--wt-ink)]">
                   Nombre del negocio
                 </span>
                 <input
-                  className="w-full rounded-2xl border border-[var(--wt-border)] bg-white px-4 py-3 text-sm font-semibold text-[var(--wt-text)] outline-none placeholder:text-[var(--wt-muted)]/60 focus:border-[var(--wt-mint)] focus:ring-2 focus:ring-[var(--wt-mint)]/15"
+                  className="w-full rounded-2xl border-[1.5px] border-[var(--wt-border)] bg-[var(--wt-surface)] px-4 py-3.5 text-[15px] font-medium text-[var(--wt-text)] outline-none transition placeholder:text-[var(--wt-muted)]/60 focus:border-[var(--wt-mint)] focus:ring-4 focus:ring-[var(--wt-mint)]/15"
                   value={biz.name}
                   onChange={(e) => setBiz((b) => ({ ...b, name: e.target.value }))}
                   maxLength={60}
@@ -189,11 +206,11 @@ export default function SetupWizard() {
                 />
               </label>
               <label className="block">
-                <span className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-[var(--wt-muted)]">
+                <span className="mb-1.5 block text-[13px] font-semibold text-[var(--wt-ink)]">
                   Frase corta (opcional)
                 </span>
                 <input
-                  className="w-full rounded-2xl border border-[var(--wt-border)] bg-white px-4 py-3 text-sm font-semibold text-[var(--wt-text)] outline-none placeholder:text-[var(--wt-muted)]/60 focus:border-[var(--wt-mint)] focus:ring-2 focus:ring-[var(--wt-mint)]/15"
+                  className="w-full rounded-2xl border-[1.5px] border-[var(--wt-border)] bg-[var(--wt-surface)] px-4 py-3.5 text-[15px] font-medium text-[var(--wt-text)] outline-none transition placeholder:text-[var(--wt-muted)]/60 focus:border-[var(--wt-mint)] focus:ring-4 focus:ring-[var(--wt-mint)]/15"
                   value={biz.tagline}
                   onChange={(e) => setBiz((b) => ({ ...b, tagline: e.target.value }))}
                   maxLength={80}
@@ -206,7 +223,7 @@ export default function SetupWizard() {
         )}
 
         {step === 2 && (
-          <div className="wt-glass p-8">
+          <div className="rounded-[32px] border border-[var(--wt-border)] bg-[var(--wt-surface)] p-6 shadow-[0_24px_60px_-40px_rgba(8,40,44,0.5)] sm:p-9">
             <StepHeader icon={Palette} title="Tu marca" subtitle="Elegí el color que va a vestir toda tu app." />
             <div className="flex flex-wrap items-center gap-4">
               <div
@@ -278,7 +295,7 @@ export default function SetupWizard() {
         )}
 
         {step === 3 && (
-          <div className="wt-glass p-8">
+          <div className="rounded-[32px] border border-[var(--wt-border)] bg-[var(--wt-surface)] p-6 shadow-[0_24px_60px_-40px_rgba(8,40,44,0.5)] sm:p-9">
             <StepHeader icon={ImagePlus} title="Tu logo" subtitle="Subí el logo horizontal y el ícono cuadrado de tu app." />
             <div className="mb-5 rounded-2xl border border-amber-300/50 bg-amber-50 p-4 text-sm text-[var(--wt-text)]">
               <p className="font-extrabold">Medidas obligatorias</p>
@@ -301,7 +318,7 @@ export default function SetupWizard() {
                 )}
               </div>
               <input ref={logoInput} type="file" accept="image/*" className="hidden" onChange={(e) => pickImage(e, 'logo')} />
-              <button className="wt-btn-ghost" onClick={() => logoInput.current?.click()} disabled={uploading}>
+              <button className="wt2-btn inline-flex items-center gap-2 rounded-full border-[1.5px] border-[var(--wt-border)] bg-[var(--wt-surface)] px-4 py-2.5 text-[13.5px] font-bold text-[var(--wt-ink)] hover:border-[var(--wt-ink)]" onClick={() => logoInput.current?.click()} disabled={uploading}>
                 <ImagePlus size={15} />
                 {settings.logo ? 'Cambiar logo' : 'Subir logo'}
               </button>
@@ -316,7 +333,7 @@ export default function SetupWizard() {
                 )}
               </div>
               <input ref={isoInput} type="file" accept="image/*" className="hidden" onChange={(e) => pickImage(e, 'iso')} />
-              <button className="wt-btn-ghost" onClick={() => isoInput.current?.click()} disabled={uploading}>
+              <button className="wt2-btn inline-flex items-center gap-2 rounded-full border-[1.5px] border-[var(--wt-border)] bg-[var(--wt-surface)] px-4 py-2.5 text-[13.5px] font-bold text-[var(--wt-ink)] hover:border-[var(--wt-ink)]" onClick={() => isoInput.current?.click()} disabled={uploading}>
                 <ImagePlus size={15} />
                 {settings.logoIso ? 'Cambiar ícono' : 'Subir ícono'}
               </button>
@@ -328,7 +345,7 @@ export default function SetupWizard() {
                 Aunque podés continuar sin subirlo, se usa como favicon del navegador y mejora notablemente la experiencia visual de la página.
                 Si todavía no tenés las piezas en estas medidas, administración puede ayudarte a prepararlas o revisarlas.
               </p>
-              <button className="wt-btn-ghost mt-3" onClick={requestLogoReview} disabled={openingTicket}>
+              <button className="wt2-btn inline-flex items-center gap-2 rounded-full border-[1.5px] border-[var(--wt-border)] bg-[var(--wt-surface)] px-4 py-2.5 text-[13.5px] font-bold text-[var(--wt-ink)] hover:border-[var(--wt-ink)] mt-3" onClick={requestLogoReview} disabled={openingTicket}>
                 {openingTicket ? <Loader2 className="animate-spin" size={15} /> : <LifeBuoy size={15} />}
                 Abrir ticket con administración
               </button>
@@ -339,12 +356,12 @@ export default function SetupWizard() {
         )}
 
         {step === 4 && (
-          <div className="wt-glass p-8">
+          <div className="rounded-[32px] border border-[var(--wt-border)] bg-[var(--wt-surface)] p-6 shadow-[0_24px_60px_-40px_rgba(8,40,44,0.5)] sm:p-9">
             <StepHeader icon={UtensilsCrossed} title="Tu menú y recompensas" subtitle="Cargá lo que tus clientes pueden consumir y qué premios ganan." />
             <div className="grid gap-3 sm:grid-cols-2">
               <button
                 onClick={() => finish(t('/dashboard/menu'))}
-                className="wt-card-hover flex flex-col items-start gap-2 rounded-2xl border-2 border-[var(--wt-border)] p-5 text-left transition-all hover:border-[var(--wt-mint)]"
+                className="wt2-lift flex flex-col items-start gap-2 rounded-[24px] border-2 border-[var(--wt-border)] p-5 text-left transition-colors hover:border-[var(--wt-mint)]"
                 style={{ background: 'rgba(255,255,255,0.5)' }}
               >
                 <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[rgba(0,207,205,0.14)] text-[var(--wt-mint-dark)]">
@@ -357,7 +374,7 @@ export default function SetupWizard() {
               </button>
               <button
                 onClick={() => finish(t('/dashboard/cupones'))}
-                className="wt-card-hover flex flex-col items-start gap-2 rounded-2xl border-2 border-[var(--wt-border)] p-5 text-left transition-all hover:border-[var(--wt-mint)]"
+                className="wt2-lift flex flex-col items-start gap-2 rounded-[24px] border-2 border-[var(--wt-border)] p-5 text-left transition-colors hover:border-[var(--wt-mint)]"
                 style={{ background: 'rgba(255,255,255,0.5)' }}
               >
                 <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[rgba(0,207,205,0.14)] text-[var(--wt-mint-dark)]">
@@ -378,16 +395,16 @@ export default function SetupWizard() {
         )}
 
         {step === 5 && (
-          <div className="wt-glass p-8 text-center">
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl text-[var(--wt-ink)]" style={{ background: 'linear-gradient(135deg, var(--wt-mint), var(--wt-mint-light))', boxShadow: '0 10px 26px rgba(0,207,205,0.32)' }}>
+          <div className="rounded-[32px] border border-[var(--wt-border)] bg-[var(--wt-surface)] p-8 text-center shadow-[0_24px_60px_-40px_rgba(8,40,44,0.5)] sm:p-12">
+            <div className="wt2-pop-in mx-auto flex h-20 w-20 items-center justify-center rounded-[28px] text-[var(--wt-ink)]" style={{ background: 'linear-gradient(135deg, var(--wt-mint), var(--wt-mint-light))', boxShadow: '0 10px 26px rgba(0,207,205,0.32)' }}>
               <Check size={30} />
             </div>
-            <h1 className="wt-h2 mt-5 text-[28px] text-[var(--wt-text)]">¡Tu app está lista!</h1>
+            <h1 className="wt-heading mt-6 text-[clamp(32px,3.6vw,44px)] font-bold leading-tight text-[var(--wt-ink)]">¡Tu app está lista!</h1>
             <p className="wt-body mx-auto mt-2 max-w-md text-[15px]">
               Ya podés compartir tu página con tus clientes, escanear sus QR y entregar
               recompensas. Todo lo que falte lo encontrás en el panel.
             </p>
-            <button className="wt-btn-mint mx-auto mt-6" onClick={() => finish()} disabled={saving}>
+            <button className="wt2-btn wt2-shine mx-auto mt-7 inline-flex items-center gap-2 rounded-full bg-[#08282c] px-7 py-4 text-[15px] font-bold text-white hover:bg-[var(--wt-mint-dark)]" onClick={() => finish()} disabled={saving}>
               {saving ? <Loader2 className="animate-spin" size={16} /> : <Rocket size={16} />}
               Ir a mi panel
             </button>
@@ -401,7 +418,13 @@ export default function SetupWizard() {
             </button>
           </div>
         )}
-      </main>
+        </main>
+
+        <aside className="hidden lg:sticky lg:top-6 lg:block">
+          <p className="mb-3 text-[11px] font-extrabold tracking-[0.16em] text-[var(--wt-muted)]">ASÍ SE VE TU APP</p>
+          <LivePreview settings={settings} biz={biz} />
+        </aside>
+      </div>
 
       {crop && (
         <ImageCropper
@@ -423,28 +446,76 @@ export default function SetupWizard() {
 
 function StepHeader({ icon: Icon, title, subtitle }) {
   return (
-    <div className="mb-6">
-      <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[rgba(0,207,205,0.14)] text-[var(--wt-mint-dark)]">
-        <Icon size={20} />
+    <div className="mb-7 flex items-start gap-4">
+      <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[var(--wt-mint)]/15 text-[var(--wt-mint-dark)]">
+        <Icon size={22} />
       </span>
-      <h1 className="wt-heading mt-3 text-xl font-semibold text-[var(--wt-text)]">{title}</h1>
-      {subtitle && <p className="mt-1 text-sm text-[var(--wt-muted)]">{subtitle}</p>}
+      <div>
+        <h1 className="wt-heading text-[26px] font-bold leading-tight text-[var(--wt-ink)]">{title}</h1>
+        {subtitle && <p className="mt-1 text-[15px] text-[var(--wt-muted)]">{subtitle}</p>}
+      </div>
     </div>
   );
 }
 
 function StepFooter({ onSkip, onNext, nextLabel, busy }) {
   return (
-    <div className="mt-7 flex flex-wrap items-center justify-between gap-3">
-      <button onClick={onSkip} className="inline-flex items-center gap-1.5 text-sm font-semibold text-[var(--wt-muted)] transition hover:text-[var(--wt-text)]">
+    <div className="mt-8 flex flex-wrap items-center justify-between gap-3 border-t border-[var(--wt-border)] pt-6">
+      <button onClick={onSkip} className="inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-[13.5px] font-semibold text-[var(--wt-muted)] transition hover:bg-[var(--wt-surface-raised)] hover:text-[var(--wt-ink)]">
         <SkipForward size={15} />
         Omitir paso
       </button>
-      <button className="wt-btn-mint" onClick={onNext} disabled={busy}>
+      <button className="wt2-btn wt2-shine inline-flex items-center gap-2 rounded-full bg-[#08282c] px-6 py-3.5 text-[15px] font-bold text-white hover:bg-[var(--wt-mint-dark)] disabled:opacity-50" onClick={onNext} disabled={busy}>
         {busy ? <Loader2 className="animate-spin" size={16} /> : null}
         {nextLabel}
-        {!busy && <ArrowRight size={16} />}
+        {!busy && <ArrowRight size={16} className="wt2-arrow" />}
       </button>
+    </div>
+  );
+}
+
+// Vista previa en vivo de la app del cliente (se actualiza con cada cambio del asistente).
+function LivePreview({ settings, biz }) {
+  const color = settings.primaryColor || '#00cfcd';
+  const dark = settings.theme === 'dark';
+  const name = (biz?.name || settings.businessName || 'Tu negocio').trim();
+  const tagline = (biz?.tagline ?? settings.tagline ?? '').trim();
+  return (
+    <div className="wt2-float-a mx-auto w-[280px] rounded-[42px] bg-[#0c1a1c] p-2.5 shadow-[0_40px_80px_-36px_rgba(8,40,44,0.6)]">
+      <div className={`flex h-[540px] flex-col overflow-hidden rounded-[34px] ${dark ? 'bg-[#15151b]' : 'bg-[#faf8fc]'}`}>
+        <div className="flex h-8 items-center justify-center"><span className="h-4 w-16 rounded-full bg-[#0c1a1c]" /></div>
+        <div className="flex items-center gap-2.5 px-4 pb-3">
+          {settings.logoIso ? (
+            <img src={settings.logoIso} alt="" className="h-9 w-9 rounded-full object-cover" />
+          ) : (
+            <span className="wt-heading flex h-9 w-9 items-center justify-center rounded-full text-[12px] font-bold text-white transition-colors duration-500" style={{ background: color }}>
+              {name.slice(0, 2).toUpperCase()}
+            </span>
+          )}
+          <div className="min-w-0">
+            <p className={`wt-heading truncate text-[15px] font-bold leading-tight ${dark ? 'text-white' : 'text-[#221729]'}`}>{name}</p>
+            {tagline && <p className={`truncate text-[10.5px] ${dark ? 'text-white/60' : 'text-[#6a5f76]'}`}>{tagline}</p>}
+          </div>
+        </div>
+        <div className="mx-3 flex flex-col gap-2.5 rounded-[22px] p-4 text-white transition-colors duration-500" style={{ background: `linear-gradient(140deg, ${color}, color-mix(in oklab, ${color} 70%, black))` }}>
+          <span className="self-start rounded-full bg-white/20 px-2.5 py-0.5 text-[9px] font-bold tracking-[0.14em]">TU CUPÓN ACTIVO</span>
+          <span className="wt-heading text-[22px] font-bold leading-none">Café gratis</span>
+          <div className="flex gap-1.5">
+            {[0, 1, 2, 3, 4].map((i) => (
+              <span key={i} className={`h-7 w-7 rounded-full ${i < 3 ? 'bg-[#ffd166]' : 'border-2 border-dashed border-white/50'}`} />
+            ))}
+          </div>
+          <span className="rounded-full bg-white py-2 text-center text-[11px] font-bold transition-colors duration-500" style={{ color }}>Mostrar mi QR</span>
+        </div>
+        <div className="flex flex-col gap-2 px-4 pt-4">
+          {['Flat White', 'Medialuna', 'Cheesecake'].map((p) => (
+            <div key={p} className={`flex items-center justify-between border-b py-2 ${dark ? 'border-white/10' : 'border-black/5'}`}>
+              <span className={`text-[12px] font-semibold ${dark ? 'text-white' : 'text-[#221729]'}`}>{p}</span>
+              <span className="wt-heading text-[12px] font-bold transition-colors duration-500" style={{ color }}>$3.900</span>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

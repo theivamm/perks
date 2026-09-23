@@ -25,6 +25,7 @@ import { useAuth } from '../../context/AuthContext.jsx';
 import TenantUsers from './TenantUsers.jsx';
 import '../../styles/wintuu-landing.css';
 import WintuuLogo from '../../components/landing/WintuuLogo.jsx';
+import AuthShell, { inputCls, primaryBtn } from '../../components/landing/AuthShell.jsx';
 
 const INPUT_CLS =
   'w-full rounded-xl border border-[var(--wt-border)] bg-white/5 px-3.5 py-2.5 text-sm font-semibold text-[var(--wt-text)] outline-none placeholder:text-[var(--wt-muted)]/50 focus:border-[var(--wt-mint)] focus:ring-2 focus:ring-[var(--wt-mint)]/20';
@@ -82,76 +83,37 @@ export default function SuperAdmin() {
 
   if (!isSuper) {
     return (
-      <div className="wintuu-landing wintuu-dark relative min-h-screen lg:grid lg:grid-cols-2">
-        <section className="relative flex min-h-screen items-center justify-center overflow-hidden px-5 py-10">
-          <div className="wt-halo h-72 w-72 -left-10 -top-10" style={{ opacity: 0.5 }} />
-          <div className="wt-halo h-64 w-64 -bottom-10 -right-10" style={{ opacity: 0.35 }} />
+      <AuthShell variant="admin" back="/" backLabel="Inicio">
+        <span className="inline-flex items-center gap-2 rounded-full bg-[#08282c] px-3 py-1.5 text-[11px] font-extrabold tracking-[0.14em] text-[var(--wt-mint-light)]">
+          <ShieldAlert size={13} /> ZONA RESTRINGIDA
+        </span>
+        <h1 className="wt-heading mt-5 text-[clamp(34px,3.8vw,46px)] font-bold leading-[1.04] text-[var(--wt-ink)]">Panel de Wintuu.</h1>
+        <p className="mt-3 text-[16px] leading-relaxed text-[var(--wt-muted)]">Negocios, usuarios, pagos y soporte de todas las apps, en un solo lugar.</p>
 
-          <div className="wt-glass relative w-full max-w-lg p-6 sm:p-8">
-            <div className="flex items-center justify-between">
-              <span className="wt-tag">Zona restringida</span>
-              <WintuuLogo height={20} />
-            </div>
+        {error && <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-600">{error}</div>}
 
-            <div className="mt-8 flex items-center gap-3">
-              <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[rgba(0,207,205,0.14)] text-[var(--wt-mint-light)]">
-                <ShieldAlert size={22} />
-              </span>
-              <div>
-                <h1 className="wt-h2 text-[26px] text-[var(--wt-text)]">Superadmin</h1>
-                <p className="text-sm text-[var(--wt-muted)]">Acceso exclusivo al panel de control de Wintuu.</p>
-              </div>
-            </div>
-
-            {error && (
-              <div className="mt-5 rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm font-semibold text-red-400">
-                {error}
-              </div>
-            )}
-
-            <form onSubmit={submit} className="mt-6 space-y-3">
-              <div className="relative">
-                <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--wt-muted)]" />
-                <input
-                  className={`${INPUT_CLS} pl-10`}
-                  type="email"
-                  placeholder="superadmin@wintuu.app"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  autoFocus
-                />
-              </div>
-              <div className="relative">
-                <KeyRound size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--wt-muted)]" />
-                <input
-                  className={`${INPUT_CLS} pl-10`}
-                  type="password"
-                  placeholder="Contraseña"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
-              </div>
-              <button type="submit" className="wt-btn-mint w-full" disabled={busy || !email || !password}>
-                {busy ? <Loader2 className="animate-spin" size={18} /> : <LogIn size={18} />}
-                Ingresar al panel
-              </button>
-            </form>
-          </div>
-        </section>
-
-        <aside className="relative hidden min-h-screen items-end overflow-hidden lg:flex" style={{ background: 'linear-gradient(165deg, #0d131a 0%, #0a0e13 100%)' }}>
-          <div className="wt-halo h-96 w-96 -right-20 -top-20" style={{ opacity: 0.4 }} />
-          <div className="relative max-w-xl p-12">
-            <p className="wt-eyebrow-light">Solo acceso autorizado</p>
-            <p className="wt-heading mt-3 text-[38px] font-semibold leading-tight text-[var(--wt-text)]">
-              Panel de control de todas las apps Wintuu.
-            </p>
-            <p className="wt-body mt-4">Gestión de negocios, usuarios, pagos y soporte desde un único lugar.</p>
-          </div>
-        </aside>
-      </div>
+        <form onSubmit={submit} className="mt-8 space-y-3">
+          <label className="block">
+            <span className="mb-1.5 block text-[13px] font-semibold text-[var(--wt-ink)]">Email</span>
+            <span className="relative block">
+              <Mail size={17} className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--wt-muted)]" />
+              <input className={inputCls} type="email" placeholder="superadmin@wintuu.app" value={email} onChange={(e) => setEmail(e.target.value)} required autoFocus />
+            </span>
+          </label>
+          <label className="block">
+            <span className="mb-1.5 block text-[13px] font-semibold text-[var(--wt-ink)]">Contraseña</span>
+            <span className="relative block">
+              <KeyRound size={17} className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--wt-muted)]" />
+              <input className={inputCls} type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required />
+            </span>
+          </label>
+          <button type="submit" className={`${primaryBtn} !mt-5`} disabled={busy || !email || !password}>
+            {busy ? <Loader2 className="animate-spin" size={18} /> : <LogIn size={18} />}
+            Ingresar al panel
+          </button>
+        </form>
+        <p className="mt-6 text-center text-[12.5px] text-[var(--wt-muted)]">Solo acceso autorizado. Los intentos quedan registrados.</p>
+      </AuthShell>
     );
   }
 
