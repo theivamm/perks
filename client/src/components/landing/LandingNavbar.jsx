@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
-import { ArrowRight, ChevronDown, LayoutGrid, LogOut, Menu, X } from 'lucide-react';
+import { ArrowRight, ChevronDown, Grip, LayoutGrid, LogOut, X } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.jsx';
 import WintuuLogo from './WintuuLogo.jsx';
 
@@ -200,17 +200,27 @@ export default function LandingNavbar() {
             </Link>
           </div>
 
-          <button
-            ref={menuBtnRef}
-            type="button"
-            className="flex h-10 w-10 items-center justify-center rounded-xl text-[var(--wt-ink)] lg:hidden"
-            aria-expanded={open}
-            aria-controls="wt-mobile-menu"
-            aria-label={open ? 'Cerrar menú' : 'Abrir menú'}
-            onClick={toggle}
-          >
-            {open ? <X size={22} /> : <Menu size={22} />}
-          </button>
+          <div className="flex items-center gap-3 lg:hidden">
+            <Link
+              to="/checkout"
+              onClick={close}
+              className="wt-btn-glow wt-btn-mint-sm shrink-0"
+              aria-label="Quiero mi app"
+            >
+              Quiero mi app
+            </Link>
+            <button
+              ref={menuBtnRef}
+              type="button"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-[var(--wt-ink)]"
+              aria-expanded={open}
+              aria-controls="wt-mobile-menu"
+              aria-label={open ? 'Cerrar menú' : 'Abrir menú'}
+              onClick={toggle}
+            >
+              {open ? <X size={24} /> : <Grip size={24} />}
+            </button>
+          </div>
         </div>
       </header>
 
@@ -226,8 +236,9 @@ export default function LandingNavbar() {
             role="dialog"
             aria-modal="true"
             aria-label="Menú de navegación"
-            className="wt-menu-overlay fixed inset-0 z-[70] flex flex-col overflow-y-auto lg:hidden"
+            className="wt-menu-overlay fixed inset-0 z-[70] flex flex-col overflow-hidden lg:hidden"
             style={{
+              backgroundColor: '#fff6ec',
               background:
                 'radial-gradient(80% 55% at 88% 8%, rgba(255,196,225,0.4), transparent 60%), radial-gradient(75% 50% at 8% 95%, rgba(0,207,205,0.16), transparent 55%), linear-gradient(165deg, #ffffff, #fff6ec)',
             }}
@@ -238,7 +249,7 @@ export default function LandingNavbar() {
               <div className="wt-bg-blob" style={{ width: 200, height: 200, background: '#e3dbff', top: '45%', left: '55%', opacity: 0.3 }} />
             </div>
 
-            <div className="relative flex h-16 items-center justify-between px-4 sm:h-[72px] sm:px-8">
+            <div className="relative flex h-16 shrink-0 items-center justify-between px-4 sm:h-[72px] sm:px-8">
               <a href="#inicio" onClick={close} aria-label="Wintuu, inicio">
                 <WintuuLogo height={22} />
               </a>
@@ -253,31 +264,32 @@ export default function LandingNavbar() {
               </button>
             </div>
 
-            <nav className="relative mt-4 flex flex-1 flex-col justify-center gap-8 px-6 sm:px-10" aria-label="Principal">
-              {NAV_ITEMS.map(([href, label], i) => (
-                <a
-                  key={href}
-                  href={href}
-                  onClick={close}
-                  className="wt-menu-item group flex items-center gap-3 sm:gap-5"
-                  style={{ '--wt-delay': `${120 + i * 80}ms` }}
-                >
-                  <span className="wt-heading shrink-0 text-[clamp(19px,5.4vw,26px)] font-semibold text-[var(--wt-mint-dark)] transition-colors duration-300 group-hover:text-[var(--wt-mint)]">
-                    {String(i + 1).padStart(2, '0')}
-                  </span>
-                  <span className="wt-heading whitespace-nowrap text-[clamp(34px,9.6vw,56px)] font-semibold leading-none text-[var(--wt-ink)] transition-all duration-300 group-hover:translate-x-2 group-hover:text-[var(--wt-mint-dark)]">
-                    {label}
-                  </span>
-                  <ArrowRight
-                    size={22}
-                    className="ml-auto shrink-0 -translate-x-2 text-[var(--wt-mint-dark)] opacity-0 transition-all duration-300 group-hover:translate-x-0 group-hover:opacity-100"
-                  />
-                </a>
-              ))}
-            </nav>
+            <div className="relative flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden">
+              <nav className="mt-4 flex flex-1 flex-col justify-center gap-8 px-6 sm:px-10" aria-label="Principal">
+                {NAV_ITEMS.map(([href, label], i) => (
+                  <a
+                    key={href}
+                    href={href}
+                    onClick={close}
+                    className="wt-menu-item group flex items-center gap-3 sm:gap-5"
+                    style={{ '--wt-delay': `${120 + i * 80}ms` }}
+                  >
+                    <span className="wt-heading shrink-0 text-[clamp(19px,5.4vw,26px)] font-semibold text-[var(--wt-mint-dark)] transition-colors duration-300 group-hover:text-[var(--wt-mint)]">
+                      {String(i + 1).padStart(2, '0')}
+                    </span>
+                    <span className="wt-heading whitespace-nowrap text-[clamp(34px,9.6vw,56px)] font-semibold leading-none text-[var(--wt-ink)] transition-all duration-300 group-hover:translate-x-2 group-hover:text-[var(--wt-mint-dark)]">
+                      {label}
+                    </span>
+                    <ArrowRight
+                      size={22}
+                      className="ml-auto shrink-0 -translate-x-2 text-[var(--wt-mint-dark)] opacity-0 transition-all duration-300 group-hover:translate-x-0 group-hover:opacity-100"
+                    />
+                  </a>
+                ))}
+              </nav>
 
-            <div className="wt-menu-item relative px-6 pb-8 pt-8 sm:px-10" style={{ '--wt-delay': '520ms' }}>
-              <div className="mx-auto flex max-w-md flex-col gap-3">
+              <div className="wt-menu-item px-6 pb-8 pt-8 sm:px-10" style={{ '--wt-delay': '520ms' }}>
+                <div className="mx-auto flex max-w-md flex-col gap-3">
                 {user ? (
                   <>
                     <div className="flex items-center gap-3 rounded-2xl border border-[var(--wt-border)] bg-white/75 px-4 py-3">
@@ -313,7 +325,8 @@ export default function LandingNavbar() {
                 <Link to="/checkout" onClick={close} className="wt-btn-mint w-full">
                   Quiero mi app <ArrowRight size={16} />
                 </Link>
-                <p className="mt-1 text-center text-[13px] text-[var(--wt-muted)]">Cupones, puntos y tu menú en un mismo lugar.</p>
+                  <p className="mt-1 text-center text-[13px] text-[var(--wt-muted)]">Cupones, puntos y tu menú en un mismo lugar.</p>
+                </div>
               </div>
             </div>
           </div>,

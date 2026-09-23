@@ -226,6 +226,19 @@
   transform: translateY(-1px);
 }
 
+/* Halo pulsante para acciones destacadas (mobile CTA) */
+.wintuu-landing .wt-btn-glow {
+  animation: wt-glow-pulse 2.2s ease-in-out infinite;
+}
+@keyframes wt-glow-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(0, 207, 205, 0.55), 0 10px 26px rgba(0, 207, 205, 0.35);
+  }
+  50% {
+    box-shadow: 0 0 0 9px rgba(0, 207, 205, 0), 0 14px 32px rgba(0, 207, 205, 0.48);
+  }
+}
+
 .wintuu-landing .wt-btn-ghost,
 .wintuu-landing .wt-btn-ghost-light {
   display: inline-flex;
@@ -618,7 +631,8 @@ html:has(.wintuu-landing) {
   .wintuu-landing .wt-phone,
   .wintuu-landing .wt-float-chip,
   .wintuu-landing .wt-menu-overlay,
-  .wintuu-landing .wt-menu-item {
+  .wintuu-landing .wt-menu-item,
+  .wintuu-landing .wt-btn-glow {
     animation: none !important;
   }
 }
