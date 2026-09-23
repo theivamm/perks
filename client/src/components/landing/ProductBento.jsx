@@ -4,15 +4,15 @@ const COUPONS = [
   ['$5.000', '10 puntos', 'bg-[#ffd9ea] text-[#9b1d5f]'],
 ];
 const BRANDS = [
-  ['Shanti-Chi', 'shanti-chi', '#6b33b1', 'from-[#6b33b1] to-[#512685]', false],
-  ['Café Lúa', 'cafe-lua', '#c2562f', 'from-[#d0643b] to-[#a8431f]', false],
-  ['Norte', 'norte', '#3fb27f', 'from-[#3fb27f] to-[#1f7a53]', true],
+  ['Fade Barber', 'fade-barber', '#6b33b1', 'from-[#6b33b1] to-[#512685]', false],
+  ['Dulce Trigo', 'dulce-trigo', '#c2562f', 'from-[#d0643b] to-[#a8431f]', false],
+  ['Huellas Vet', 'huellas-vet', '#3fb27f', 'from-[#3fb27f] to-[#1f7a53]', true],
 ];
 const CLIENTS = [
   ['L', 'Lucía M.', 80, '4/5', '#c9bbff'],
   ['T', 'Tomás G.', 40, '2/5', '#ffc4e1'],
 ];
-const MENU = [['Flat White', '$3.900'], ['Cold Brew', '$3.900'], ['Cheesecake', '$4.200'], ['Tostado de campo', '$3.800']];
+const MENU = [['Corte + barba', '$8.900'], ['Manicura', '$4.500'], ['Torta Rogel', 'x porción'], ['Baño y corte', 'A consultar']];
 
 function Tile({ children, className = '', delay = 0 }) {
   return (
@@ -112,9 +112,9 @@ export default function ProductBento() {
                   <span className="absolute left-2 top-2 rounded-full bg-gradient-to-r from-[#f5b33a] to-[#f07a2a] px-2 py-0.5 text-[10px] font-extrabold text-white">−30% OFF</span>
                 </div>
                 <div className="flex flex-col gap-0.5 px-3 py-2.5">
-                  <span className="wt-heading text-[14px] font-bold text-[var(--wt-ink)]">Caramel Latté</span>
+                  <span className="wt-heading text-[14px] font-bold text-[var(--wt-ink)]">Corte + barba</span>
                   <span className="wt-heading text-[14px] font-bold text-[var(--wt-mint-dark)]">
-                    $2.590 <span className="font-sans text-[11px] font-medium text-[var(--wt-muted)] line-through">$3.700</span>
+                    $7.400 <span className="font-sans text-[11px] font-medium text-[var(--wt-muted)] line-through">$9.900</span>
                   </span>
                 </div>
               </div>
