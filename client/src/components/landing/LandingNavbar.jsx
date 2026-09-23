@@ -175,141 +175,153 @@ export default function LandingNavbar() {
   const close = () => setOpen(false);
 
   return (
-    <header className="wt-navbar">
-      <div className="mx-auto flex h-16 max-w-[1280px] items-center justify-between px-4 sm:h-[72px] sm:px-8 lg:px-12">
-        <a href="#inicio" className="flex shrink-0 items-center" aria-label="Wintuu, inicio">
-          <WintuuLogo height={22} />
-        </a>
+    <>
+      <header className="wt-navbar">
+        <div className="mx-auto flex h-16 max-w-[1280px] items-center justify-between px-4 sm:h-[72px] sm:px-8 lg:px-12">
+          <a href="#inicio" className="flex shrink-0 items-center" aria-label="Wintuu, inicio">
+            <WintuuLogo height={22} />
+          </a>
 
-        <nav className="hidden items-center gap-8 lg:flex" aria-label="Principal">
-          {NAV_ITEMS.map(([href, label]) => (
-            <a key={href} href={href} className="wt-nav-link">
-              {label}
-            </a>
-          ))}
-        </nav>
-
-        <div className="hidden items-center gap-5 lg:flex">
-          {user ? (
-            <AccountMenu user={user} />
-          ) : (
-            <Link to="/ingresar" className="wt-nav-link">
-              Ingresar
-            </Link>
-          )}
-          <Link to="/checkout" className="wt-btn-mint-sm">
-            Quiero mi app
-          </Link>
-        </div>
-
-        <button
-          ref={menuBtnRef}
-          type="button"
-          className="flex h-10 w-10 items-center justify-center rounded-xl text-[var(--wt-ink)] lg:hidden"
-          aria-expanded={open}
-          aria-controls="wt-mobile-menu"
-          aria-label={open ? 'Cerrar menú' : 'Abrir menú'}
-          onClick={() => setOpen((v) => !v)}
-        >
-          {open ? <X size={22} /> : <Menu size={22} />}
-        </button>
-      </div>
-
-      {open && (
-        <div
-          id="wt-mobile-menu"
-          className="wt-menu-overlay fixed inset-0 z-50 flex flex-col overflow-y-auto lg:hidden"
-          style={{
-            background:
-              'radial-gradient(80% 55% at 88% 8%, rgba(255,196,225,0.4), transparent 60%), radial-gradient(75% 50% at 8% 95%, rgba(0,207,205,0.16), transparent 55%), linear-gradient(165deg, #ffffff, #fff6ec)',
-          }}
-        >
-          <div className="pointer-events-none absolute inset-0 overflow-hidden">
-            <div className="wt-bg-blob" style={{ width: 280, height: 280, background: '#ffd3ea', top: '6%', right: '-18%', opacity: 0.45 }} />
-            <div className="wt-bg-blob" style={{ width: 320, height: 320, background: '#bff3ea', bottom: '4%', left: '-20%', opacity: 0.45 }} />
-            <div className="wt-bg-blob" style={{ width: 200, height: 200, background: '#e3dbff', top: '45%', left: '55%', opacity: 0.3 }} />
-          </div>
-
-          <div className="relative flex h-16 items-center justify-between px-4 sm:h-[72px] sm:px-8">
-            <a href="#inicio" onClick={close} aria-label="Wintuu, inicio">
-              <WintuuLogo height={22} />
-            </a>
-            <button
-              ref={closeBtnRef}
-              type="button"
-              onClick={close}
-              className="flex h-10 w-10 items-center justify-center rounded-xl text-[var(--wt-ink)]"
-              aria-label="Cerrar menú"
-            >
-              <X size={26} />
-            </button>
-          </div>
-
-          <nav className="relative mt-4 flex flex-1 flex-col justify-center gap-8 px-6 sm:px-10" aria-label="Principal">
-            {NAV_ITEMS.map(([href, label], i) => (
-              <a
-                key={href}
-                href={href}
-                onClick={close}
-                className="wt-menu-item group flex items-center gap-4 sm:gap-6"
-                style={{ '--wt-delay': `${120 + i * 80}ms` }}
-              >
-                <span className="wt-heading text-[clamp(19px,5.4vw,26px)] font-semibold text-[var(--wt-mint-dark)] transition-colors duration-300 group-hover:text-[var(--wt-mint)]">
-                  {String(i + 1).padStart(2, '0')}
-                </span>
-                <span className="wt-heading text-[clamp(36px,10vw,58px)] font-semibold leading-none text-[var(--wt-ink)] transition-all duration-300 group-hover:translate-x-2 group-hover:text-[var(--wt-mint-dark)]">
-                  {label}
-                </span>
-                <ArrowRight
-                  size={22}
-                  className="ml-auto shrink-0 -translate-x-2 text-[var(--wt-mint-dark)] opacity-0 transition-all duration-300 group-hover:translate-x-0 group-hover:opacity-100"
-                />
+          <nav className="hidden items-center gap-8 lg:flex" aria-label="Principal">
+            {NAV_ITEMS.map(([href, label]) => (
+              <a key={href} href={href} className="wt-nav-link">
+                {label}
               </a>
             ))}
           </nav>
 
-          <div className="wt-menu-item relative px-6 pb-8 pt-8 sm:px-10" style={{ '--wt-delay': '520ms' }}>
-            <div className="mx-auto flex max-w-md flex-col gap-3">
-              {user ? (
-                <>
-                  <div className="flex items-center gap-3 rounded-2xl border border-[var(--wt-border)] bg-white/75 px-4 py-3">
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[var(--wt-mint)] to-[var(--wt-mint-dark)] text-sm font-extrabold text-white">
-                      {initials(user.name)}
-                    </span>
-                    <div className="min-w-0">
-                      <p className="truncate text-[15px] font-semibold text-[var(--wt-text)]">{user.name}</p>
-                      <p className="truncate text-xs text-[var(--wt-muted)]">{user.email}</p>
-                    </div>
-                  </div>
-                  <div className="flex gap-3">
-                    <Link to="/ingresar" onClick={close} className="wt-btn-ghost flex-1 justify-center">
-                      Mis apps
-                    </Link>
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        close();
-                        await logout();
-                      }}
-                      className="wt-btn-ghost flex-1 justify-center text-red-500"
-                    >
-                      Salir
-                    </button>
-                  </div>
-                </>
-              ) : (
-                <Link to="/ingresar" onClick={close} className="wt-btn-ghost w-full justify-center">
-                  Ingresar
-                </Link>
-              )}
-              <Link to="/checkout" onClick={close} className="wt-btn-mint w-full">
-                Quiero mi app <ArrowRight size={16} />
+          <div className="hidden items-center gap-5 lg:flex">
+            {user ? (
+              <AccountMenu user={user} />
+            ) : (
+              <Link to="/ingresar" className="wt-nav-link">
+                Ingresar
               </Link>
-              <p className="mt-1 text-center text-[13px] text-[var(--wt-muted)]">Cupones, puntos y tu menú en un mismo lugar.</p>
-            </div>
+            )}
+            <Link to="/checkout" className="wt-btn-mint-sm">
+              Quiero mi app
+            </Link>
           </div>
+
+          <button
+            ref={menuBtnRef}
+            type="button"
+            className="flex h-10 w-10 items-center justify-center rounded-xl text-[var(--wt-ink)] lg:hidden"
+            aria-expanded={open}
+            aria-controls="wt-mobile-menu"
+            aria-label={open ? 'Cerrar menú' : 'Abrir menú'}
+            onClick={() => setOpen((v) => !v)}
+          >
+            {open ? <X size={22} /> : <Menu size={22} />}
+          </button>
         </div>
-      )}
-    </header>
+      </header>
+
+      {/*
+        El menú se porta a la raíz .wintuu-landing (como el dropdown de cuenta):
+        dentro del navbar (con backdrop-filter) un fixed quedaría confinado a la
+        altura de la barra y no cubriría la pantalla.
+      */}
+      {open &&
+        createPortal(
+          <div
+            id="wt-mobile-menu"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Menú de navegación"
+            className="wt-menu-overlay fixed inset-0 z-[70] flex flex-col overflow-y-auto lg:hidden"
+            style={{
+              background:
+                'radial-gradient(80% 55% at 88% 8%, rgba(255,196,225,0.4), transparent 60%), radial-gradient(75% 50% at 8% 95%, rgba(0,207,205,0.16), transparent 55%), linear-gradient(165deg, #ffffff, #fff6ec)',
+            }}
+          >
+            <div className="pointer-events-none absolute inset-0 overflow-hidden">
+              <div className="wt-bg-blob" style={{ width: 280, height: 280, background: '#ffd3ea', top: '6%', right: '-18%', opacity: 0.45 }} />
+              <div className="wt-bg-blob" style={{ width: 320, height: 320, background: '#bff3ea', bottom: '4%', left: '-20%', opacity: 0.45 }} />
+              <div className="wt-bg-blob" style={{ width: 200, height: 200, background: '#e3dbff', top: '45%', left: '55%', opacity: 0.3 }} />
+            </div>
+
+            <div className="relative flex h-16 items-center justify-between px-4 sm:h-[72px] sm:px-8">
+              <a href="#inicio" onClick={close} aria-label="Wintuu, inicio">
+                <WintuuLogo height={22} />
+              </a>
+              <button
+                ref={closeBtnRef}
+                type="button"
+                onClick={close}
+                className="flex h-10 w-10 items-center justify-center rounded-xl text-[var(--wt-ink)]"
+                aria-label="Cerrar menú"
+              >
+                <X size={26} />
+              </button>
+            </div>
+
+            <nav className="relative mt-4 flex flex-1 flex-col justify-center gap-8 px-6 sm:px-10" aria-label="Principal">
+              {NAV_ITEMS.map(([href, label], i) => (
+                <a
+                  key={href}
+                  href={href}
+                  onClick={close}
+                  className="wt-menu-item group flex items-center gap-4 sm:gap-6"
+                  style={{ '--wt-delay': `${120 + i * 80}ms` }}
+                >
+                  <span className="wt-heading text-[clamp(19px,5.4vw,26px)] font-semibold text-[var(--wt-mint-dark)] transition-colors duration-300 group-hover:text-[var(--wt-mint)]">
+                    {String(i + 1).padStart(2, '0')}
+                  </span>
+                  <span className="wt-heading text-[clamp(36px,10vw,58px)] font-semibold leading-none text-[var(--wt-ink)] transition-all duration-300 group-hover:translate-x-2 group-hover:text-[var(--wt-mint-dark)]">
+                    {label}
+                  </span>
+                  <ArrowRight
+                    size={22}
+                    className="ml-auto shrink-0 -translate-x-2 text-[var(--wt-mint-dark)] opacity-0 transition-all duration-300 group-hover:translate-x-0 group-hover:opacity-100"
+                  />
+                </a>
+              ))}
+            </nav>
+
+            <div className="wt-menu-item relative px-6 pb-8 pt-8 sm:px-10" style={{ '--wt-delay': '520ms' }}>
+              <div className="mx-auto flex max-w-md flex-col gap-3">
+                {user ? (
+                  <>
+                    <div className="flex items-center gap-3 rounded-2xl border border-[var(--wt-border)] bg-white/75 px-4 py-3">
+                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[var(--wt-mint)] to-[var(--wt-mint-dark)] text-sm font-extrabold text-white">
+                        {initials(user.name)}
+                      </span>
+                      <div className="min-w-0">
+                        <p className="truncate text-[15px] font-semibold text-[var(--wt-text)]">{user.name}</p>
+                        <p className="truncate text-xs text-[var(--wt-muted)]">{user.email}</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-3">
+                      <Link to="/ingresar" onClick={close} className="wt-btn-ghost flex-1 justify-center">
+                        Mis apps
+                      </Link>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          close();
+                          await logout();
+                        }}
+                        className="wt-btn-ghost flex-1 justify-center text-red-500"
+                      >
+                        Salir
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <Link to="/ingresar" onClick={close} className="wt-btn-ghost w-full justify-center">
+                    Ingresar
+                  </Link>
+                )}
+                <Link to="/checkout" onClick={close} className="wt-btn-mint w-full">
+                  Quiero mi app <ArrowRight size={16} />
+                </Link>
+                <p className="mt-1 text-center text-[13px] text-[var(--wt-muted)]">Cupones, puntos y tu menú en un mismo lugar.</p>
+              </div>
+            </div>
+          </div>,
+          document.querySelector('.wintuu-landing') || document.body
+        )}
+    </>
   );
 }
