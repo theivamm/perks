@@ -17,6 +17,9 @@ const DEFAULT_SETTINGS = {
   setupCompleted: 'true',
 };
 
+// Datos de contacto del local (footer + botón flotante). Se guardan en la misma tabla settings.
+const CONTACT_KEYS = ["businessDescription", "address", "mapsUrl", "phone", "whatsapp", "email", "website", "instagram", "facebook", "tiktok", "hours", "contactButton", "contactMessage"];
+
 const settingsKey = (slug = '') => `wintuu:settings:${slug || '_wintuu'}`;
 
 function normalize(data) {
@@ -30,6 +33,7 @@ function normalize(data) {
     businessName: data.businessName || DEFAULT_SETTINGS.businessName,
     tagline: data.tagline || '',
     setupCompleted: String(data.setupCompleted ?? DEFAULT_SETTINGS.setupCompleted),
+    ...Object.fromEntries(CONTACT_KEYS.map((k) => [k, data[k] || ''])),
   };
 }
 
@@ -129,6 +133,7 @@ export function ThemeProvider({ children }) {
         }
       } catch (e) {
         console.error(e);
+        throw e;
       }
     },
     [settings, slug]
