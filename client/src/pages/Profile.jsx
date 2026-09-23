@@ -1,22 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import {
-  Archive,
-  ArrowLeft,
-  BadgePercent,
-  Bell,
-  Camera,
-  Coffee,
-  Copy,
-  Gift,
-  Loader2,
-  Moon,
-  Pencil,
-  QrCode,
-  Save,
-  Sun,
-  X,
-} from 'lucide-react';
+import { Archive, ArrowRight, Bell, Camera, Check, Coffee, Copy, Loader2, Mail, Pencil, Phone, QrCode, Save, Ticket, X } from 'lucide-react';
 import QRCode from 'qrcode';
 import { api } from '../api.js';
 import { useAuth } from '../context/AuthContext.jsx';
@@ -24,16 +8,16 @@ import { useTheme } from '../context/ThemeContext.jsx';
 import { useTenant } from '../context/TenantContext.jsx';
 import { EmptyState, Modal, Spinner, toast } from '../components/ui.jsx';
 import ImageCropper from '../components/ImageCropper.jsx';
-import { ActiveCouponCard, ReadyCouponCard } from '../components/CouponCards.jsx';
-import NotificationsBell from '../components/NotificationsBell.jsx';
-import UserMenu from '../components/UserMenu.jsx';
+import { ReadyCouponCard, couponValue } from '../components/CouponCards.jsx';
+import Navbar from '../components/Navbar.jsx';
+import Stamps from '../components/Stamps.jsx';
 import PhoneInput from '../components/PhoneInput.jsx';
 import AdminSummary from '../components/AdminSummary.jsx';
 import { formatWhen, notificationMeta } from '../lib/notifications.js';
 
 export default function Profile() {
   const { user, updateUser } = useAuth();
-  const { settings, toggleTheme } = useTheme();
+  const { settings } = useTheme();
   const { t } = useTenant();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -45,6 +29,7 @@ export default function Profile() {
   const [form, setForm] = useState({ name: '', last_name: '', phone: '', email: '', image: '' });
   const [saving, setSaving] = useState(false);
   const [notifications, setNotifications] = useState([]);
+  const currency = settings.currency || '$';
 
   const me = data?.user;
   const isCliente = me?.role === 'cliente';
@@ -141,200 +126,210 @@ export default function Profile() {
     }
   };
 
-  if (loading && !data) return <Spinner label="Cargando perfil..." />;
-  if (!data) return <EmptyState icon={Coffee} title="No se pudo cargar el perfil" />;
+  if (loading && !data) {
+    return (
+      <div className="page-aurora min-h-screen">
+        <Navbar />
+        <Spinner label="Cargando perfil..." />
+      </div>
+    );
+  }
+  if (!data) {
+    return (
+      <div className="page-aurora min-h-screen">
+        <Navbar />
+        <EmptyState icon={Coffee} title="No se pudo cargar el perfil" />
+      </div>
+    );
+  }
 
   const activeCoupon = data.activeCoupon || null;
   const readyCoupons = data.readyCoupons || [];
+  const unread = notifications.filter((n) => !n.read).length;
 
   return (
-    <div className="min-h-screen bg-surface-page">
-      <header className="sticky top-0 z-40 border-b border-line bg-surface-page px-4 py-3 backdrop-blur-md">
-        <div className="mx-auto flex max-w-5xl items-center justify-between gap-3">
-          <Link to={t('/')} className="inline-flex items-center gap-2 text-sm font-semibold text-ink-muted hover:text-ink">
-            <ArrowLeft size={16} />
-            Inicio
-          </Link>
-          <span className="text-sm font-bold text-ink">Mi perfil</span>
-<div className="flex items-center gap-1.5">
-            <NotificationsBell />
-            <button className="btn-icon" onClick={toggleTheme} aria-label="Cambiar tema">
-              <span key={settings.theme} className="animate-pop inline-block">
-                {settings.theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
-              </span>
-            </button>
-            <UserMenu />
-          </div>
-        </div>
-      </header>
+    <div className="page-aurora min-h-screen">
+      <Navbar />
 
-      <main className="mx-auto max-w-3xl space-y-6 px-4 py-8">
-        {isCliente && (
-          <section className="card p-6 text-center">
-          {me.image ? (
-            <img src={me.image} alt={fullName(me)} className="mx-auto h-28 w-28 rounded-3xl object-cover shadow-md" />
-          ) : (
-            <div className="mx-auto flex h-28 w-28 items-center justify-center rounded-3xl bg-gradient-to-br from-primary to-primary-strong text-4xl font-extrabold text-primary-contrast shadow-md">
-              {initials(me)}
-            </div>
-          )}
-          <h1 className="mt-4 text-xl font-extrabold text-ink">{fullName(me)}</h1>
-          <button className="btn-ghost mx-auto mt-2 inline-flex items-center gap-1.5 text-xs" onClick={openEdit}>
-            <Pencil size={13} />
-            Editar perfil
-          </button>
-          {qrCode ? (
-            <>
-              <p className="text-sm text-ink-muted">
-                Mostrá este código al pagar para que el local sume puntos a tu cupón activo.
-              </p>
+      <main className="mx-auto max-w-[1400px] px-4 pb-16 pt-6 sm:px-6 sm:pt-8 lg:px-8">
+        <h1 className="mb-6 text-3xl font-bold text-ink sm:text-4xl">Mi perfil</h1>
 
-              <div className="mx-auto mt-5 w-fit rounded-3xl border border-line bg-white p-4 shadow-sm dark:bg-surface">
-                {qrImg ? (
-                  <img src={qrImg} alt={`Código QR ${qrCode}`} className="h-52 w-52" />
+        <div className="grid items-start gap-5 lg:grid-cols-[340px_minmax(0,1fr)]">
+          {/* Columna izquierda: identidad + QR */}
+          <aside className="space-y-4 lg:sticky lg:top-24">
+            <section className="card p-5">
+              <div className="flex items-center gap-4">
+                {me.image ? (
+                  <img src={me.image} alt={fullName(me)} className="h-20 w-20 shrink-0 rounded-full object-cover ring-4 ring-primary-softer" />
                 ) : (
-                  <div className="flex h-52 w-52 items-center justify-center text-sm font-bold text-ink-muted">
-                    <Loader2 className="animate-spin" size={22} />
+                  <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary-strong font-heading text-2xl font-bold text-primary-contrast ring-4 ring-primary-softer">
+                    {initials(me)}
                   </div>
                 )}
+                <div className="min-w-0">
+                  <p className="truncate font-heading text-xl font-bold text-ink">{fullName(me)}</p>
+                  {me.email && <p className="flex items-center gap-1.5 truncate text-xs text-ink-muted"><Mail size={12} className="shrink-0" />{me.email}</p>}
+                  {me.phone && <p className="mt-0.5 flex items-center gap-1.5 truncate text-xs text-ink-muted"><Phone size={12} className="shrink-0" />{me.phone}</p>}
+                </div>
               </div>
-
-              <button
-                className="btn-ghost mx-auto mt-4 inline-flex items-center gap-2"
-                onClick={copyCode}
-                title="Copiar código"
-                aria-label="Copiar código QR"
-              >
-                <span className="font-mono text-sm font-bold tracking-wider text-ink">{qrCode}</span>
-                {copied ? <CheckCircleMini /> : <Copy size={14} />}
+              <button className="btn-ghost mt-4 w-full !py-2 text-sm" onClick={openEdit}>
+                <Pencil size={14} />
+                Editar perfil
               </button>
-            </>
-          ) : (
-            <>
-              <p className="text-sm text-ink-muted">
-                Activá un cupón para obtener tu código QR y que el local te sume puntos.
-              </p>
-              <div className="mx-auto mt-5 flex h-52 w-52 flex-col items-center justify-center gap-3 rounded-3xl border border-dashed border-line bg-surface-alt/40 p-4 text-center">
-                <QrCode size={26} className="text-ink-muted" />
-                <p className="text-sm font-bold text-ink-muted">Sin cupón activo</p>
-                <Link to={t('/cupones')} className="btn-primary text-sm">
-                  Ver cupones y activar
+            </section>
+
+            {isCliente && (
+              <section className="card p-5 text-center">
+                <p className="flex items-center justify-center gap-1.5 text-[10px] font-extrabold uppercase tracking-[0.18em] text-ink-muted">
+                  <QrCode size={13} /> Tu QR
+                </p>
+                {qrCode ? (
+                  <>
+                    <div className="mx-auto mt-3 w-fit rounded-3xl border border-line bg-white p-3">
+                      {qrImg ? (
+                        <img src={qrImg} alt={`Código QR ${qrCode}`} className="h-48 w-48" />
+                      ) : (
+                        <div className="flex h-48 w-48 items-center justify-center text-ink-muted"><Loader2 className="animate-spin" size={22} /></div>
+                      )}
+                    </div>
+                    <button className="btn-ghost mx-auto mt-3 !py-1.5" onClick={copyCode} title="Copiar código" aria-label="Copiar código QR">
+                      <span className="font-mono text-sm font-bold tracking-wider text-ink">{qrCode}</span>
+                      {copied ? <Check size={14} className="text-primary-strong" /> : <Copy size={14} />}
+                    </button>
+                    <p className="mt-2 text-xs text-ink-muted">Mostralo al pagar para sumar puntos.</p>
+                  </>
+                ) : (
+                  <div className="mt-3 flex flex-col items-center gap-3 rounded-3xl border-2 border-dashed border-line px-4 py-8">
+                    <p className="text-sm font-semibold text-ink">Activá un cupón para tener tu QR</p>
+                    <Link to={t('/cupones')} className="btn-primary !py-2 text-sm">
+                      Elegir cupón
+                    </Link>
+                  </div>
+                )}
+              </section>
+            )}
+          </aside>
+
+          {/* Columna derecha */}
+          <div className="min-w-0 space-y-6">
+            {isCliente ? (
+              <>
+                {activeCoupon ? (
+                  <section className="relative overflow-hidden rounded-[28px] bg-gradient-to-br from-primary to-primary-strong p-6 text-primary-contrast shadow-glow sm:p-7">
+                    <div className="orb -right-16 -top-16 h-56 w-56 bg-primary-contrast/10" />
+                    <div className="relative flex flex-wrap items-start justify-between gap-3">
+                      <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.14em]">
+                        <Ticket size={13} /> Tu cupón activo
+                      </span>
+                      <Link to={t('/cupones')} className="inline-flex items-center gap-1 text-sm font-semibold opacity-90 hover:opacity-100">
+                        Mis cupones <ArrowRight size={14} />
+                      </Link>
+                    </div>
+                    <h2 className="relative mt-3 font-heading text-3xl font-bold leading-tight">
+                      {activeCoupon.type === 'regalo' ? activeCoupon.title : couponValue(activeCoupon, currency)}
+                    </h2>
+                    {activeCoupon.description && <p className="relative mt-1 max-w-xl text-sm opacity-85">{activeCoupon.description}</p>}
+                    <div className="relative mt-4">
+                      <Stamps points={activeCoupon.points} target={activeCoupon.target_points} />
+                    </div>
+                    <p className="relative mt-3 text-sm font-bold">
+                      {Number(activeCoupon.points) || 0} de {Number(activeCoupon.target_points) || 0} puntos
+                      <span className="font-medium opacity-80">
+                        {' '}· te faltan {Math.max(0, (Number(activeCoupon.target_points) || 0) - (Number(activeCoupon.points) || 0))}
+                      </span>
+                    </p>
+                  </section>
+                ) : (
+                  <section className="card flex flex-wrap items-center justify-between gap-4 border-2 border-dashed p-6">
+                    <div>
+                      <p className="font-heading text-xl font-bold text-ink">No tenés un cupón activo</p>
+                      <p className="mt-1 text-sm text-ink-muted">Elegí un premio y empezá a sumar puntos con tu QR.</p>
+                    </div>
+                    <Link to={t('/cupones')} className="btn-primary">
+                      Ver cupones <ArrowRight size={15} />
+                    </Link>
+                  </section>
+                )}
+
+                {readyCoupons.length > 0 && (
+                  <section className="space-y-3">
+                    <div className="flex items-center gap-2.5">
+                      <h2 className="text-xl font-bold text-ink">Listos para canjear</h2>
+                      <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-bold text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">
+                        {readyCoupons.length}
+                      </span>
+                    </div>
+                    <div className="grid gap-4 xl:grid-cols-2">
+                      {readyCoupons.map((c) => (
+                        <ReadyCouponCard key={c.id} coupon={c} currency={currency} />
+                      ))}
+                    </div>
+                  </section>
+                )}
+              </>
+            ) : (
+              <AdminSummary />
+            )}
+
+            <section className="space-y-3">
+              <div className="flex items-center justify-between gap-2">
+                <h2 className="flex items-center gap-2.5 text-xl font-bold text-ink">
+                  Notificaciones
+                  {unread > 0 && (
+                    <span className="rounded-full bg-primary px-2 py-0.5 font-sans text-xs font-bold text-primary-contrast">{unread} nuevas</span>
+                  )}
+                </h2>
+                <Link to={t('/notificaciones')} className="text-sm font-semibold text-primary-strong hover:underline">
+                  Ver historial
                 </Link>
               </div>
-            </>
-          )}
-        </section>
-        )}
-
-        {isCliente ? (
-          <>
-            <section>
-              <h2 className="mb-3 flex items-center gap-2 text-lg font-extrabold text-ink">
-                <QrCode size={20} className="text-primary-strong" />
-                Cupones activos
-              </h2>
-              {activeCoupon ? (
-                <ActiveCouponCard coupon={activeCoupon} currency={settings.currency} />
-              ) : (
-                <>
-                  <EmptyState
-                    icon={BadgePercent}
-                    title="No tenés cupones activos"
-                    subtitle="Elegí un premio y empezá a sumar puntos con tu QR."
-                  />
-                  <div className="-mt-8 mb-6 text-center">
-                    <Link to={t('/')} className="btn-primary text-sm">Ver cupones y activar</Link>
-                  </div>
-                </>
-              )}
-            </section>
-
-            <section>
-              <h2 className="mb-3 flex items-center gap-2 text-lg font-extrabold text-ink">
-                <Gift size={20} className="text-primary-strong" />
-                Cupones listos para canjear
-              </h2>
-              {readyCoupons.length === 0 ? (
-                <EmptyState
-                  icon={BadgePercent}
-                  title="Todavía no tenés cupones listos"
-                  subtitle="Cuando completes un cupón vas a recibir tu código de canje acá."
-                />
-              ) : (
-                <div className="grid grid-cols-1 gap-4">
-                  {readyCoupons.map((c) => (
-                    <ReadyCouponCard key={c.id} coupon={c} currency={settings.currency} />
-                  ))}
+              {notifications.length === 0 ? (
+                <div className="card">
+                  <EmptyState icon={Bell} title="No tenés notificaciones" subtitle="Las novedades de tus compras y cupones aparecerán acá." />
                 </div>
+              ) : (
+                <ul className="card divide-y divide-line overflow-hidden">
+                  {notifications.slice(0, 6).map((n) => {
+                    const meta = notificationMeta(n.type);
+                    const Icon = meta.icon;
+                    return (
+                      <li key={n.id} className={`group flex items-start gap-3 px-4 py-3.5 sm:px-5 ${!n.read ? 'bg-primary-softer/60' : ''}`}>
+                        <span className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${meta.style}`}>
+                          <Icon size={17} />
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-baseline justify-between gap-3">
+                            <p className="flex items-center gap-1.5 text-sm font-bold text-ink">
+                              {!n.read && <span className="h-2 w-2 shrink-0 rounded-full bg-primary"><span className="sr-only">Sin leer</span></span>}
+                              {n.title}
+                            </p>
+                            <p className="shrink-0 text-[11px] font-semibold text-ink-muted">{formatWhen(n.created_at)}</p>
+                          </div>
+                          <p className="mt-0.5 text-sm leading-relaxed text-ink-muted">{n.body}</p>
+                        </div>
+                        <button
+                          className="btn-icon shrink-0 opacity-70 transition group-hover:opacity-100"
+                          onClick={() => archiveNotification(n)}
+                          title="Archivar"
+                          aria-label="Archivar notificación"
+                        >
+                          <Archive size={15} />
+                        </button>
+                      </li>
+                    );
+                  })}
+                  {notifications.length > 6 && (
+                    <li className="px-5 py-3 text-center">
+                      <Link to={t('/notificaciones')} className="text-xs font-bold text-primary-strong hover:underline">
+                        Ver todas las notificaciones ({notifications.length})
+                      </Link>
+                    </li>
+                  )}
+                </ul>
               )}
             </section>
-          </>
-        ) : (
-          <AdminSummary />
-        )}
-
-        <section>
-          <div className="mb-3 flex items-center justify-between gap-2">
-            <h2 className="flex items-center gap-2 text-lg font-extrabold text-ink">
-              <Bell size={20} className="text-primary-strong" />
-              Notificaciones
-            </h2>
-            <Link
-              to={t('/notificaciones')}
-              className="inline-flex items-center gap-1 text-sm font-bold text-primary-strong hover:underline"
-            >
-              Ver historial
-            </Link>
           </div>
-          {notifications.length === 0 ? (
-            <EmptyState
-              icon={Bell}
-              title="No tenés notificaciones"
-              subtitle="Las novedades de tus compras y cupones aparecerán acá."
-            />
-          ) : (
-            <ul className="space-y-3">
-              {notifications.slice(0, 6).map((n) => {
-                const meta = notificationMeta(n.type);
-                const Icon = meta.icon;
-                return (
-                  <li key={n.id} className="card flex items-start gap-3 p-4">
-                    <span className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${meta.style}`}>
-                      <Icon size={18} />
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-1.5">
-                        <p className="text-sm font-extrabold text-ink">{n.title}</p>
-                        {!n.read && (
-                          <span className="h-2 w-2 shrink-0 rounded-full bg-primary-strong">
-                            <span className="sr-only">Sin leer</span>
-                          </span>
-                        )}
-                      </div>
-                      <p className="mt-0.5 text-sm leading-relaxed text-ink-muted">{n.body}</p>
-                      <p className="mt-1 text-[11px] font-semibold text-ink-muted/70 dark:text-ink-muted">{formatWhen(n.created_at)}</p>
-                    </div>
-                    <button
-                      className="btn-ghost !px-2.5 !py-1.5 text-xs"
-                      onClick={() => archiveNotification(n)}
-                      title="Archivar"
-                    >
-                      <Archive size={14} />
-                      Archivar
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-          {notifications.length > 6 && (
-            <p className="mt-3 text-center text-xs font-semibold text-ink-muted">
-              <Link to={t('/notificaciones')} className="text-primary-strong hover:underline">
-                Ver todas las notificaciones
-              </Link>
-            </p>
-          )}
-        </section>
+        </div>
       </main>
 
       <Modal open={editModal} onClose={() => setEditModal(false)} title="Editar perfil">
@@ -342,16 +337,16 @@ export default function Profile() {
           <div className="flex items-center gap-4">
             <div className="relative">
               {form.image ? (
-                <img src={form.image} alt={form.name} className="h-16 w-16 rounded-2xl object-cover shadow-sm" />
+                <img src={form.image} alt={form.name} className="h-16 w-16 rounded-full object-cover shadow-sm" />
               ) : (
-                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-primary-strong text-xl font-extrabold text-primary-contrast shadow-sm">
+                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary-strong text-xl font-extrabold text-primary-contrast shadow-sm">
                   {initials(form)}
                 </div>
               )}
               <button
                 type="button"
                 onClick={() => fileRef.current?.click()}
-                className="absolute -bottom-2 -right-2 flex h-7 w-7 items-center justify-center rounded-full border border-line bg-surface text-primary-strong shadow-md transition-transform hover:scale-110"
+                className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full border border-line bg-surface text-primary-strong shadow-md transition-transform hover:scale-110"
                 aria-label="Cambiar foto de perfil"
               >
                 <Camera size={13} />
@@ -363,34 +358,16 @@ export default function Profile() {
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
               <label className="label" htmlFor="profile-name">Nombre</label>
-              <input
-                id="profile-name"
-                className="input"
-                value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
-                required
-              />
+              <input id="profile-name" className="input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
             </div>
             <div>
               <label className="label" htmlFor="profile-last-name">Apellido</label>
-              <input
-                id="profile-last-name"
-                className="input"
-                value={form.last_name}
-                onChange={(e) => setForm({ ...form, last_name: e.target.value })}
-              />
+              <input id="profile-last-name" className="input" value={form.last_name} onChange={(e) => setForm({ ...form, last_name: e.target.value })} />
             </div>
           </div>
           <div>
             <label className="label" htmlFor="profile-email">Email</label>
-            <input
-              id="profile-email"
-              className="input"
-              type="email"
-              value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
-              required
-            />
+            <input id="profile-email" className="input" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required />
           </div>
           <div>
             <label className="label" htmlFor="profile-phone">Teléfono</label>
@@ -425,20 +402,9 @@ export default function Profile() {
   );
 }
 
-function CheckCircleMini() {
-  return (
-    <span className="text-primary-strong">
-      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M20 6 9 17l-5-5" />
-      </svg>
-    </span>
-  );
-}
-
 function initials(u) {
   const parts = [u?.name, u?.last_name].filter((x) => x && String(x).trim());
-  const s = parts.length > 0 ? parts.map((p) => String(p).trim()[0]).join('').slice(0, 2).toUpperCase() : '?';
-  return s;
+  return parts.length > 0 ? parts.map((p) => String(p).trim()[0]).join('').slice(0, 2).toUpperCase() : '?';
 }
 
 function fullName(u) {

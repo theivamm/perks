@@ -6,8 +6,9 @@ import { api, formatDate } from '../api.js';
 import { useTheme } from '../context/ThemeContext.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useTenant } from '../context/TenantContext.jsx';
-import { ReadyCouponCard, couponValue, useProgressBar } from '../components/CouponCards.jsx';
+import { ReadyCouponCard, couponValue } from '../components/CouponCards.jsx';
 import Navbar from '../components/Navbar.jsx';
+import Stamps from '../components/Stamps.jsx';
 import { EmptyState, Modal, Spinner, toast } from '../components/ui.jsx';
 
 const TYPE = {
@@ -21,38 +22,6 @@ const flat = (v) => String(v || '').toLowerCase().replace(/\s+/g, '');
 const subtitleOf = (c, currency) => (flat(c.title) !== flat(couponValue(c, currency)) ? c.title : '');
 
 const STEPS = ['Elegí un premio de abajo', 'Mostrá tu QR al pagar', 'Completalo y canjealo'];
-
-function Stamps({ points, target }) {
-  // Hasta 12 puntos mostramos sellos; con más, una barra.
-  const pct = Math.min(100, Math.round((points / Math.max(1, target)) * 100));
-  const fill = useProgressBar(pct);
-  if (target > 12) {
-    return (
-      <div className="h-3.5 max-w-md overflow-hidden rounded-full bg-white/20">
-        <div className="h-full rounded-full bg-gradient-to-r from-amber-300 to-orange-500 transition-[width] duration-1000 ease-out" style={{ width: `${fill}%` }} />
-      </div>
-    );
-  }
-  return (
-    <div className="flex flex-wrap gap-2">
-      {Array.from({ length: target }, (_, i) => {
-        const done = i < points;
-        const last = i === target - 1;
-        return (
-          <span
-            key={i}
-            className={`flex h-10 w-10 items-center justify-center rounded-full text-sm font-extrabold transition-all sm:h-11 sm:w-11 ${
-              done ? 'animate-pop bg-amber-400 text-ink shadow-sm' : 'border-2 border-dashed border-white/45 text-primary-contrast/80'
-            }`}
-            style={done ? { animationDelay: `${i * 60}ms` } : undefined}
-          >
-            {done ? <Check size={17} strokeWidth={3} /> : last ? <Gift size={16} /> : i + 1}
-          </span>
-        );
-      })}
-    </div>
-  );
-}
 
 export default function CouponsPage() {
   const { isAuthed } = useAuth();

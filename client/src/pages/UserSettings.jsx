@@ -1,18 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import {
-  Bell,
-  Building2,
-  Camera,
-  Check,
-  Loader2,
-  Moon,
-  Palette,
-  Settings as SettingsIcon,
-  Sun,
-  Trash2,
-  User as UserIcon,
-} from 'lucide-react';
+import { Bell, Building2, Camera, Check, ChevronRight, Coins, Loader2, LogOut, Moon, Sun, Trash2, User as UserIcon } from 'lucide-react';
 import { api } from '../api.js';
 import { useTheme } from '../context/ThemeContext.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
@@ -21,6 +9,39 @@ import { Modal, toast } from '../components/ui.jsx';
 import ImageCropper from '../components/ImageCropper.jsx';
 import { avatarInitials } from '../components/UserMenu.jsx';
 import Navbar from '../components/Navbar.jsx';
+
+function Group({ title, children, danger = false }) {
+  return (
+    <section className="space-y-2">
+      <h2 className={`px-1 font-sans text-[11px] font-extrabold uppercase tracking-[0.16em] ${danger ? 'text-red-500' : 'text-ink-muted'}`}>{title}</h2>
+      <div className={`card divide-y divide-line overflow-hidden ${danger ? '!border-red-200 dark:!border-red-400/30' : ''}`}>{children}</div>
+    </section>
+  );
+}
+
+function Row({ icon: Icon, title, subtitle, children, to, onClick, tone = 'default' }) {
+  const iconCls =
+    tone === 'danger'
+      ? 'bg-red-500/10 text-red-500'
+      : 'bg-primary-softer text-primary-strong';
+  const inner = (
+    <>
+      <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${iconCls}`}>
+        <Icon size={18} />
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className={`text-sm font-bold ${tone === 'danger' ? 'text-red-600 dark:text-red-400' : 'text-ink'}`}>{title}</p>
+        {subtitle && <p className="mt-0.5 text-xs leading-relaxed text-ink-muted">{subtitle}</p>}
+      </div>
+      {children}
+      {(to || onClick) && !children && <ChevronRight size={17} className="shrink-0 text-ink-muted" />}
+    </>
+  );
+  const cls = 'flex w-full items-center gap-3.5 px-4 py-4 text-left sm:px-5';
+  if (to) return <Link to={to} className={`${cls} transition-colors hover:bg-surface-alt`}>{inner}</Link>;
+  if (onClick) return <button onClick={onClick} className={`${cls} transition-colors hover:bg-surface-alt`}>{inner}</button>;
+  return <div className={cls}>{inner}</div>;
+}
 
 export default function UserSettings() {
   const { settings, toggleTheme } = useTheme();
@@ -98,183 +119,134 @@ export default function UserSettings() {
     }
   };
 
+  const doLogout = async () => {
+    await logout();
+    navigate(t('/'));
+  };
+
+  const setTheme = (wantDark) => {
+    if (wantDark !== dark) toggleTheme();
+  };
+
   return (
     <div className="page-aurora min-h-screen">
       <Navbar />
 
-      <main className="mx-auto max-w-3xl px-4 pt-10 pb-16">
-        <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary via-primary-strong to-primary-soft p-8 text-primary-contrast shadow-glow sm:p-10">
-          <div className="orb -right-16 -top-16 h-64 w-64 bg-primary-contrast/15" />
-          <div className="orb -bottom-24 right-40 h-52 w-52 bg-primary-contrast/12" />
+      <main className="mx-auto max-w-2xl space-y-7 px-4 pb-16 pt-6 sm:px-6 sm:pt-8">
+        <div>
+          <h1 className="text-3xl font-bold text-ink sm:text-4xl">Configuración</h1>
+          <p className="mt-1 text-sm text-ink-muted">Tu foto, tu tema y la gestión de tu cuenta.</p>
+        </div>
+
+        {/* Tarjeta de identidad con foto */}
+        <section className="card flex flex-wrap items-center gap-4 p-5">
           <div className="relative">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-contrast/15 px-3 py-1 text-xs font-bold tracking-wide uppercase">
-              <SettingsIcon size={14} />
-              Configuración
-            </span>
-            <h1 className="mt-3 text-3xl font-extrabold sm:text-4xl">Personalizá tu experiencia</h1>
-            <p className="mt-2 max-w-lg text-sm text-primary-contrast/85 sm:text-base">
-              Tu foto, tu tema y la gestión de tu cuenta, todo en un solo lugar.
-            </p>
+            {user?.image ? (
+              <img src={user.image} alt={user.name || 'Foto de perfil'} className="h-16 w-16 rounded-full object-cover ring-4 ring-primary-softer" />
+            ) : (
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary-strong font-heading text-xl font-bold text-primary-contrast ring-4 ring-primary-softer">
+                {avatarInitials(user)}
+              </div>
+            )}
+            <button
+              type="button"
+              onClick={() => fileRef.current?.click()}
+              className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full border border-line bg-surface text-primary-strong shadow-md transition-transform hover:scale-110"
+              aria-label="Cambiar foto de perfil"
+            >
+              {uploading ? <Loader2 className="animate-spin" size={13} /> : <Camera size={13} />}
+            </button>
           </div>
+          <div className="min-w-0 flex-1">
+            <p className="truncate font-heading text-lg font-bold text-ink">{[user?.name, user?.last_name].filter(Boolean).join(' ') || 'Tu cuenta'}</p>
+            {user?.email && <p className="truncate text-xs text-ink-muted">{user.email}</p>}
+          </div>
+          <button className="btn-ghost !py-2 text-sm" onClick={() => fileRef.current?.click()} disabled={uploading}>
+            {uploading ? 'Subiendo…' : 'Cambiar foto'}
+          </button>
+          <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={onPickPhoto} />
         </section>
 
-        <section className="mt-6 space-y-5">
-          {clientApps.length > 1 && (
-            <div className="card p-6">
-              <div className="flex items-center gap-4">
-                <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-softer text-primary-strong"><Building2 size={22} /></span>
-                <div>
-                  <h2 className="font-extrabold text-ink">Cambiar de negocio</h2>
-                  <p className="text-sm text-ink-muted">Elegí en qué app querés consultar tus puntos y beneficios.</p>
-                </div>
-              </div>
-              <div className="mt-4 grid gap-2 sm:grid-cols-2">
-                {clientApps.map((app) => (
-                  <button
-                    key={app.id}
-                    onClick={() => changeApp(app.slug)}
-                    disabled={Boolean(switchingApp)}
-                    className={`flex items-center justify-between gap-3 rounded-2xl border px-4 py-3 text-left transition ${app.slug === slug ? 'border-primary bg-primary-softer' : 'border-line bg-surface hover:border-primary/50'}`}
-                  >
-                    <span><span className="block font-bold text-ink">{app.business_name}</span><span className="block text-xs text-ink-muted">/{app.slug}</span></span>
-                    {switchingApp === app.slug ? <Loader2 className="animate-spin" size={16} /> : app.slug === slug ? <Check size={16} className="text-primary" /> : null}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div className="tile tile-sky relative overflow-hidden p-6">
-            <div className="orb -right-10 -top-14 h-36 w-36 bg-white/50" />
-            <div className="relative flex flex-wrap items-center justify-between gap-4">
-              <div className="flex items-center gap-4">
-                <div className="relative">
-                  {user?.image ? (
-                    <img src={user.image} alt={user.name || 'Foto de perfil'} className="h-16 w-16 rounded-2xl object-cover shadow-sm" />
-                  ) : (
-                    <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-primary-strong text-xl font-extrabold text-primary-contrast shadow-sm">
-                      {avatarInitials(user)}
-                    </div>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => fileRef.current?.click()}
-                    className="absolute -bottom-2 -right-2 flex h-7 w-7 items-center justify-center rounded-full border border-line bg-surface text-primary-strong shadow-md transition-transform hover:scale-110"
-                    aria-label="Cambiar foto de perfil"
-                  >
-                    <Camera size={13} />
-                  </button>
-                </div>
-                <div>
-                  <h2 className="font-extrabold text-ink">Foto de perfil</h2>
-                  <p className="text-sm text-ink-muted">Subí o cambiá tu foto para que te reconozcan en el local.</p>
-                </div>
-              </div>
-              <button className="btn-ghost text-sm" onClick={() => fileRef.current?.click()} disabled={uploading}>
-                {uploading ? <Loader2 className="animate-spin" size={15} /> : <Camera size={15} />}
-                {uploading ? 'Subiendo...' : 'Cambiar foto'}
-              </button>
-              <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={onPickPhoto} />
-            </div>
-          </div>
-
-          <div className="tile tile-mint relative overflow-hidden p-6">
-            <div className="orb -right-10 -top-14 h-36 w-36 bg-white/50" />
-            <div className="relative flex flex-wrap items-center justify-between gap-4">
-              <div className="flex items-center gap-4">
-                <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/80 text-emerald-700 shadow-sm dark:bg-emerald-500/15 dark:text-emerald-300">
-                  {dark ? <Moon size={22} /> : <Sun size={22} />}
-                </span>
-                <div>
-                  <h2 className="font-extrabold text-ink">Tema</h2>
-                  <p className="text-sm text-ink-muted">
-                    Modo {dark ? 'oscuro' : 'claro'} activado.
-                  </p>
-                </div>
-              </div>
-              <button
-                className={`relative inline-flex h-8 w-16 items-center rounded-full transition-colors ${
-                  dark ? 'bg-primary-strong' : 'bg-surface-alt'
-                }`}
-                onClick={toggleTheme}
-                aria-label="Alternar tema"
-              >
-                <span
-                  className={`relative inline-block h-6 w-6 rounded-full bg-white shadow transition-transform ${
-                    dark ? 'translate-x-9' : 'translate-x-1'
+        <Group title="Preferencias">
+          <Row icon={dark ? Moon : Sun} title="Tema" subtitle="Cómo ves la app en este dispositivo.">
+            <div className="flex shrink-0 gap-1 rounded-xl bg-surface-alt p-1">
+              {[
+                [false, 'Claro', Sun],
+                [true, 'Oscuro', Moon],
+              ].map(([d, label, Icon]) => (
+                <button
+                  key={label}
+                  onClick={() => setTheme(d)}
+                  className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition ${
+                    dark === d ? 'bg-surface text-ink shadow-sm' : 'text-ink-muted hover:text-ink'
                   }`}
-                />
-              </button>
+                >
+                  <Icon size={13} />
+                  {label}
+                </button>
+              ))}
             </div>
-          </div>
+          </Row>
+          <Row icon={Coins} title="Moneda" subtitle="La define el local; los precios y premios se muestran así.">
+            <span className="shrink-0 rounded-lg bg-surface-alt px-3 py-1.5 font-mono text-sm font-bold text-ink">{settings.currency || '$'}</span>
+          </Row>
+        </Group>
 
-          <div className="tile tile-lilac relative overflow-hidden p-6">
-            <div className="orb -right-10 -top-14 h-36 w-36 bg-white/50" />
-            <div className="relative">
-              <div className="flex items-center gap-4">
-                <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/80 text-violet-700 shadow-sm dark:bg-violet-500/15 dark:text-violet-300">
-                  <Palette size={22} />
-                </span>
-                <div>
-                  <h2 className="font-extrabold text-ink">Moneda del local</h2>
-                  <p className="text-sm text-ink-muted">
-                    Los premios se muestran en{' '}
-                    <span className="font-black text-ink">{settings.currency || '$'}</span>.
-                  </p>
-                </div>
-              </div>
-              <p className="mt-3 rounded-xl bg-white/70 px-3 py-2 text-xs font-semibold text-ink-muted dark:bg-violet-500/15 dark:text-violet-200">
-                La moneda la define el local en su configuración del dashboard.
-              </p>
-            </div>
-          </div>
+        <Group title="Tu cuenta">
+          <Row icon={UserIcon} title="Mi perfil" subtitle="Tus datos, tu QR y tus cupones." to={t('/perfil')} />
+          <Row icon={Bell} title="Notificaciones" subtitle="Historial de puntos, cupones y novedades." to={t('/notificaciones')} />
+          <Row icon={LogOut} title="Cerrar sesión" onClick={doLogout} />
+        </Group>
 
-          <div className="card p-6">
-            <h2 className="mb-3 font-extrabold text-ink">Accesos rápidos</h2>
-            <div className="grid gap-2 sm:grid-cols-2">
-              <Link
-                to={t('/perfil')}
-                className="flex items-center gap-2.5 rounded-2xl border border-line bg-surface px-4 py-3 text-sm font-bold text-ink transition-colors hover:bg-surface-alt"
+        {clientApps.length > 1 && (
+          <Group title="Tus negocios">
+            {clientApps.map((app) => (
+              <Row
+                key={app.id}
+                icon={Building2}
+                title={app.business_name}
+                subtitle={`/${app.slug}`}
+                onClick={app.slug === slug || switchingApp ? undefined : () => changeApp(app.slug)}
               >
-                <UserIcon size={16} className="text-primary-strong" />
-                Mi perfil
-              </Link>
-              <Link
-                to={t('/notificaciones')}
-                className="flex items-center gap-2.5 rounded-2xl border border-line bg-surface px-4 py-3 text-sm font-bold text-ink transition-colors hover:bg-surface-alt"
-              >
-                <Bell size={16} className="text-primary-strong" />
-                Notificaciones
-              </Link>
-            </div>
-          </div>
+                {switchingApp === app.slug ? (
+                  <Loader2 className="animate-spin text-ink-muted" size={16} />
+                ) : app.slug === slug ? (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-primary-softer px-2.5 py-1 text-xs font-bold text-primary-strong">
+                    <Check size={12} /> Actual
+                  </span>
+                ) : (
+                  <ChevronRight size={17} className="shrink-0 text-ink-muted" />
+                )}
+              </Row>
+            ))}
+          </Group>
+        )}
 
-          <div className="tile tile-rose relative overflow-hidden p-6">
-            <div className="orb -right-10 -top-14 h-36 w-36 bg-white/50" />
-            <div className="relative flex flex-wrap items-center justify-between gap-4">
-              <div>
-                <h2 className="flex items-center gap-2 font-extrabold text-rose-700 dark:text-rose-200">
-                  <Trash2 size={18} />
-                  Eliminar mi cuenta
-                </h2>
-                <p className="mt-1 max-w-md text-sm text-ink-muted">
-                  Se borran tu perfil, cupones, puntos, compras e historial, y tu cuenta se desvincula de Google. No se puede deshacer.
-                </p>
-              </div>
-              <button className="btn-danger text-sm" onClick={() => { setDeleteConfirm(''); setDeleteModal(true); }}>
-                <Trash2 size={15} />
-                Eliminar cuenta
-              </button>
-            </div>
-          </div>
-        </section>
+        <Group title="Zona de peligro" danger>
+          <Row
+            icon={Trash2}
+            tone="danger"
+            title="Eliminar mi cuenta"
+            subtitle="Se borran tu perfil, cupones, puntos, compras e historial, y tu cuenta se desvincula de Google. No se puede deshacer."
+          >
+            <button
+              className="shrink-0 rounded-full border border-red-300 px-3.5 py-1.5 text-xs font-bold text-red-600 transition hover:bg-red-500/10 dark:border-red-400/40 dark:text-red-400"
+              onClick={() => {
+                setDeleteConfirm('');
+                setDeleteModal(true);
+              }}
+            >
+              Eliminar
+            </button>
+          </Row>
+        </Group>
       </main>
 
       <Modal open={deleteModal} onClose={() => { if (!deleting) setDeleteModal(false); }} title="Eliminar cuenta">
         <form onSubmit={deleteAccount} className="space-y-4">
           <p className="text-sm leading-relaxed text-ink-muted">
-            Esta acción <strong className="text-red-500">borra todo</strong>: tu perfil, cupones, puntos, compras e
-            historial, y <strong className="text-red-500">desvincula tu cuenta de Google</strong>. No se puede deshacer.
+            Esta acción <strong className="text-red-500">borra todo</strong>: tu perfil, cupones, puntos, compras e historial, y{' '}
+            <strong className="text-red-500">desvincula tu cuenta de Google</strong>. No se puede deshacer.
           </p>
           <div>
             <label className="label" htmlFor="delete-account-confirm">Escribí ELIMINAR para confirmar</label>
