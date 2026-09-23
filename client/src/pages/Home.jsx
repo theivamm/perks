@@ -20,6 +20,17 @@ const TYPE_TONE = {
 };
 const typeLabel = (t) => (t === 'descuento' ? 'Descuento' : t === 'regalo' ? 'Regalo' : 'Recompensa');
 
+const STEPS = ['Activá un cupón', 'Mostrá tu QR al pagar', 'Completalo y canjealo'];
+
+function Eyebrow({ children }) {
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.14em]">
+      <Sparkles size={13} />
+      {children}
+    </span>
+  );
+}
+
 function ActiveStrip({ coupon, currency, onQr, onHow }) {
   const points = Number(coupon.points) || 0;
   const target = Math.max(1, Number(coupon.target_points) || 1);
@@ -28,18 +39,17 @@ function ActiveStrip({ coupon, currency, onQr, onHow }) {
   const left = Math.max(0, target - points);
 
   return (
-    <div className="relative flex flex-col gap-5 overflow-hidden rounded-3xl bg-gradient-to-br from-primary to-primary-strong p-5 text-primary-contrast shadow-glow sm:flex-row sm:items-center sm:p-6">
-      <div className="orb -right-16 -top-16 h-48 w-48 bg-primary-contrast/10" />
-      <div className="relative min-w-0 flex-1 space-y-2.5">
-        <div className="flex items-center justify-between gap-3">
-          <span className="text-[10px] font-extrabold uppercase tracking-[0.2em] opacity-80">
-            Tu cupón activo · {typeLabel(coupon.type)}
-          </span>
-          <span className="rounded-full bg-white/15 px-2.5 py-1 text-xs font-extrabold">{pct}%</span>
-        </div>
-        <p className="font-heading text-2xl font-bold leading-tight sm:text-[28px]">
-          {coupon.type === 'regalo' ? coupon.title : `${couponValue(coupon, currency)} · ${coupon.title}`}
-        </p>
+    <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary to-primary-strong p-6 text-primary-contrast shadow-glow sm:p-8">
+      <div className="orb -right-16 -top-16 h-56 w-56 bg-primary-contrast/10" />
+      <div className="relative flex items-center justify-between gap-3">
+        <Eyebrow>Tu cupón activo · {typeLabel(coupon.type)}</Eyebrow>
+        <span className="rounded-full bg-white/15 px-3 py-1 text-xs font-extrabold">{pct}%</span>
+      </div>
+      <h1 className="relative mt-4 font-heading text-3xl font-bold leading-[1.05] sm:text-[40px]">
+        {coupon.type === 'regalo' ? coupon.title : `${couponValue(coupon, currency)} · ${coupon.title}`}
+      </h1>
+      {coupon.description && <p className="relative mt-2 max-w-xl text-[15px] leading-relaxed opacity-85">{coupon.description}</p>}
+      <div className="relative mt-5 max-w-xl">
         <div className="h-3 overflow-hidden rounded-full bg-white/20">
           <div
             className="relative h-full rounded-full bg-gradient-to-r from-amber-300 to-orange-500 transition-[width] duration-1000 ease-out"
@@ -48,23 +58,23 @@ function ActiveStrip({ coupon, currency, onQr, onHow }) {
             <div className="animate-shimmer absolute inset-0 rounded-full bg-[linear-gradient(100deg,transparent,rgba(255,255,255,0.55)_42%,rgba(255,255,255,0.55)_50%,transparent_58%)] bg-[length:200%_100%]" />
           </div>
         </div>
-        <p className="text-sm font-semibold">
+        <p className="mt-2 text-sm font-bold">
           {points}/{target} puntos
-          <span className="font-medium opacity-75">
+          <span className="font-medium opacity-80">
             {left > 0 ? ` · te faltan ${left} ${left === 1 ? 'compra' : 'compras'}` : ' · ¡listo para canjear!'}
           </span>
         </p>
       </div>
-      <div className="relative flex shrink-0 gap-2 sm:flex-col">
+      <div className="relative mt-6 flex flex-wrap gap-2">
         <button
           onClick={onQr}
-          className="inline-flex flex-1 items-center justify-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-bold text-primary-strong transition hover:-translate-y-0.5 active:scale-95"
+          className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-bold text-primary-strong transition hover:-translate-y-0.5 active:scale-95"
         >
           <QrCode size={16} /> Mostrar mi QR
         </button>
         <button
           onClick={onHow}
-          className="inline-flex flex-1 items-center justify-center rounded-full border border-white/35 px-5 py-2.5 text-sm font-semibold transition hover:bg-white/10"
+          className="inline-flex items-center justify-center rounded-full border border-white/35 px-5 py-3 text-sm font-semibold transition hover:bg-white/10"
         >
           Cómo funciona
         </button>
@@ -73,40 +83,44 @@ function ActiveStrip({ coupon, currency, onQr, onHow }) {
   );
 }
 
-function IntroStrip({ isAuthed, loginTo, onHow }) {
+function IntroStrip({ isAuthed, loginTo }) {
   return (
-    <div className="relative flex flex-col gap-4 overflow-hidden rounded-3xl bg-gradient-to-br from-primary to-primary-strong p-5 text-primary-contrast shadow-glow sm:flex-row sm:items-center sm:p-6">
-      <div className="orb -right-16 -top-16 h-48 w-48 bg-primary-contrast/10" />
-      <div className="relative flex-1 space-y-1.5">
-        <span className="text-[10px] font-extrabold uppercase tracking-[0.2em] opacity-80">Programa de fidelización</span>
-        <p className="font-heading text-2xl font-bold leading-tight sm:text-[28px]">
+    <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary to-primary-strong p-6 text-primary-contrast shadow-glow sm:p-8">
+      <div className="orb -right-16 -top-16 h-56 w-56 bg-primary-contrast/10" />
+      <div className="relative max-w-xl">
+        <Eyebrow>Programa de fidelización</Eyebrow>
+        <h1 className="mt-4 font-heading text-3xl font-bold leading-[1.05] sm:text-[40px]">
           {isAuthed ? 'Elegí tu primer cupón' : 'Sumá compras, ganá premios'}
-        </p>
-        <p className="text-sm opacity-85">
+        </h1>
+        <p className="mt-3 text-[15px] leading-relaxed opacity-85">
           {isAuthed
-            ? 'Activá un cupón de la lista y mostrá tu QR al pagar para sumar puntos.'
-            : 'Activá un cupón, mostrá tu QR al pagar y canjealo al completarlo.'}
+            ? 'Activá uno de los cupones disponibles y empezá a sumar puntos con cada compra.'
+            : 'Ingresá con Google, activá un cupón y sumá puntos cada vez que pagás.'}
         </p>
       </div>
-      <div className="relative flex shrink-0 gap-2 sm:flex-col">
-        {!isAuthed && (
-          <Link
-            to={loginTo}
-            className="inline-flex flex-1 items-center justify-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-bold text-primary-strong transition hover:-translate-y-0.5"
-          >
-            Ingresá con Google
-          </Link>
-        )}
-        <button
-          onClick={onHow}
-          className="inline-flex flex-1 items-center justify-center rounded-full border border-white/35 px-5 py-2.5 text-sm font-semibold transition hover:bg-white/10"
+      <ol className="relative mt-6 grid gap-2 sm:grid-cols-3">
+        {STEPS.map((step, i) => (
+          <li key={step} className="flex items-center gap-2.5 rounded-2xl bg-white/10 px-3 py-2.5 text-sm font-semibold">
+            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white text-xs font-extrabold text-primary-strong">
+              {i + 1}
+            </span>
+            {step}
+          </li>
+        ))}
+      </ol>
+      {!isAuthed && (
+        <Link
+          to={loginTo}
+          className="relative mt-6 inline-flex items-center justify-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-bold text-primary-strong transition hover:-translate-y-0.5"
         >
-          Cómo funciona
-        </button>
-      </div>
+          Ingresá con Google y empezá a sumar
+        </Link>
+      )}
     </div>
   );
 }
+
+const flat = (v) => String(v || '').toLowerCase().replace(/\s+/g, '');
 
 export default function Home() {
   const { user, isAuthed } = useAuth();
@@ -121,6 +135,7 @@ export default function Home() {
   const [confirmCoupon, setConfirmCoupon] = useState(null);
   const [qrOpen, setQrOpen] = useState(false);
   const [howOpen, setHowOpen] = useState(false);
+  const [query, setQuery] = useState('');
 
   const loadCatalog = async () => {
     try {
@@ -201,7 +216,9 @@ export default function Home() {
   const CouponRow = ({ c }) => (
     <div className={`flex items-center gap-3 rounded-2xl px-3.5 py-3 ${TYPE_TONE[c.type] || TYPE_TONE.monto}`}>
       <span className="w-24 shrink-0 font-heading text-xl font-bold leading-none">{couponValue(c, currency)}</span>
-      <span className="min-w-0 flex-1 truncate text-xs font-semibold opacity-90">{c.title}</span>
+      <span className="min-w-0 flex-1 truncate text-xs font-semibold opacity-90">
+        {flat(c.title) !== flat(couponValue(c, currency)) ? c.title : c.description || ''}
+      </span>
       {!isAuthed ? (
         <span className="shrink-0 rounded-full bg-white/80 px-2.5 py-1 text-[11px] font-extrabold dark:bg-white/10">
           {Number(c.target_points)} pts
@@ -224,11 +241,11 @@ export default function Home() {
 
   return (
     <div className="page-aurora min-h-screen">
-      <Navbar />
+      <Navbar search={{ value: query, onChange: setQuery, placeholder: 'Buscar plato, bebida, postre…' }} />
 
-      <main className={`mx-auto max-w-6xl px-4 pt-4 sm:pt-8 ${isAuthed && activeCoupon ? 'pb-28 lg:pb-16' : 'pb-16'}`}>
+      <main className={`mx-auto max-w-[1600px] px-4 pt-4 sm:px-6 sm:pt-6 lg:px-8 ${isAuthed && activeCoupon ? 'pb-28 lg:pb-16' : 'pb-16'}`}>
         {/* Franja de fidelización: estado real del cliente en lugar del hero + 3 bloques explicativos */}
-        <section className="grid gap-4 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]">
+        <section className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_440px]">
           {isAuthed && activeCoupon ? (
             <ActiveStrip
               coupon={activeCoupon}
@@ -237,10 +254,10 @@ export default function Home() {
               onHow={() => setHowOpen(true)}
             />
           ) : (
-            <IntroStrip isAuthed={isAuthed} loginTo={t('/login')} onHow={() => setHowOpen(true)} />
+            <IntroStrip isAuthed={isAuthed} loginTo={t('/login')} />
           )}
 
-          <div className="card flex flex-col gap-2.5 p-4 sm:p-5">
+          <div className="card flex flex-col gap-2.5 p-5">
             <div className="flex items-baseline justify-between gap-3">
               <h2 className="font-heading text-base font-bold text-ink">
                 {isAuthed && activeCoupon ? 'Tus próximos cupones' : 'Cupones disponibles'}
@@ -273,19 +290,15 @@ export default function Home() {
                 Tenés {readyCount} cupón{readyCount > 1 ? 'es' : ''} listo{readyCount > 1 ? 's' : ''} para canjear →
               </Link>
             )}
-            {user?.role === 'admin' && (
-              <Link to={t('/dashboard')} className="btn-secondary mt-1 text-xs">
-                Ir al panel
-              </Link>
-            )}
+
           </div>
         </section>
 
-        <PublicMenu />
+        <PublicMenu query={query} onQueryChange={setQuery} />
       </main>
 
       <footer className="border-t border-line py-6">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4">
+        <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
           <Logo size="md" showText={false} />
           <p className="min-w-0 truncate text-sm text-ink-muted">
             <span className="font-extrabold text-ink">{settings.businessName || 'Fidelización App'}</span>

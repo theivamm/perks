@@ -32,12 +32,17 @@ function Thumb({ item, className = '' }) {
   );
 }
 
-export default function PublicMenu() {
+// Si Home le pasa `query` + `onQueryChange`, el buscador vive en el Navbar
+// (controlado desde afuera); si no, PublicMenu usa su propio buscador.
+export default function PublicMenu({ query: extQuery, onQueryChange }) {
+  const controlled = typeof onQueryChange === 'function';
   const { settings } = useTheme();
   const currency = settings.currency || '$';
   const [data, setData] = useState({ items: [], categories: [] });
   const [loading, setLoading] = useState(true);
-  const [query, setQuery] = useState('');
+  const [ownQuery, setOwnQuery] = useState('');
+  const query = controlled ? extQuery || '' : ownQuery;
+  const setQuery = controlled ? onQueryChange : setOwnQuery;
   const [catFilter, setCatFilter] = useState('Todas');
   const [highlightId, setHighlightId] = useState(null);
   const highlightTimer = useRef(null);
@@ -79,8 +84,17 @@ export default function PublicMenu() {
     return map;
   }, [filtered]);
 
+  useEffect(() => {
+    if (controlled) highlightMatch(query);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query]);
+
   const handleSearch = (value) => {
     setQuery(value);
+    highlightMatch(value);
+  };
+
+  const highlightMatch = (value) => {
     const q = normalize(value.trim());
     if (!q) return;
     const match = visible.find((it) => {
@@ -120,9 +134,14 @@ export default function PublicMenu() {
   const ring = (id) => (highlightId === id ? 'ring-2 ring-primary ring-offset-2 ring-offset-surface-page' : '');
 
   return (
-    <div id="menu-top" className="mt-6 lg:mt-8 lg:grid lg:grid-cols-[220px_minmax(0,1fr)] lg:items-start lg:gap-9">
+    <div id="menu-top" className="mt-6 lg:mt-8 lg:grid lg:grid-cols-[240px_minmax(0,1fr)] lg:items-start lg:gap-9">
       {/* Escritorio: categorías fijas a la izquierda */}
       <aside className="hidden lg:sticky lg:top-24 lg:block">
+        {controlled && query && (
+          <p className="mb-3 rounded-xl bg-primary-softer px-3 py-2 text-xs font-semibold text-primary-strong">
+            {filtered.length} resultado{filtered.length === 1 ? '' : 's'} para “{query}”
+          </p>
+        )}
         <p className="px-3 pb-2.5 text-[10px] font-extrabold uppercase tracking-[0.18em] text-ink-muted">Categorías</p>
         <div className="space-y-0.5">
           {tabs.map((t) => {
@@ -136,7 +155,7 @@ export default function PublicMenu() {
                   on ? 'bg-primary text-primary-contrast shadow-sm' : 'text-ink hover:bg-surface-alt'
                 }`}
               >
-                <span className="truncate">{t.label}</span>
+                <span className="leading-snug">{t.label}</span>
                 <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${on ? 'bg-white/20' : 'bg-primary-softer text-ink-muted'}`}>{t.count}</span>
               </button>
             );
@@ -146,8 +165,15 @@ export default function PublicMenu() {
 
       <div className="min-w-0 space-y-8">
         {/* Buscador (+ chips en mobile). Queda fijo bajo el Navbar en mobile. */}
-        <div className="sticky top-[64px] z-30 -mx-4 space-y-2.5 bg-surface-page/95 px-4 py-3 backdrop-blur lg:static lg:mx-0 lg:bg-transparent lg:p-0 lg:backdrop-blur-none">
-          <div className="relative">
+        <div className={`sticky z-30 -mx-4 space-y-2.5 bg-surface-page/95 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6 lg:mx-0 lg:bg-transparent lg:p-0 lg:backdrop-blur-none ${
+          controlled ? 'top-[128px] lg:hidden' : 'top-[72px] lg:static'
+        }`}>
+          {controlled && query && (
+            <p className="text-xs font-semibold text-ink-muted lg:hidden">
+              {filtered.length} resultado{filtered.length === 1 ? '' : 's'} para “{query}”
+            </p>
+          )}
+          <div className={`relative ${controlled ? 'hidden' : ''}`}>
             <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-muted" />
             <input
               id="menu-search"
@@ -228,7 +254,7 @@ export default function PublicMenu() {
                     <span className="hidden text-xs font-semibold text-ink-muted lg:inline">{list.length}</span>
                     <div className="hidden h-px flex-1 bg-line lg:block" />
                   </div>
-                  <div className="grid grid-cols-1 lg:grid-cols-2 lg:gap-3">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 lg:gap-3 2xl:grid-cols-3">
                     {list.map((item) => (
                       <article
                         key={item.id}
