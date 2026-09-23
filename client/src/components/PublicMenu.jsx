@@ -32,12 +32,16 @@ function Thumb({ item, className = '' }) {
   );
 }
 
-export default function PublicMenu() {
+export default function PublicMenu({ query: queryProp, onQueryChange } = {}) {
   const { settings } = useTheme();
   const currency = settings.currency || '$';
   const [data, setData] = useState({ items: [], categories: [] });
   const [loading, setLoading] = useState(true);
-  const [query, setQuery] = useState('');
+  // Controlado desde afuera cuando la página tiene su propio buscador en el
+  // navbar (hoy, Home); si no se lo pasan, se maneja con estado interno.
+  const [internalQuery, setInternalQuery] = useState('');
+  const query = queryProp !== undefined ? queryProp : internalQuery;
+  const setQuery = onQueryChange || setInternalQuery;
   const [catFilter, setCatFilter] = useState('Todas');
   const [highlightId, setHighlightId] = useState(null);
   const highlightTimer = useRef(null);
@@ -145,8 +149,9 @@ export default function PublicMenu() {
       </aside>
 
       <div className="min-w-0 space-y-8">
-        {/* Buscador (+ chips en mobile). Queda fijo bajo el Navbar en mobile. */}
-        <div className="sticky top-[64px] z-30 -mx-4 space-y-2.5 bg-surface-page/95 px-4 py-3 backdrop-blur lg:static lg:mx-0 lg:bg-transparent lg:p-0 lg:backdrop-blur-none">
+        {/* Buscador + chips: solo mobile/tablet. En desktop el buscador ya
+            está en el navbar y las categorías están en el aside de la izq. */}
+        <div className="sticky top-[64px] z-30 -mx-4 space-y-2.5 bg-surface-page/95 px-4 py-3 backdrop-blur lg:hidden">
           <div className="relative">
             <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-muted" />
             <input
@@ -162,7 +167,7 @@ export default function PublicMenu() {
               </button>
             )}
           </div>
-          <div className={`-mx-4 flex gap-2 overflow-x-auto px-4 lg:hidden ${NO_SCROLLBAR}`}>
+          <div className={`-mx-4 flex gap-2 overflow-x-auto px-4 ${NO_SCROLLBAR}`}>
             {tabs.map((t) => {
               const on = catFilter === t.name;
               return (

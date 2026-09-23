@@ -164,7 +164,7 @@ export default function CouponsPage() {
     <div className="page-aurora min-h-screen">
       <Navbar />
 
-      <main className="mx-auto max-w-6xl px-4 pt-10 pb-16">
+      <main className="mx-auto max-w-[1600px] px-4 pt-10 pb-16 sm:px-6 lg:px-8">
         <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary via-primary-strong to-primary-soft p-8 text-primary-contrast shadow-glow sm:p-10">
           <div className="orb -right-16 -top-16 h-64 w-64 bg-primary-contrast/15" />
           <div className="orb -bottom-24 right-40 h-52 w-52 bg-primary-contrast/12" />

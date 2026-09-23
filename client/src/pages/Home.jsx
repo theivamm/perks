@@ -121,6 +121,7 @@ export default function Home() {
   const [confirmCoupon, setConfirmCoupon] = useState(null);
   const [qrOpen, setQrOpen] = useState(false);
   const [howOpen, setHowOpen] = useState(false);
+  const [menuQuery, setMenuQuery] = useState('');
 
   const loadCatalog = async () => {
     try {
@@ -224,9 +225,11 @@ export default function Home() {
 
   return (
     <div className="page-aurora min-h-screen">
-      <Navbar />
+      <Navbar search={{ value: menuQuery, onChange: setMenuQuery, placeholder: 'Buscar plato, bebida, postre...' }} />
 
-      <main className={`mx-auto max-w-6xl px-4 pt-4 sm:pt-8 ${isAuthed && activeCoupon ? 'pb-28 lg:pb-16' : 'pb-16'}`}>
+      <main
+        className={`mx-auto max-w-[1600px] px-4 pt-4 sm:px-6 sm:pt-8 lg:px-8 ${isAuthed && activeCoupon ? 'pb-28 lg:pb-16' : 'pb-16'}`}
+      >
         {/* Franja de fidelización: estado real del cliente en lugar del hero + 3 bloques explicativos */}
         <section className="grid gap-4 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]">
           {isAuthed && activeCoupon ? (
@@ -281,11 +284,11 @@ export default function Home() {
           </div>
         </section>
 
-        <PublicMenu />
+        <PublicMenu query={menuQuery} onQueryChange={setMenuQuery} />
       </main>
 
       <footer className="border-t border-line py-6">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4">
+        <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
           <Logo size="md" showText={false} />
           <p className="min-w-0 truncate text-sm text-ink-muted">
             <span className="font-extrabold text-ink">{settings.businessName || 'Fidelización App'}</span>
