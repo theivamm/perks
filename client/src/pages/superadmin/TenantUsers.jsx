@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Check, Eye, EyeOff, KeyRound, Loader2, Mail, Plus, Trash2, X } from 'lucide-react';
 import { api } from '../../api.js';
-import { BTN_GHOST, BTN_INK, EYEBROW, FIELD, initials } from './SuperAdmin.jsx';
+import { BTN_GHOST, BTN_INK, ConfirmDialog, EYEBROW, FIELD, initials } from './SuperAdmin.jsx';
 
 function PasswordField({ value, onChange, placeholder }) {
   const [show, setShow] = useState(false);
@@ -142,6 +142,7 @@ export default function TenantUsers({ tenantId }) {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState(null);
+  const [confirmUser, setConfirmUser] = useState(null);
   const [editingId, setEditingId] = useState(null);
   const [adding, setAdding] = useState(false);
   const [query, setQuery] = useState('');
@@ -165,7 +166,6 @@ export default function TenantUsers({ tenantId }) {
   }, [load]);
 
   const remove = async (user) => {
-    if (!confirm(`¿Quitar a "${user.name}" (${user.email}) de esta app? Su cuenta y sus accesos a otras apps se conservarán.`)) return;
     setDeletingId(user.id);
     setError('');
     try {
@@ -175,6 +175,7 @@ export default function TenantUsers({ tenantId }) {
       setError(err.message);
     } finally {
       setDeletingId(null);
+      setConfirmUser(null);
     }
   };
 
@@ -193,6 +194,16 @@ export default function TenantUsers({ tenantId }) {
 
   return (
     <div className="flex flex-col gap-3">
+      {confirmUser && (
+        <ConfirmDialog
+          title={`¿Quitar a ${confirmUser.name}?`}
+          message={`${confirmUser.email} deja de tener acceso a esta app. Su cuenta y sus accesos a otras apps se conservan.`}
+          confirmLabel="Quitar"
+          busy={deletingId === confirmUser.id}
+          onConfirm={() => remove(confirmUser)}
+          onCancel={() => setConfirmUser(null)}
+        />
+      )}
       {error && <p className="rounded-xl bg-red-50 px-3.5 py-2.5 text-[13px] font-semibold text-red-600">{error}</p>}
 
       <div className="flex items-center justify-between">
@@ -228,7 +239,7 @@ export default function TenantUsers({ tenantId }) {
             >
               {editingId === u.id ? 'Cerrar' : 'Credenciales'}
             </button>
-            <RemoveButton busy={deletingId === u.id} disabled={deletingId !== null} onClick={() => remove(u)} />
+            <RemoveButton busy={deletingId === u.id} disabled={deletingId !== null} onClick={() => setConfirmUser(u)} />
           </div>
           {editingId === u.id && (
             <CredentialsForm
@@ -262,7 +273,7 @@ export default function TenantUsers({ tenantId }) {
                 <p className="truncate text-[13.5px] font-semibold">{u.name}</p>
                 <p className="truncate text-xs text-[var(--wt-muted)]">{u.email}</p>
               </div>
-              <RemoveButton busy={deletingId === u.id} disabled={deletingId !== null} onClick={() => remove(u)} />
+              <RemoveButton busy={deletingId === u.id} disabled={deletingId !== null} onClick={() => setConfirmUser(u)} />
             </div>
           ))}
         </div>

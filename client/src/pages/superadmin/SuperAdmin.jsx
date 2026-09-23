@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ExternalLink, KeyRound, Loader2, LogIn, Mail, Plus, RefreshCw, Search, Send, ShieldAlert, Trash2, X } from 'lucide-react';
+import { AlertTriangle, ExternalLink, KeyRound, Loader2, LogIn, Mail, Plus, RefreshCw, Search, Send, ShieldAlert, Trash2, X } from 'lucide-react';
 import { api } from '../../api.js';
 import { useAuth } from '../../context/AuthContext.jsx';
 import TenantUsers from './TenantUsers.jsx';
@@ -149,6 +149,82 @@ function Spinner() {
     <div className="flex items-center justify-center py-16 text-[var(--wt-muted)]">
       <Loader2 className="animate-spin" size={22} />
     </div>
+  );
+}
+
+/* ── Confirmación con estilo Wintuu (reemplaza window.confirm) ──
+ * requireText: si se pasa, el botón se habilita solo al escribir ese texto exacto. */
+export function ConfirmDialog({ title, message, items, confirmLabel = 'Eliminar', requireText, busy, onConfirm, onCancel }) {
+  const [typed, setTyped] = useState('');
+  const inputRef = useRef(null);
+  const cancelRef = useRef(null);
+  const ok = !requireText || typed.trim() === requireText.trim();
+
+  useEffect(() => {
+    (requireText ? inputRef.current : cancelRef.current)?.focus();
+    const onKey = (e) => e.key === 'Escape' && !busy && onCancel();
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return (
+    <>
+      <div onClick={() => !busy && onCancel()} className="fixed inset-0 z-[60] bg-[rgba(8,40,44,.45)] backdrop-blur-[3px]" />
+      <div
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby="wt-confirm-title"
+        className="wt2-pop-in fixed left-1/2 top-1/2 z-[61] w-[min(460px,calc(100%-32px))] overflow-hidden rounded-[26px] bg-[var(--wt-bg)] shadow-[0_40px_80px_-30px_rgba(8,40,44,.55)]"
+        style={{ translate: '-50% -50%' }}
+      >
+        <div className="flex flex-col gap-4 p-[26px]">
+          <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#ffe3ef] text-[#9b1c4b]">
+            <AlertTriangle size={22} />
+          </span>
+          <div>
+            <h2 id="wt-confirm-title" className="wt-heading text-[24px] font-semibold leading-tight text-[var(--wt-ink)]">{title}</h2>
+            {message && <p className="mt-2 text-[14px] leading-relaxed text-[var(--wt-muted)]">{message}</p>}
+          </div>
+          {items?.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {items.map((it) => (
+                <span key={it} className="rounded-full border border-[#ffc4e1] bg-[#fff5f9] px-3 py-1 text-[12.5px] font-semibold text-[#9b1c4b]">{it}</span>
+              ))}
+            </div>
+          )}
+          {requireText && (
+            <label className={LABEL}>
+              <span>
+                Para confirmar, escribí <strong className="font-mono text-[#9b1c4b]">{requireText}</strong>
+              </span>
+              <input
+                ref={inputRef}
+                className={`${FIELD} font-mono`}
+                value={typed}
+                onChange={(e) => setTyped(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && ok && !busy && onConfirm()}
+                autoComplete="off"
+                spellCheck={false}
+              />
+            </label>
+          )}
+        </div>
+        <div className="flex justify-end gap-2 border-t border-[rgba(20,36,37,0.08)] bg-white px-[26px] py-4">
+          <button ref={cancelRef} type="button" className={BTN_GHOST} onClick={onCancel} disabled={busy}>
+            Cancelar
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={!ok || busy}
+            className="wt2-btn inline-flex items-center justify-center gap-2 rounded-full bg-[#c2185b] px-5 py-2.5 text-[13px] font-bold text-white transition hover:bg-[#9b1c4b] disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            {busy ? <Loader2 className="animate-spin" size={15} /> : <Trash2 size={15} />} {confirmLabel}
+          </button>
+        </div>
+      </div>
+    </>
   );
 }
 
@@ -558,6 +634,7 @@ function TenantDrawer({ tenant, onClose, onSaved, onDeleted }) {
   const [plan, setPlan] = useState(tenant.plan);
   const [busy, setBusy] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const [setupBusy, setSetupBusy] = useState(false);
   const [error, setError] = useState('');
   const central = tenant.slug === 'wintuu';
@@ -565,10 +642,10 @@ function TenantDrawer({ tenant, onClose, onSaved, onDeleted }) {
   const c = tenant.counts || {};
 
   useEffect(() => {
-    const onKey = (e) => e.key === 'Escape' && onClose();
+    const onKey = (e) => e.key === 'Escape' && !confirmDelete && onClose();
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
+  }, [onClose, confirmDelete]);
 
   const patch = async (body) => {
     setBusy(true);
@@ -597,7 +674,6 @@ function TenantDrawer({ tenant, onClose, onSaved, onDeleted }) {
   };
 
   const remove = async () => {
-    if (!confirm(`¿Eliminar la app "${tenant.business_name}" y TODOS sus datos (clientes, pedidos, cupones, menú, config)? Esta acción no se puede deshacer.`)) return;
     setDeleting(true);
     setError('');
     try {
@@ -606,6 +682,7 @@ function TenantDrawer({ tenant, onClose, onSaved, onDeleted }) {
     } catch (e) {
       setError(e.message);
       setDeleting(false);
+      setConfirmDelete(false);
     }
   };
 
@@ -711,7 +788,7 @@ function TenantDrawer({ tenant, onClose, onSaved, onDeleted }) {
                     <p className="text-sm font-bold text-[#9b1c4b]">Eliminar app</p>
                     <p className="mt-0.5 text-[12.5px] text-[var(--wt-muted)]">Borra clientes, pedidos, cupones y menú.</p>
                   </div>
-                  <button onClick={remove} disabled={deleting} className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-[#e98bb0] bg-white px-3.5 py-2 text-[12.5px] font-bold text-[#9b1c4b] transition hover:bg-[#ffe3ef] disabled:opacity-50">
+                  <button onClick={() => setConfirmDelete(true)} disabled={deleting} className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-[#e98bb0] bg-white px-3.5 py-2 text-[12.5px] font-bold text-[#9b1c4b] transition hover:bg-[#ffe3ef] disabled:opacity-50">
                     {deleting ? <Loader2 className="animate-spin" size={14} /> : <Trash2 size={14} />} Eliminar
                   </button>
                 </div>
@@ -731,6 +808,18 @@ function TenantDrawer({ tenant, onClose, onSaved, onDeleted }) {
           </div>
         )}
       </aside>
+      {confirmDelete && (
+        <ConfirmDialog
+          title={`¿Eliminar "${tenant.business_name}"?`}
+          message="Se borra la app y todos sus datos. Esta acción no se puede deshacer."
+          items={[`${num(c.clients)} clientes`, `${num(c.orders)} pedidos`, `${num(c.coupons)} cupones`, 'Catálogo', 'Configuración']}
+          requireText={tenant.slug}
+          confirmLabel="Eliminar app"
+          busy={deleting}
+          onConfirm={remove}
+          onCancel={() => setConfirmDelete(false)}
+        />
+      )}
       <style>{`
         @keyframes wt2-drawer-in { from { transform: translateX(40px); opacity: 0; } to { transform: none; opacity: 1; } }
         .wt2-drawer { animation: wt2-drawer-in .35s cubic-bezier(.2,.8,.2,1) both; }
