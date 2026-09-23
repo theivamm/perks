@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Loader2, Search, SearchX, Star, UtensilsCrossed, X } from 'lucide-react';
-import { api, formatMoney } from '../api.js';
+import { api } from '../api.js';
 import { useTheme } from '../context/ThemeContext.jsx';
 import { EmptyState } from './ui.jsx';
 
@@ -10,8 +10,31 @@ const normalize = (s) =>
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase();
 
+// $3.900 en lugar de $3900.00 (sin decimales si el precio es entero)
+const money = (v, symbol = '$') => {
+  const n = Number(v || 0);
+  return `${symbol}${n.toLocaleString('es-AR', { minimumFractionDigits: Number.isInteger(n) ? 0 : 2, maximumFractionDigits: 2 })}`;
+};
+
+const NO_SCROLLBAR = '[scrollbar-width:none] [&::-webkit-scrollbar]:hidden';
+
+function Thumb({ item, className = '' }) {
+  return (
+    <div className={`overflow-hidden bg-primary-softer ${className}`}>
+      {item.image ? (
+        <img src={item.image} alt={item.title} loading="lazy" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+      ) : (
+        <div className="flex h-full w-full items-center justify-center text-primary/35">
+          <UtensilsCrossed size={20} />
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function PublicMenu() {
   const { settings } = useTheme();
+  const currency = settings.currency || '$';
   const [data, setData] = useState({ items: [], categories: [] });
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
@@ -33,8 +56,9 @@ export default function PublicMenu() {
   const visible = useMemo(() => (data.items || []).filter((it) => it.available), [data.items]);
 
   const categories = useMemo(() => {
-    const set = new Set(visible.map((it) => it.category).filter(Boolean));
-    return [...set];
+    const counts = new Map();
+    for (const it of visible) if (it.category) counts.set(it.category, (counts.get(it.category) || 0) + 1);
+    return [...counts.entries()].map(([name, count]) => ({ name, count }));
   }, [visible]);
 
   const filtered = useMemo(() => {
@@ -42,10 +66,7 @@ export default function PublicMenu() {
     return visible.filter((it) => {
       const okCat = catFilter === 'Todas' || it.category === catFilter;
       const okSearch =
-        !q ||
-        normalize(it.title).includes(q) ||
-        normalize(it.description).includes(q) ||
-        normalize(it.category).includes(q);
+        !q || normalize(it.title).includes(q) || normalize(it.description).includes(q) || normalize(it.category).includes(q);
       return okCat && okSearch;
     });
   }, [visible, catFilter, query]);
@@ -62,25 +83,21 @@ export default function PublicMenu() {
     setQuery(value);
     const q = normalize(value.trim());
     if (!q) return;
-
     const match = visible.find((it) => {
       const okCat = catFilter === 'Todas' || it.category === catFilter;
       if (!okCat) return false;
-      return (
-        normalize(it.title).includes(q) ||
-        normalize(it.description).includes(q) ||
-        normalize(it.category).includes(q)
-      );
+      return normalize(it.title).includes(q) || normalize(it.description).includes(q) || normalize(it.category).includes(q);
     });
-
     if (!match) return;
-    requestAnimationFrame(() => {
-      const el = document.getElementById(`menu-item-${match.id}`);
-      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    });
     setHighlightId(match.id);
     clearTimeout(highlightTimer.current);
     highlightTimer.current = setTimeout(() => setHighlightId((h) => (h === match.id ? null : h)), 2200);
+  };
+
+  const pickCat = (cat) => {
+    setCatFilter(cat);
+    const el = document.getElementById('menu-top');
+    if (el && el.getBoundingClientRect().top < 0) window.scrollTo({ top: window.scrollY + el.getBoundingClientRect().top - 72, behavior: 'smooth' });
   };
 
   if (loading) {
@@ -94,174 +111,146 @@ export default function PublicMenu() {
   if (visible.length === 0) {
     return (
       <section className="mt-10">
-        <EmptyState
-          icon={UtensilsCrossed}
-          title="El menú se viene pronto"
-          subtitle="Muy pronto vas a poder ver todos los productos del local acá."
-        />
+        <EmptyState icon={UtensilsCrossed} title="El menú se viene pronto" subtitle="Muy pronto vas a poder ver todos los productos del local acá." />
       </section>
     );
   }
 
+  const tabs = [{ name: 'Todas', label: 'Todo el menú', count: visible.length }, ...categories.map((c) => ({ ...c, label: c.name }))];
+  const ring = (id) => (highlightId === id ? 'ring-2 ring-primary ring-offset-2 ring-offset-surface-page' : '');
+
   return (
-    <div className="mt-12 space-y-8">
-      <div className="space-y-4">
-        <div className="relative">
-          <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-muted" />
-          <input
-            id="menu-search"
-            className="input w-full rounded-2xl py-3 pl-11 pr-10"
-            placeholder="Buscar plato, bebida, postre..."
-            value={query}
-            onChange={(e) => handleSearch(e.target.value)}
-          />
-          {query && (
-            <button
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-muted transition-colors hover:text-ink"
-              onClick={() => setQuery('')}
-              aria-label="Limpiar búsqueda"
-            >
-              <X size={16} />
-            </button>
-          )}
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {['Todas', ...categories].map((cat) => (
-            <button
-              key={cat}
-              onClick={() => setCatFilter(cat)}
-              aria-current={catFilter === cat ? 'true' : undefined}
-              className={`rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all ${
-                catFilter === cat
-                  ? 'bg-primary text-primary-contrast shadow'
-                  : 'border border-line bg-surface text-ink-muted hover:bg-surface-alt'
-              }`}
-            >
-              {cat}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {filtered.length === 0 ? (
-        <EmptyState
-          icon={SearchX}
-          title="Sin resultados"
-          subtitle="Probá con otra búsqueda o elegí otra categoría."
-        />
-      ) : (
-        <div className="space-y-12">
-          {featured.length > 0 && (
-        <section>
-          <div className="mb-4 flex items-center gap-2">
-            <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-glow">
-              <Star size={18} className="fill-white" />
-            </span>
-            <h2 className="text-2xl font-extrabold text-ink">Ofertas especiales</h2>
-          </div>
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {featured.map((item, i) => (
-              <article
-                key={item.id}
-                id={`menu-item-${item.id}`}
-                className={`animate-fade-up group relative overflow-hidden rounded-3xl border border-amber-300/50 bg-surface shadow-glow transition-transform hover:-translate-y-1 ${
-                  highlightId === item.id ? 'ring-2 ring-primary ring-offset-2 ring-offset-surface-page' : ''
+    <div id="menu-top" className="mt-6 lg:mt-8 lg:grid lg:grid-cols-[220px_minmax(0,1fr)] lg:items-start lg:gap-9">
+      {/* Escritorio: categorías fijas a la izquierda */}
+      <aside className="hidden lg:sticky lg:top-24 lg:block">
+        <p className="px-3 pb-2.5 text-[10px] font-extrabold uppercase tracking-[0.18em] text-ink-muted">Categorías</p>
+        <div className="space-y-0.5">
+          {tabs.map((t) => {
+            const on = catFilter === t.name;
+            return (
+              <button
+                key={t.name}
+                onClick={() => pickCat(t.name)}
+                aria-current={on ? 'true' : undefined}
+                className={`flex w-full items-center justify-between gap-2 rounded-xl px-3 py-2.5 text-left text-sm font-semibold transition ${
+                  on ? 'bg-primary text-primary-contrast shadow-sm' : 'text-ink hover:bg-surface-alt'
                 }`}
-                style={{ animationDelay: `${i * 80}ms` }}
               >
-                <div className="relative aspect-[4/3] overflow-hidden bg-gradient-to-br from-primary to-primary-strong">
-                  {item.image ? (
-                    <img src={item.image} alt={item.title} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center text-4xl font-extrabold text-primary-contrast/60">
-                      {(item.title || '?').slice(0, 2).toUpperCase()}
-                    </div>
-                  )}
-                  <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-amber-400 to-orange-500 px-3 py-1.5 text-sm font-black text-white shadow-glow">
-                    <Star size={14} className="fill-white" />
-                    {Number(item.discount) > 0 ? `-${Number(item.discount)}% OFF` : item.featured_label || 'Oferta'}
-                  </span>
-                </div>
-                <div className="p-5">
-                  <p className="text-xs font-bold uppercase tracking-wide text-ink-muted">{item.category}</p>
-                  <h3 className="mt-1 text-lg font-extrabold text-ink">{item.title}</h3>
-                  {item.description && (
-                    <p className="mt-1 line-clamp-2 text-sm text-ink-muted">{item.description}</p>
-                  )}
-                  <p className="mt-3 flex flex-wrap items-end gap-2">
-                    <span className="text-3xl font-black text-primary-strong drop-shadow-sm">
-                      {formatMoney(
-                        Number(item.discount) > 0
-                          ? (Number(item.price) * (100 - Number(item.discount))) / 100
-                          : item.price,
-                        settings.currency
-                      )}
-                    </span>
-                    {Number(item.discount) > 0 && (
-                      <span className="pb-0.5 text-lg font-bold text-ink-muted line-through">
-                        {formatMoney(item.price, settings.currency)}
-                      </span>
-                    )}
-                  </p>
-                  {item.featured_label && Number(item.discount) > 0 && (
-                    <p className="mt-2 text-sm font-bold text-amber-600 dark:text-amber-400">{item.featured_label}</p>
-                  )}
-                </div>
-              </article>
-            ))}
-          </div>
-        </section>
-      )}
+                <span className="truncate">{t.label}</span>
+                <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${on ? 'bg-white/20' : 'bg-primary-softer text-ink-muted'}`}>{t.count}</span>
+              </button>
+            );
+          })}
+        </div>
+      </aside>
 
-      <section>
-        <h2 className="mb-4 text-2xl font-extrabold text-ink">Nuestro menú</h2>
-        {Object.keys(grouped).length === 0 && featured.length > 0 ? (
-          <p className="text-sm text-ink-muted">Todos los productos del menú están en oferta.</p>
+      <div className="min-w-0 space-y-8">
+        {/* Buscador (+ chips en mobile). Queda fijo bajo el Navbar en mobile. */}
+        <div className="sticky top-[64px] z-30 -mx-4 space-y-2.5 bg-surface-page/95 px-4 py-3 backdrop-blur lg:static lg:mx-0 lg:bg-transparent lg:p-0 lg:backdrop-blur-none">
+          <div className="relative">
+            <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-muted" />
+            <input
+              id="menu-search"
+              className="input w-full rounded-2xl py-3 pl-11 pr-10"
+              placeholder="Buscar plato, bebida, postre..."
+              value={query}
+              onChange={(e) => handleSearch(e.target.value)}
+            />
+            {query && (
+              <button className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-muted hover:text-ink" onClick={() => setQuery('')} aria-label="Limpiar búsqueda">
+                <X size={16} />
+              </button>
+            )}
+          </div>
+          <div className={`-mx-4 flex gap-2 overflow-x-auto px-4 lg:hidden ${NO_SCROLLBAR}`}>
+            {tabs.map((t) => {
+              const on = catFilter === t.name;
+              return (
+                <button
+                  key={t.name}
+                  onClick={() => pickCat(t.name)}
+                  className={`shrink-0 whitespace-nowrap rounded-full border px-3.5 py-2 text-xs font-semibold transition ${
+                    on ? 'border-primary bg-primary text-primary-contrast' : 'border-line bg-surface text-ink'
+                  }`}
+                >
+                  {t.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {filtered.length === 0 ? (
+          <EmptyState icon={SearchX} title="Sin resultados" subtitle="Probá con otra búsqueda o elegí otra categoría." />
         ) : (
-          <div className="space-y-10">
-            {Object.entries(grouped).map(([category, list]) => (
-              <div key={category}>
-                <div className="mb-4 flex items-center gap-3">
-                  <h3 className="text-lg font-extrabold text-ink">{category}</h3>
-                  <div className="h-px flex-1 bg-line" />
-                </div>
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {list.map((item) => (
+          <>
+            {featured.length > 0 && (
+              <section className="space-y-3">
+                {featured.map((item) => {
+                  const disc = Number(item.discount) > 0;
+                  const final = disc ? (Number(item.price) * (100 - Number(item.discount))) / 100 : item.price;
+                  return (
                     <article
-                    key={item.id}
-                    id={`menu-item-${item.id}`}
-                    className={`card group overflow-hidden transition-transform hover:-translate-y-0.5 ${
-                      highlightId === item.id ? 'ring-2 ring-primary ring-offset-2 ring-offset-surface-page' : ''
-                    }`}
-                  >
-                      <div className="relative aspect-square bg-gradient-to-br from-primary to-primary-strong">
-                        {item.image ? (
-                          <img src={item.image} alt={item.title} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
-                        ) : (
-                          <div className="flex h-full w-full items-center justify-center text-3xl font-extrabold text-primary-contrast/60">
-                            {(item.title || '?').slice(0, 2).toUpperCase()}
-                          </div>
-                        )}
+                      key={item.id}
+                      id={`menu-item-${item.id}`}
+                      className={`group flex items-center gap-3 overflow-hidden rounded-3xl border border-amber-300/60 bg-surface p-2.5 shadow-[0_10px_30px_-14px_rgba(242,138,30,0.45)] sm:items-stretch sm:gap-0 sm:p-0 ${ring(item.id)}`}
+                    >
+                      <div className="relative h-[86px] w-[86px] shrink-0 overflow-hidden rounded-2xl sm:h-auto sm:min-h-[190px] sm:w-[300px] sm:rounded-none">
+                        <Thumb item={item} className="h-full w-full" />
+                        <span className="absolute left-1.5 top-1.5 inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-amber-400 to-orange-500 px-2 py-0.5 text-[10px] font-black text-white shadow sm:left-3.5 sm:top-3.5 sm:px-3 sm:py-1.5 sm:text-[13px]">
+                          <Star size={12} className="hidden fill-white sm:block" />
+                          {disc ? `−${Number(item.discount)}%${' '}` : item.featured_label || 'Oferta'}
+                          {disc && <span className="hidden sm:inline">OFF</span>}
+                        </span>
                       </div>
-                      <div className="p-4">
-                        <h4 className="font-bold text-ink">{item.title}</h4>
-                        {item.description && (
-                          <p className="mt-1 line-clamp-2 text-sm text-ink-muted">{item.description}</p>
-                        )}
-                        <p className="mt-3 text-2xl font-black text-primary-strong">
-                          {formatMoney(item.price, settings.currency)}
+                      <div className="flex min-w-0 flex-1 flex-col justify-center gap-0.5 sm:gap-1.5 sm:px-6 sm:py-5">
+                        <p className="text-[9px] font-extrabold uppercase tracking-[0.16em] text-amber-700 sm:text-[10px] dark:text-amber-400">
+                          {item.featured_label && disc ? item.featured_label : 'Oferta del día'}
+                        </p>
+                        <h3 className="font-heading text-[17px] font-bold leading-tight text-ink sm:text-[28px]">{item.title}</h3>
+                        {item.description && <p className="hidden max-w-md text-sm text-ink-muted sm:line-clamp-2">{item.description}</p>}
+                        <p className="flex items-baseline gap-2 sm:mt-1.5">
+                          <span className="font-heading text-lg font-bold text-primary-strong sm:text-3xl">{money(final, currency)}</span>
+                          {disc && <span className="text-xs font-semibold text-ink-muted line-through sm:text-base">{money(item.price, currency)}</span>}
                         </p>
                       </div>
                     </article>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
+                  );
+                })}
+              </section>
+            )}
+
+            <div className="space-y-8 lg:space-y-10">
+              {Object.entries(grouped).map(([category, list]) => (
+                <section key={category}>
+                  <div className="mb-1 flex items-center gap-3 lg:mb-3.5">
+                    <h3 className="font-heading text-[17px] font-bold text-ink lg:text-[21px]">{category}</h3>
+                    <span className="hidden text-xs font-semibold text-ink-muted lg:inline">{list.length}</span>
+                    <div className="hidden h-px flex-1 bg-line lg:block" />
+                  </div>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 lg:gap-3">
+                    {list.map((item) => (
+                      <article
+                        key={item.id}
+                        id={`menu-item-${item.id}`}
+                        className={`group flex items-center gap-3 border-b border-line py-3 lg:gap-3.5 lg:rounded-[18px] lg:border lg:bg-surface lg:p-3 lg:transition lg:hover:border-primary/40 ${ring(item.id)}`}
+                      >
+                        <Thumb item={item} className="order-last h-16 w-16 shrink-0 rounded-xl lg:order-first lg:h-[76px] lg:w-[76px] lg:rounded-2xl" />
+                        <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                          <h4 className="text-sm font-semibold text-ink lg:text-[15px]">{item.title}</h4>
+                          {item.description && <p className="line-clamp-2 text-xs leading-snug text-ink-muted lg:text-[13px]">{item.description}</p>}
+                          <p className="mt-1 font-heading text-[15px] font-bold text-primary-strong lg:hidden">{money(item.price, currency)}</p>
+                        </div>
+                        <p className="hidden shrink-0 pr-1.5 font-heading text-[17px] font-bold text-primary-strong lg:block">{money(item.price, currency)}</p>
+                      </article>
+                    ))}
+                  </div>
+                </section>
+              ))}
+            </div>
+          </>
         )}
-      </section>
-        </div>
-      )}
+      </div>
     </div>
   );
 }
