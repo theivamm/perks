@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
-import { ArrowRight, ChevronDown, Grip, LayoutGrid, LogOut, X } from 'lucide-react';
+import { ArrowRight, ChevronDown, Grip, LayoutGrid, LogOut, X, LogIn } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.jsx';
 import WintuuLogo from './WintuuLogo.jsx';
 
@@ -173,7 +173,7 @@ export default function LandingNavbar() {
 
   return (
     <>
-      <header className="wt-navbar">
+      <header className="wt-navbar wt2-rise" style={{ '--d': '0ms' }}>
         <div className="mx-auto flex h-16 max-w-[1280px] items-center justify-between px-4 sm:h-[72px] sm:px-8 lg:px-12">
           <a href="#inicio" className="flex shrink-0 items-center" aria-label="Wintuu, inicio">
             <WintuuLogo height={22} />
@@ -187,16 +187,23 @@ export default function LandingNavbar() {
             ))}
           </nav>
 
-          <div className="hidden items-center gap-5 lg:flex">
+          <div className="hidden items-center gap-2.5 lg:flex">
             {user ? (
               <AccountMenu user={user} />
             ) : (
-              <Link to="/ingresar" className="wt-nav-link">
+              <Link
+                to="/ingresar"
+                className="wt2-btn inline-flex items-center gap-2 rounded-full border-[1.5px] border-[var(--wt-border)] bg-[var(--wt-surface)] px-5 py-2.5 text-[14px] font-bold text-[var(--wt-ink)] hover:border-[var(--wt-ink)]"
+              >
+                <LogIn size={16} strokeWidth={2.4} />
                 Ingresar
               </Link>
             )}
-            <Link to="/checkout" className="wt-btn-mint-sm">
-              Quiero mi app
+            <Link
+              to="/checkout"
+              className="wt2-btn wt2-shine inline-flex items-center rounded-full bg-[#08282c] px-5 py-2.5 text-[14px] font-bold text-white shadow-[0_8px_20px_-10px_rgba(8,40,44,0.6)] hover:bg-[var(--wt-mint-dark)]"
+            >
+              Crear mi app
             </Link>
           </div>
 
@@ -205,9 +212,9 @@ export default function LandingNavbar() {
               to="/checkout"
               onClick={close}
               className="wt-btn-glow wt-btn-mint-sm shrink-0"
-              aria-label="Quiero mi app"
+              aria-label="Crear mi app"
             >
-              Quiero mi app
+              Crear mi app
             </Link>
             <button
               ref={menuBtnRef}

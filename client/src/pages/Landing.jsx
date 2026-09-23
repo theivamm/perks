@@ -1,11 +1,11 @@
 import { useEffect } from 'react';
 import '../styles/wintuu-landing.css';
+import '../styles/wintuu-landing-v2.css';
 import { useReveal } from '../components/landing/useReveal.js';
 import LandingNavbar from '../components/landing/LandingNavbar.jsx';
 import HeroBento from '../components/landing/HeroBento.jsx';
 import ProductBento from '../components/landing/ProductBento.jsx';
 import HowItWorks from '../components/landing/HowItWorks.jsx';
-import MenuCta from '../components/landing/MenuCta.jsx';
 import PricingSection from '../components/landing/PricingSection.jsx';
 import FaqSection from '../components/landing/FaqSection.jsx';
 import ContactSection from '../components/landing/ContactSection.jsx';
@@ -32,7 +32,6 @@ export default function Landing() {
       <HeroBento />
       <ProductBento />
       <HowItWorks />
-      <MenuCta />
       <PricingSection />
       <FaqSection />
       <ContactSection />

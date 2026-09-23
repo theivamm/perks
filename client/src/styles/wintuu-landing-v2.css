@@ -1,0 +1,79 @@
+/* ── Wintuu landing v2: animaciones ──
+   Se apoya en el sistema .wt-reveal / .is-visible de wintuu-landing.css. */
+
+/* Flotantes del hero */
+@keyframes wt2-float-a { 0%,100% { transform: translateY(0) rotate(-2deg); } 50% { transform: translateY(-10px) rotate(-1deg); } }
+@keyframes wt2-float-b { 0%,100% { transform: translateY(0) rotate(2deg); } 50% { transform: translateY(8px) rotate(1deg); } }
+@keyframes wt2-phone { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+@keyframes wt2-backdrop { 0%,100% { transform: rotate(-4deg) scale(1); } 50% { transform: rotate(-2deg) scale(1.02); } }
+.wintuu-landing .wt2-float-a { animation: wt2-float-a 6s ease-in-out infinite; }
+.wintuu-landing .wt2-float-b { animation: wt2-float-b 7s ease-in-out infinite; animation-delay: -2s; }
+.wintuu-landing .wt2-phone { animation: wt2-phone 8s ease-in-out infinite; }
+.wintuu-landing .wt2-backdrop { animation: wt2-backdrop 12s ease-in-out infinite; }
+
+/* Entrada del hero (al cargar) */
+@keyframes wt2-rise { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
+@keyframes wt2-pop-in { 0% { opacity: 0; transform: scale(.85) translateY(12px); } 70% { transform: scale(1.03); } 100% { opacity: 1; transform: none; } }
+.wintuu-landing .wt2-rise { animation: wt2-rise .8s cubic-bezier(.2,.8,.2,1) both; animation-delay: var(--d, 0ms); }
+.wintuu-landing .wt2-pop-in { animation: wt2-pop-in .7s cubic-bezier(.2,.8,.2,1) both; animation-delay: var(--d, 0ms); }
+
+/* Sellos: se llenan en secuencia cuando su contenedor .wt-reveal entra */
+@keyframes wt2-stamp { 0% { transform: scale(.4); opacity: 0; } 60% { transform: scale(1.18); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+.wintuu-landing .wt2-stamp { opacity: 0; }
+.wintuu-landing .wt2-stamp-hero,
+.wintuu-landing .is-visible .wt2-stamp { animation: wt2-stamp .5s cubic-bezier(.2,.8,.2,1) both; animation-delay: calc(var(--i, 0) * 140ms + var(--base, 300ms)); }
+
+/* Barras de progreso que crecen al entrar */
+.wintuu-landing .wt2-bar { width: 0; transition: width 1.2s cubic-bezier(.2,.8,.2,1) .3s; }
+.wintuu-landing .is-visible .wt2-bar { width: var(--w); }
+
+/* Hover */
+.wintuu-landing .wt2-lift { transition: transform .35s cubic-bezier(.2,.8,.2,1), box-shadow .35s; }
+.wintuu-landing .wt2-lift:hover { transform: translateY(-6px); box-shadow: 0 24px 50px -28px rgba(8,40,44,.45); }
+.wintuu-landing .wt2-tilt { transition: transform .4s cubic-bezier(.2,.8,.2,1); }
+.wintuu-landing .wt2-tilt:hover { transform: rotate(-2deg) scale(1.04); }
+.wintuu-landing .wt2-btn { transition: transform .2s, background-color .2s, color .2s, border-color .2s, box-shadow .2s; }
+.wintuu-landing .wt2-btn:hover { transform: translateY(-2px); }
+.wintuu-landing .wt2-btn:active { transform: translateY(0) scale(.97); }
+.wintuu-landing .wt2-arrow { transition: transform .25s; }
+.wintuu-landing .wt2-btn:hover .wt2-arrow { transform: translateX(4px); }
+
+/* Marquesina de rubros */
+@keyframes wt2-marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+.wintuu-landing .wt2-marquee { animation: wt2-marquee 32s linear infinite; }
+.wintuu-landing .wt2-marquee-wrap:hover .wt2-marquee { animation-play-state: paused; }
+
+/* Toast "+1 punto" que late */
+@keyframes wt2-ping { 0% { box-shadow: 0 0 0 0 rgba(0,207,205,.55); } 100% { box-shadow: 0 0 0 14px rgba(0,207,205,0); } }
+.wintuu-landing .wt2-ping { animation: wt2-ping 2s ease-out infinite; }
+
+/* Punto de "en vivo" */
+@keyframes wt2-blink { 0%,100% { opacity: 1; } 50% { opacity: .25; } }
+.wintuu-landing .wt2-blink { animation: wt2-blink 1.6s ease-in-out infinite; }
+
+/* Brillo que recorre el CTA principal */
+@keyframes wt2-shine { 0% { transform: translateX(-120%) skewX(-20deg); } 60%,100% { transform: translateX(220%) skewX(-20deg); } }
+.wintuu-landing .wt2-shine { position: relative; overflow: hidden; isolation: isolate; }
+.wintuu-landing .wt2-shine::after { content: ''; position: absolute; inset: 0; width: 40%; background: linear-gradient(90deg, transparent, rgba(255,255,255,.55), transparent); animation: wt2-shine 3.6s ease-in-out infinite; z-index: -1; }
+
+/* FAQ */
+.wintuu-landing .wt2-faq summary { list-style: none; cursor: pointer; }
+.wintuu-landing .wt2-faq summary::-webkit-details-marker { display: none; }
+.wintuu-landing .wt2-faq .wt2-faq-icon { transition: transform .3s, background-color .3s, color .3s; }
+.wintuu-landing .wt2-faq[open] .wt2-faq-icon { transform: rotate(45deg); background: var(--wt-ink); color: #fff; }
+.wintuu-landing .wt2-faq[open] { background: var(--wt-surface); box-shadow: 0 18px 40px -30px rgba(8,40,44,.4); }
+@keyframes wt2-faq-in { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+.wintuu-landing .wt2-faq[open] .wt2-faq-body { animation: wt2-faq-in .35s ease both; }
+
+/* Wordmark del footer que se dibuja al entrar */
+.wintuu-landing .wt2-wordmark { clip-path: inset(0 100% 0 0); transition: clip-path 1.4s cubic-bezier(.6,0,.2,1) .15s; }
+.wintuu-landing .is-visible .wt2-wordmark, .wintuu-landing .wt2-wordmark.is-visible { clip-path: inset(0 0 0 0); }
+
+@media (prefers-reduced-motion: reduce) {
+  .wintuu-landing .wt2-float-a, .wintuu-landing .wt2-float-b, .wintuu-landing .wt2-phone, .wintuu-landing .wt2-backdrop,
+  .wintuu-landing .wt2-marquee, .wintuu-landing .wt2-ping, .wintuu-landing .wt2-blink, .wintuu-landing .wt2-shine::after,
+  .wintuu-landing .wt2-rise, .wintuu-landing .wt2-pop-in { animation: none !important; }
+  .wintuu-landing .wt2-stamp { opacity: 1; animation: none !important; }
+  .wintuu-landing .wt2-bar { width: var(--w); transition: none; }
+  .wintuu-landing .wt2-wordmark { clip-path: none; transition: none; }
+}

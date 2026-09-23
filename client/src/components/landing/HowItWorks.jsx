@@ -1,201 +1,47 @@
-import { useEffect, useRef, useState } from 'react';
-import { StepVisual } from './HowItWorksScenes.jsx';
-
 const STEPS = [
-  {
-    title: 'Creás un cupón.',
-    body: 'Elegís el premio y la cantidad de puntos para conseguirlo. Puede ser un descuento o ese pequeño regalo que representa a tu negocio.',
-  },
-  {
-    title: 'Tus clientes lo activan.',
-    body: 'Entran al perfil de tu negocio, acceden con Google y eligen el cupón que quieren empezar a completar.',
-  },
-  {
-    title: 'Cada visita puede sumar.',
-    body: 'Cuando corresponde sumar un punto, escaneás el QR de su cupón y lo registrás desde el panel. El cliente puede ver cómo avanza.',
-  },
-  {
-    title: 'Llega el premio. Y otra vuelta.',
-    body: 'Al completar la meta, el cupón queda listo para canjear. Lo validás en tu negocio y el cliente puede activar otro para volver a empezar.',
-  },
-];
-
-const FRIENDLY = [
-  'Vos marcás las reglas.',
-  'El cliente se suma al juego.',
-  'Cada visita suma un puntito.',
-  'Premio cumplido, otra vuelta.',
+  { tag: 'Vos', title: 'Creás un cupón.', body: 'Elegís el premio y los puntos para conseguirlo: un descuento o ese regalo que representa a tu negocio.', filled: 0 },
+  { tag: 'Tu cliente', title: 'Lo activa.', body: 'Entra al perfil de tu negocio con Google y elige el cupón que quiere empezar a completar.', filled: 1 },
+  { tag: 'Cada visita', title: 'Suma un punto.', body: 'Escaneás su QR desde el panel y el punto se registra. El cliente ve cómo avanza al instante.', filled: 3 },
+  { tag: 'El premio', title: 'Y otra vuelta.', body: 'Al completar la meta, valida el canje en tu local y puede activar otro cupón para volver a empezar.', filled: 5 },
 ];
 
 export default function HowItWorks() {
-  const [active, setActive] = useState(0);
-  const [reduced, setReduced] = useState(false);
-  const stepRefs = useRef([]);
-  const btnRefs = useRef([]);
-
-  useEffect(() => {
-    setReduced(window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (!entry.isIntersecting) return;
-          const idx = Number(entry.target.dataset.stepIndex);
-          if (!Number.isNaN(idx)) setActive(idx);
-        });
-      },
-      { rootMargin: '-45% 0px -45% 0px', threshold: 0 }
-    );
-    stepRefs.current.forEach((el) => el && observer.observe(el));
-    return () => observer.disconnect();
-  }, []);
-
-  const select = (idx) => {
-    setActive(idx);
-    btnRefs.current[idx]?.focus({ preventScroll: true });
-    stepRefs.current[idx]?.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'center' });
-  };
-
-  const onKeyDown = (e, idx) => {
-    const count = STEPS.length;
-    let next = null;
-    if (e.key === 'ArrowDown') next = (idx + 1) % count;
-    if (e.key === 'ArrowUp') next = (idx - 1 + count) % count;
-    if (e.key === 'Home') next = 0;
-    if (e.key === 'End') next = count - 1;
-    if (next === null) return;
-    e.preventDefault();
-    setActive(next);
-    btnRefs.current[next]?.focus();
-  };
-
   return (
-    <section id="como-funciona" className="relative px-4 py-20 sm:px-8 sm:py-28 lg:px-12 lg:py-32">
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="wt-bg-blob" style={{ width: 340, height: 340, background: '#ffc4e1', top: '-4%', left: '-6%' }} />
-      </div>
-
-      <div className="relative mx-auto max-w-[1280px]">
-        <div className="wt-reveal max-w-2xl">
-          <p className="wt-eyebrow">Cómo funciona</p>
-          <h2 className="wt-h2 mt-5 text-[var(--wt-text)]">De una visita a las ganas de volver.</h2>
-          <p className="wt-body mt-5">
-            Vos definís el beneficio. Tus clientes van sumando. Cada uno puede seguir su progreso desde el celular.
-          </p>
-        </div>
-
-        <div className="mt-14 lg:grid lg:grid-cols-2 lg:gap-20">
-          {/* Pasos — timeline con selección por scroll, clic y teclado */}
-          <div className="relative">
-            <span
-              aria-hidden
-              className="pointer-events-none absolute left-6 top-4 bottom-4 hidden w-px border-l-2 border-dashed border-[rgba(20,36,37,0.12)] lg:block"
-            />
-
-            <div>
-              {STEPS.map((s, i) => {
-                const isActive = i === active;
-                return (
-                  <div
-                    key={s.title}
-                    ref={(el) => {
-                      stepRefs.current[i] = el;
-                      btnRefs.current[i] = el?.querySelector('[data-step-btn]');
-                    }}
-                    data-step-index={i}
-                    className="wt-reveal relative"
-                    style={{ '--wt-delay': `${i * 60}ms` }}
-                  >
-                    <button
-                      type="button"
-                      data-step-btn
-                      aria-current={isActive ? 'step' : undefined}
-                      onClick={() => select(i)}
-                      onKeyDown={(e) => onKeyDown(e, i)}
-                      className="relative z-10 block w-full cursor-pointer text-left transition-opacity hover:opacity-100 focus-visible:opacity-100"
-                    >
-                      <span className="flex items-start gap-4 py-6 first:pt-0 sm:gap-5 lg:min-h-[54vh] lg:items-center lg:py-0">
-                        <span
-                          className={`wt-heading mt-0.5 flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-[17px] font-semibold transition-all duration-300 lg:mt-0 ${
-                            isActive
-                              ? 'bg-[var(--wt-mint)] text-[var(--wt-ink)] shadow-[0_12px_28px_rgba(0,207,205,0.45)]'
-                              : 'bg-[rgba(20,36,37,0.06)] text-[var(--wt-muted)]'
-                          }`}
-                        >
-                          {String(i + 1).padStart(2, '0')}
-                        </span>
-                        <span className="min-w-0">
-                          <span
-                            className={`wt-h3 block transition-colors duration-300 ${
-                              isActive ? 'text-[var(--wt-text)]' : 'text-[var(--wt-muted)]'
-                            }`}
-                          >
-                            {s.title}
-                          </span>
-                          <span
-                            className={`wt-body mt-2 block text-[15.5px] transition-opacity duration-300 ${
-                              isActive ? 'opacity-100' : 'opacity-55'
-                            }`}
-                          >
-                            {s.body}
-                          </span>
-                        </span>
-                      </span>
-                    </button>
-
-                    {/* Escena inline — mobile / tablet */}
-                    <div className="mt-6 flex justify-center pb-10 lg:hidden">
-                      <StepVisual index={i} />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+    <section id="como-funciona" className="px-3 sm:px-6">
+      <div className="relative mx-auto max-w-[1320px] overflow-hidden rounded-[32px] bg-[#08282c] px-5 py-16 text-white sm:rounded-[48px] sm:px-10 sm:py-24 lg:px-16">
+        <div className="wt-bg-blob" style={{ width: 480, height: 480, background: '#00cfcd', top: '-40%', right: '-10%', opacity: 0.25 }} />
+        <div className="relative flex flex-col gap-14">
+          <div className="wt-reveal flex max-w-[640px] flex-col gap-4">
+            <p className="text-[12px] font-extrabold tracking-[0.18em] text-[var(--wt-mint-light)]">CÓMO FUNCIONA</p>
+            <h2 className="wt-heading text-balance text-[clamp(36px,4.4vw,56px)] font-bold leading-none">De una visita a las ganas de volver.</h2>
+            <p className="text-[17px] leading-relaxed text-white/70">Vos marcás las reglas, tus clientes se suman al juego y cada visita suma un puntito.</p>
           </div>
 
-          {/* Escena pegada (sticky) — solo desktop */}
-          <div className="relative hidden lg:block">
-            <div className="sticky top-24 flex h-[calc(100vh-96px)] flex-col items-center justify-center">
-              <div className="pointer-events-none absolute -top-10 left-1/2 h-80 w-80 -translate-x-1/2 rounded-full bg-[rgba(0,207,205,0.12)] blur-[70px]" />
-              <div className="pointer-events-none absolute -bottom-12 right-0 h-72 w-72 rounded-full bg-[rgba(255,196,225,0.4)] blur-[70px]" />
-
-              <div className="relative mx-auto w-full max-w-[420px]">
-                <div key={`label-${active}`} className="wt-step-visual-enter flex items-center gap-4">
-                  <span className="wt-heading flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[var(--wt-mint)] text-[17px] font-semibold text-[var(--wt-ink)] shadow-[0_12px_28px_rgba(0,207,205,0.45)]">
-                    {String(active + 1).padStart(2, '0')}
-                  </span>
-                  <div className="min-w-0">
-<p className="text-[11.5px] font-bold uppercase tracking-[0.1em] text-[var(--wt-mint-dark)]">
-      Paso {String(active + 1).padStart(2, '0')}
-    </p>
-    <p className="wt-heading mt-0.5 text-[18px] font-semibold leading-tight text-[var(--wt-ink)]">
-      {FRIENDLY[active]}
-    </p>
-                  </div>
+          <ol className="grid gap-[18px] sm:grid-cols-2 xl:grid-cols-4">
+            {STEPS.map((s, i) => (
+              <li
+                key={s.title}
+                className="wt-reveal wt2-lift flex flex-col gap-3.5 rounded-[28px] border border-white/10 bg-white/[0.05] p-6 hover:border-[var(--wt-mint)]/40"
+                style={{ '--wt-delay': `${i * 110}ms` }}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="wt-heading flex h-12 w-12 items-center justify-center rounded-full bg-[var(--wt-mint)] text-[20px] font-bold text-[#08282c]">{i + 1}</span>
+                  <span className="text-[12px] font-semibold text-[var(--wt-mint-light)]">{s.tag}</span>
                 </div>
-
-                <div key={active} className="wt-step-visual-enter mt-7 flex justify-center">
-                  <StepVisual index={active} />
+                <h3 className="wt-heading text-[22px] font-bold leading-tight">{s.title}</h3>
+                <p className="text-[14.5px] leading-relaxed text-white/70">{s.body}</p>
+                <div className="mt-auto flex gap-1.5 pt-2" aria-label={`${s.filled} de 5 puntos`}>
+                  {[0, 1, 2, 3, 4].map((d) =>
+                    d < s.filled ? (
+                      <span key={d} className="wt2-stamp h-[22px] w-[22px] rounded-full bg-[var(--wt-mint-light)]" style={{ '--i': d, '--base': `${400 + i * 110}ms` }} />
+                    ) : (
+                      <span key={d} className="h-[22px] w-[22px] rounded-full border-2 border-dashed border-white/30" />
+                    )
+                  )}
                 </div>
-
-                <div className="mt-7 flex justify-center gap-2">
-                  {STEPS.map((s, i) => (
-                    <button
-                      key={`${s.title}-dot`}
-                      type="button"
-                      aria-label={`Ver paso ${i + 1}: ${s.title}`}
-                      onClick={() => select(i)}
-                      className={`h-2.5 rounded-full transition-all duration-300 ${
-                        i === active
-                          ? 'w-8 bg-[var(--wt-mint)]'
-                          : 'w-2.5 bg-[rgba(20,36,37,0.18)] hover:bg-[rgba(20,36,37,0.32)]'
-                      }`}
-                    />
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
+              </li>
+            ))}
+          </ol>
         </div>
       </div>
     </section>

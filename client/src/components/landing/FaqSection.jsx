@@ -1,4 +1,3 @@
-import { Link } from 'react-router-dom';
 import { Plus } from 'lucide-react';
 
 const FAQS = [
@@ -46,43 +45,39 @@ const FAQS = [
 
 export default function FaqSection() {
   return (
-    <section id="faqs" className="px-4 py-20 sm:px-8 sm:py-28 lg:px-12 lg:py-32">
-      <div className="mx-auto max-w-[1280px]">
-        <div className="grid gap-10 lg:grid-cols-[minmax(0,320px)_1fr] lg:gap-16">
-          <div className="wt-reveal lg:sticky lg:top-28 lg:self-start">
-            <p className="wt-eyebrow">FAQs</p>
-            <h2 className="wt-h2 mt-5 text-[var(--wt-text)]">Algunas dudas, resueltas.</h2>
-            <p className="wt-body mt-5">Y si te queda alguna más, estamos a un mensaje.</p>
-          </div>
+    <section id="faqs" className="px-4 pb-20 sm:px-8 sm:pb-28 lg:px-12 lg:pb-32">
+      <div className="mx-auto grid max-w-[1280px] gap-10 lg:grid-cols-[minmax(0,360px)_minmax(0,1fr)] lg:gap-16">
+        <div className="wt-reveal flex flex-col gap-4 lg:sticky lg:top-28 lg:self-start">
+          <p className="text-[12px] font-extrabold tracking-[0.18em] text-[var(--wt-mint-dark)]">FAQS</p>
+          <h2 className="wt-heading text-[clamp(36px,4.4vw,56px)] font-bold leading-none text-[var(--wt-ink)]">Algunas dudas, resueltas.</h2>
+          <p className="text-[17px] leading-relaxed text-[var(--wt-muted)]">Y si te queda alguna más, estamos a un mensaje.</p>
+          <a
+            href="https://wa.me/541161120433?text=Hola%2C%20tengo%20una%20consulta%20sobre%20Wintuu."
+            target="_blank"
+            rel="noopener noreferrer"
+            className="wt2-btn mt-2 inline-flex items-center gap-2 self-start rounded-full border-[1.5px] border-[var(--wt-border)] bg-[var(--wt-surface)] px-5 py-3 text-[14px] font-bold text-[var(--wt-ink)] hover:border-[var(--wt-ink)]"
+          >
+            Preguntanos por WhatsApp
+          </a>
+        </div>
 
-          <div className="wt-reveal divide-y divide-[var(--wt-border)] border-t border-[var(--wt-border)]" style={{ '--wt-delay': '100ms' }}>
-            {FAQS.map(({ q, a }) => (
-              <details key={q} className="wt-faq-item group py-5 sm:py-6">
-                <summary className="flex items-center justify-between gap-4">
-                  <span className="wt-heading text-[16.5px] font-semibold text-[var(--wt-text)] sm:text-[18px]">{q}</span>
-                  <Plus size={18} className="wt-faq-icon shrink-0 text-[var(--wt-mint-dark)]" />
-                </summary>
-                <p className="wt-body mt-3.5 max-w-2xl text-[15px]">{a}</p>
-              </details>
-            ))}
-
-            <details className="wt-faq-item group py-5 sm:py-6">
-              <summary className="flex items-center justify-between gap-4">
-                <span className="wt-heading text-[16.5px] font-semibold text-[var(--wt-text)] sm:text-[18px]">
-                  ¿Ya tengo una cuenta: por dónde ingreso?
+        <div className="flex flex-col gap-2.5">
+          {FAQS.map(({ q, a }, i) => (
+            <details
+              key={q}
+              className="wt-reveal wt2-faq rounded-[22px] border border-[var(--wt-border)] transition-[background-color,box-shadow] duration-300"
+              style={{ '--wt-delay': `${Math.min(i, 5) * 50}ms` }}
+              open={i === 0}
+            >
+              <summary className="flex items-center justify-between gap-4 px-5 py-5 text-left text-[16.5px] font-semibold leading-snug text-[var(--wt-ink)] sm:px-6">
+                {q}
+                <span className="wt2-faq-icon flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--wt-surface-raised)] text-[var(--wt-ink)]">
+                  <Plus size={18} />
                 </span>
-                <Plus size={18} className="wt-faq-icon shrink-0 text-[var(--wt-mint-dark)]" />
               </summary>
-              <p className="wt-body mt-3.5 max-w-2xl text-[15px]">
-                Desde{' '}
-                <Link to="/ingresar" className="font-semibold text-[var(--wt-mint-dark)] underline underline-offset-4">
-                  Ingresar
-                </Link>
-                , arriba de esta página. El portal te permite elegir el negocio al que querés entrar y acceder como
-                cliente o administrador, según corresponda a tu cuenta.
-              </p>
+              <p className="wt2-faq-body max-w-[680px] px-5 pb-6 text-[15px] leading-relaxed text-[var(--wt-muted)] sm:px-6">{a}</p>
             </details>
-          </div>
+          ))}
         </div>
       </div>
     </section>
