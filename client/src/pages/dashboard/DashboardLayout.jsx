@@ -98,72 +98,120 @@ export default function DashboardLayout() {
     navigate(path);
   };
 
+  // Ítem del sidebar: activo = fondo suave + barra de color a la izquierda (no más píldora con gradiente).
   const itemClass = (isActive) =>
-    `group relative flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-semibold transition-all duration-300 ${
-      collapsed ? 'justify-center' : 'w-full'
+    `group relative flex h-11 items-center gap-3 rounded-xl text-sm transition-colors duration-200 ${
+      collapsed ? 'w-11 justify-center' : 'w-full px-3'
     } ${
       isActive
-        ? 'bg-gradient-to-r from-primary to-primary-strong text-primary-contrast shadow-glow'
-        : 'text-ink-muted hover:bg-surface-alt hover:text-ink'
+        ? 'bg-primary-softer font-bold text-primary-strong'
+        : 'font-semibold text-ink-muted hover:bg-surface-alt hover:text-ink'
     }`;
 
+  const Tip = ({ label }) =>
+    collapsed ? (
+      <span className="pointer-events-none absolute left-full z-50 ml-3 whitespace-nowrap rounded-lg bg-ink px-2.5 py-1.5 text-xs font-bold text-surface-page opacity-0 shadow-lg transition-opacity group-hover:opacity-100 dark:bg-surface-alt dark:text-ink">
+        {label}
+      </span>
+    ) : null;
+
   const link = (item) => (
-    <NavLink key={item.to} to={item.to} title={collapsed ? item.label : undefined} className={({ isActive }) => itemClass(isActive)}>
-      <item.icon
-        size={collapsed ? 22 : 20}
-        strokeWidth={2.4}
-        className="shrink-0 transition-all duration-300 group-hover:animate-icon-wiggle"
-      />
-      {!collapsed && <span>{item.label}</span>}
+    <NavLink key={item.to} to={item.to} className={({ isActive }) => itemClass(isActive)} aria-label={collapsed ? item.label : undefined}>
+      {({ isActive }) => (
+        <>
+          {isActive && <span className={`absolute top-1/2 h-5 w-1 -translate-y-1/2 rounded-full bg-primary ${collapsed ? '-left-[15px]' : '-left-4'}`} />}
+          <item.icon size={19} strokeWidth={isActive ? 2.5 : 2.1} className="shrink-0" />
+          {!collapsed && <span className="truncate">{item.label}</span>}
+          <Tip label={item.label} />
+        </>
+      )}
     </NavLink>
   );
+
+  const SectionLabel = ({ children }) =>
+    collapsed ? (
+      <span className="mx-auto my-2 block h-px w-6 bg-line" />
+    ) : (
+      <p className="px-3 pb-1.5 pt-4 text-[10px] font-extrabold uppercase tracking-[0.18em] text-ink-muted/80">{children}</p>
+    );
 
   return (
     <div className="page-aurora flex min-h-screen">
       {/* Sidebar escritorio */}
       <aside
-        className={`hidden flex-col border-r border-line bg-surface p-4 transition-all duration-300 lg:sticky lg:top-0 lg:flex lg:h-screen ${
-          collapsed ? 'lg:w-[78px]' : 'lg:w-[248px]'
+        className={`relative hidden shrink-0 flex-col border-r border-line bg-surface transition-[width] duration-300 lg:sticky lg:top-0 lg:flex lg:h-screen ${
+          collapsed ? 'lg:w-[76px] lg:px-4' : 'lg:w-[264px] lg:px-4'
         }`}
       >
-        <div className={`mb-6 ${collapsed ? 'flex items-center justify-center' : ''}`}>
-          <Logo
-            size={collapsed ? 'sm' : 'md'}
-            variant={collapsed ? 'iso' : 'logo'}
-            fullWidth={!collapsed}
-            className={collapsed ? '' : 'w-full justify-center'}
-            showText={false}
-          />
+        {/* Negocio */}
+        <div className={`flex h-[72px] shrink-0 items-center border-b border-line ${collapsed ? 'justify-center' : 'gap-3 px-1'}`}>
+          <Logo size="sm" variant="iso" showText={false} fallback="initials" circle />
+          {!collapsed && (
+            <div className="min-w-0">
+              <p className="truncate font-heading text-[15px] font-bold leading-tight text-ink">{settings.businessName || 'Mi negocio'}</p>
+              <p className="truncate text-[11px] font-semibold text-ink-muted">Panel del comercio</p>
+            </div>
+          )}
         </div>
 
-        <nav className={`flex flex-1 flex-col gap-1 ${collapsed ? 'lg:items-center' : ''}`}>{NAV.map(link)}</nav>
+        {/* Botón colapsar: pestaña en el borde */}
+        <button
+          onClick={toggleCollapsed}
+          aria-label={collapsed ? 'Expandir menú' : 'Colapsar menú'}
+          title={collapsed ? 'Expandir menú' : 'Colapsar menú'}
+          className="absolute -right-3 top-[60px] z-10 flex h-6 w-6 items-center justify-center rounded-full border border-line bg-surface text-ink-muted shadow-sm transition-colors hover:bg-primary hover:text-primary-contrast"
+        >
+          {collapsed ? <ChevronsRight size={13} /> : <ChevronsLeft size={13} />}
+        </button>
 
-        <div className={`mt-4 flex flex-col gap-1 border-t border-line pt-3 ${collapsed ? 'lg:items-center' : ''}`}>
+        {/* Acción principal */}
+        <div className="pt-4">
+          <NavLink
+            to={t('/dashboard/escanear')}
+            aria-label="Escanear QR"
+            className={`group relative flex h-11 items-center justify-center gap-2 rounded-xl bg-primary text-sm font-bold text-primary-contrast shadow-glow transition hover:bg-primary-strong ${collapsed ? 'w-11' : 'w-full'}`}
+          >
+            <ScanLine size={18} />
+            {!collapsed && 'Escanear QR'}
+            <Tip label="Escanear QR" />
+          </NavLink>
+        </div>
+
+        <nav className={`flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto overflow-x-visible ${collapsed ? 'items-center' : ''}`}>
+          <SectionLabel>Gestión</SectionLabel>
+          {NAV.slice(0, 3).map(link)}
+          <SectionLabel>Ayuda</SectionLabel>
+          {link(NAV[3])}
           {link({ to: t('/dashboard/configuracion'), label: 'Configuración', icon: SettingsIcon })}
-          <a
-            href={home()}
-            target="_blank"
-            rel="noreferrer"
-            title={collapsed ? 'Ver página de inicio' : undefined}
-            aria-label="Ver página de inicio"
-            className={itemClass(false)}
-          >
-            <ExternalLink size={collapsed ? 22 : 20} strokeWidth={2.4} className="shrink-0" />
-            {!collapsed && <span>Ver página de inicio</span>}
+          <a href={home()} target="_blank" rel="noreferrer" aria-label="Ver página de inicio" className={itemClass(false)}>
+            <ExternalLink size={19} strokeWidth={2.1} className="shrink-0" />
+            {!collapsed && <span className="truncate">Ver mi página</span>}
+            <Tip label="Ver mi página" />
           </a>
-          <button
-            onClick={toggleCollapsed}
-            title={collapsed ? 'Expandir menú' : 'Colapsar menú'}
-            aria-label={collapsed ? 'Expandir menú' : 'Colapsar menú'}
-            className={itemClass(false)}
-          >
-            {collapsed ? (
-              <ChevronsRight size={22} strokeWidth={2.4} className="shrink-0" />
+        </nav>
+
+        {/* Usuario */}
+        <div className={`shrink-0 border-t border-line py-3 ${collapsed ? 'flex justify-center' : ''}`}>
+          <div className={`group relative flex items-center gap-3 rounded-xl ${collapsed ? '' : 'bg-surface-alt p-2'}`}>
+            {user.image ? (
+              <img src={user.image} alt={user.name} className="h-9 w-9 shrink-0 rounded-full object-cover" />
             ) : (
-              <ChevronsLeft size={20} strokeWidth={2.4} className="shrink-0" />
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary-strong text-xs font-extrabold text-primary-contrast">
+                {initials(user.name)}
+              </div>
             )}
-            {!collapsed && <span>Colapsar menú</span>}
-          </button>
+            {!collapsed && (
+              <>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-bold text-ink">{user.name}</p>
+                  <p className="truncate text-[11px] text-ink-muted">{user.email}</p>
+                </div>
+                <button onClick={doLogout} className="btn-icon !h-8 !w-8 shrink-0 text-ink-muted hover:!text-red-500" title="Salir" aria-label="Salir">
+                  <LogOut size={15} />
+                </button>
+              </>
+            )}
+          </div>
         </div>
       </aside>
 
