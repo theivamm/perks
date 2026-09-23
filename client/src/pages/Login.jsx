@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext.jsx';
 import { useTheme } from '../context/ThemeContext.jsx';
 import { useTenant } from '../context/TenantContext.jsx';
 import { supabase } from '../lib/supabase.js';
+import Logo from '../components/Logo.jsx';
 
 export default function Login() {
   const { loginAdminEmail, loginOtp, loginGoogle } = useAuth();
@@ -133,39 +134,67 @@ export default function Login() {
       ? 'Ingresá el código de 6 dígitos de tu app de autenticación.'
       : 'Ingresá con tu email y contraseña de administrador.';
 
+  const benefits = [
+    ['Activá un cupón', 'Elegí el premio que querés ganar.'],
+    ['Mostrá tu QR al pagar', 'El local suma tus puntos en segundos.'],
+    ['Canjeá tu premio', 'Al completarlo recibís tu código.'],
+  ];
+
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-surface-page px-4 py-10">
-      <div className="pointer-events-none absolute -left-32 -top-32 h-96 w-96 rounded-full bg-primary/20 blur-3xl" />
-      <div className="pointer-events-none absolute -bottom-32 -right-32 h-96 w-96 rounded-full bg-primary/20 blur-3xl" />
-
-      <div className="relative w-full max-w-md">
-        <Link
-          to={t('/')}
-          className="mb-6 inline-flex items-center gap-2 text-sm font-semibold text-ink-muted transition-colors hover:text-ink"
-        >
-          <ArrowLeft size={16} />
-          Volver al menú
+    <div className="grid min-h-screen bg-surface-page lg:grid-cols-2">
+      <aside className="relative hidden overflow-hidden bg-gradient-to-br from-primary to-primary-strong p-12 text-primary-contrast lg:flex lg:flex-col lg:justify-between">
+        <div className="orb -right-24 -top-24 h-96 w-96 bg-primary-contrast/15" />
+        <div className="orb -bottom-32 -left-20 h-80 w-80 bg-primary-contrast/10" />
+        <Link to={t('/')} className="relative flex items-center gap-3">
+          <Logo variant="iso" size="lg" showText={false} fallback="initials" circle />
+          <span className="flex flex-col">
+            <span className="font-heading text-xl font-bold leading-tight">{settings.businessName || 'Mi negocio'}</span>
+            {settings.tagline && <span className="text-sm opacity-80">{settings.tagline}</span>}
+          </span>
         </Link>
+        <div className="relative max-w-md">
+          <h2 className="font-heading text-5xl font-bold leading-[1.02]">Sumá compras,<br />ganá premios.</h2>
+          <ul className="mt-8 space-y-3">
+            {benefits.map(([title, sub], i) => (
+              <li key={title} className="flex items-start gap-3 rounded-2xl bg-white/10 px-4 py-3">
+                <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white text-sm font-extrabold text-primary-strong">{i + 1}</span>
+                <span>
+                  <span className="block font-bold">{title}</span>
+                  <span className="block text-sm opacity-80">{sub}</span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <p className="relative text-sm opacity-70">Con Wintuu ganamos todos.</p>
+      </aside>
 
-        <div className="card overflow-hidden">
-          <div className="bg-gradient-to-br from-primary to-primary-strong p-6 text-primary-contrast">
-            <div className="flex items-center justify-between">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-contrast/15">
-                <LogIn size={24} />
-              </div>
-              <button
-                className="rounded-lg bg-primary-contrast/15 p-2 hover:bg-primary-contrast/25"
-                onClick={toggleTheme}
-                aria-label="Cambiar tema"
-              >
-                {settings.theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
-              </button>
-            </div>
-            <h1 className="mt-4 text-2xl font-extrabold">Ingresá</h1>
-            <p className="mt-1 text-sm text-primary-contrast/85">{subtitle}</p>
+      <div className="relative flex flex-col px-5 py-5 sm:px-10">
+        <div className="flex items-center justify-between">
+          <Link to={t('/')} className="inline-flex items-center gap-2 text-sm font-semibold text-ink-muted transition-colors hover:text-ink">
+            <ArrowLeft size={16} />
+            Volver al menú
+          </Link>
+          <button
+            className="flex h-10 w-10 items-center justify-center rounded-full border border-line bg-surface text-ink transition-colors hover:bg-surface-alt"
+            onClick={toggleTheme}
+            aria-label="Cambiar tema"
+          >
+            {settings.theme === 'dark' ? <Sun size={17} /> : <Moon size={17} />}
+          </button>
+        </div>
+
+        <div className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center py-10">
+          <div className="mb-8 flex items-center gap-3 lg:hidden">
+            <Logo variant="iso" size="md" showText={false} fallback="initials" circle />
+            <span className="font-heading text-lg font-bold text-ink">{settings.businessName || 'Mi negocio'}</span>
           </div>
+          <h1 className="font-heading text-4xl font-bold leading-tight text-ink">
+            {mode === 'client' ? 'Ingresá' : loginToken ? 'Verificación' : 'Panel del local'}
+          </h1>
+          <p className="mt-2 text-[15px] text-ink-muted">{subtitle}</p>
 
-          <div className="p-6">
+          <div className="mt-7">
             <div className="mb-5 grid grid-cols-2 gap-1 rounded-2xl bg-surface-alt p-1">
               <button
                 aria-pressed={mode === 'client'}
@@ -209,7 +238,7 @@ export default function Login() {
             {mode === 'client' ? (
               <>
                 <button
-                  className="btn-ghost w-full !py-3 text-base"
+                  className="btn-ghost w-full !py-3.5 text-base shadow-sm hover:border-primary/40"
                   onClick={() => startGoogle()}
                   disabled={googleLoading}
                 >

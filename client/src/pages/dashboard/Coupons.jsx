@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import {
   BadgePercent,
   CheckCircle2,
+  Eye,
   Gift,
   Loader2,
   Pencil,
@@ -14,7 +15,7 @@ import {
 } from 'lucide-react';
 import { api, formatDate } from '../../api.js';
 import { useTheme } from '../../context/ThemeContext.jsx';
-import { EmptyState, Modal, Spinner, toast } from '../../components/ui.jsx';
+import { EmptyState, Modal, Spinner, SwitchRow, toast } from '../../components/ui.jsx';
 import { couponValue } from '../../components/CouponCards.jsx';
 
 const EMPTY = { title: '', description: '', type: 'monto', value: '', target_points: '10', active: true };
@@ -254,7 +255,7 @@ export default function Coupons() {
             </ul>
           )}
 
-          <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={editing ? 'Editar cupón' : 'Nuevo cupón'}>
+          <Modal open={modalOpen} onClose={() => setModalOpen(false)} icon={Gift} title={editing ? 'Editar cupón' : 'Nuevo cupón'} subtitle="Definí el premio y cuántos puntos hacen falta.">
             <form onSubmit={save} className="space-y-4">
               <div>
                 <label className="label">Nombre del cupón *</label>
@@ -318,15 +319,13 @@ export default function Coupons() {
                   Cuántos puntos debe sumar el cliente para completar este cupón.
                 </p>
               </div>
-              <label className="flex cursor-pointer items-center justify-between rounded-xl border border-line bg-surface px-4 py-3">
-                <span className="text-sm font-bold text-ink">Visible para los clientes</span>
-                <input
-                  type="checkbox"
-                  className="h-4 w-4 accent-primary"
-                  checked={form.active}
-                  onChange={(e) => setForm({ ...form, active: e.target.checked })}
-                />
-              </label>
+              <SwitchRow
+                checked={form.active}
+                onChange={(v) => setForm({ ...form, active: v })}
+                icon={Eye}
+                title="Visible para los clientes"
+                subtitle="Si lo apagás, queda pausado y nadie puede activarlo."
+              />
               <div className="flex justify-end gap-2 pt-1">
                 <button type="button" className="btn-ghost" onClick={() => setModalOpen(false)}>
                   Cancelar

@@ -4,6 +4,7 @@ import {
   HelpCircle,
   ImagePlus,
   Loader2,
+  Eye,
   Pencil,
   Plus,
   Search,
@@ -15,7 +16,7 @@ import {
 import { api } from '../../api.js';
 import { money } from '../../lib/money.js';
 import { useTheme } from '../../context/ThemeContext.jsx';
-import { EmptyState, Modal, Spinner, toast } from '../../components/ui.jsx';
+import { EmptyState, Field, Modal, Spinner, SwitchRow, toast } from '../../components/ui.jsx';
 import ImageCropper from '../../components/ImageCropper.jsx';
 
 const EMPTY_FORM = { title: '', description: '', price: '', category: 'General', image: '', available: 1, featured: 0, featured_label: '', discount: 0 };
@@ -493,172 +494,139 @@ export default function MenuManager() {
         </div>
       </div>
 
-      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={editing ? 'Editar producto' : 'Nuevo producto'}>
-        <form onSubmit={save} className="space-y-4">
-          <div className="flex gap-4">
-            <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-2xl border border-line bg-gradient-to-br from-primary to-primary-strong">
-              {form.image ? (
-                <img src={form.image} alt="Vista previa" className="h-full w-full object-cover" />
-              ) : (
-                <div className="flex h-full w-full items-center justify-center text-primary-contrast/60">
-                  <ImagePlus size={24} />
-                </div>
-              )}
-              {uploading && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/40">
-                  <Loader2 className="animate-spin text-white" size={20} />
-                </div>
-              )}
-            </div>
-            <div className="flex flex-1 flex-col justify-center gap-2">
-              <button
-                type="button"
-                className="btn-ghost w-full"
-                onClick={() => imageInput.current?.click()}
-                disabled={uploading}
-              >
-                <ImagePlus size={15} />
-                Subir imagen
-              </button>
-              <input
-                ref={imageInput}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={onPickFile}
-              />
-              <input
-                className="input !text-xs"
-                placeholder="...o pega una URL de imagen"
-                value={form.image}
-                onChange={set('image')}
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="label">Titulo *</label>
-            <input className="input" required value={form.title} onChange={set('title')} placeholder="Ej: Pizza Margherita" />
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="label">Precio *</label>
-              <input
-                className="input"
-                required
-                type="number"
-                min="0"
-                step="0.01"
-                value={form.price}
-                onChange={set('price')}
-                placeholder="0.00"
-              />
-            </div>
-            <div>
-              <label className="label">Categoría</label>
-              <select
-                className="input"
-                value={isNewCat ? '__new__' : form.category || ''}
-                onChange={onCategoryChange}
-              >
-                <option value="">General</option>
-                {data.categories.map((c) => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-                <option value="__new__">+ Nueva categoría…</option>
-              </select>
-              {isNewCat && (
-                <input
-                  className="input mt-2"
-                  value={form.category}
-                  onChange={set('category')}
-                  placeholder="Escribí el nombre de la nueva categoría"
-                  autoFocus
-                />
-              )}
-            </div>
-          </div>
-
-          <div>
-            <label className="label">Descripción</label>
-            <textarea
-              className="input min-h-20 resize-y"
-              value={form.description}
-              onChange={set('description')}
-              placeholder="Ingredientes, detalles, etc."
-            />
-          </div>
-
-          <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-line bg-surface p-3">
-            <input
-              type="checkbox"
-              className="h-4 w-4 accent-[hsl(var(--primary))]"
-              checked={Boolean(form.available)}
-              onChange={(e) => setForm((f) => ({ ...f, available: e.target.checked ? 1 : 0 }))}
-            />
-            <span className="text-sm font-semibold text-ink">Disponible en el menú público</span>
-          </label>
-
-          <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-amber-300/60 bg-amber-50 p-3 dark:border-amber-400/40 dark:bg-amber-400/10">
-            <input
-              type="checkbox"
-              className="h-4 w-4 accent-[hsl(var(--primary))]"
-              checked={Boolean(form.featured)}
-              onChange={(e) => setForm((f) => ({ ...f, featured: e.target.checked ? 1 : 0 }))}
-            />
-            <span className="text-sm font-semibold text-ink">
-              <Star size={13} className="inline-block text-amber-500" />
-              Oferta especial / Favorito (se muestra arriba del menú en el inicio)
-            </span>
-          </label>
-
-          {Boolean(form.featured) && (
-            <>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="animate-fade-up">
-                  <label className="label">Descuento %</label>
-                  <input
-                    className="input"
-                    type="number"
-                    min="0"
-                    max="100"
-                    step="1"
-                    value={form.discount}
-                    onChange={set('discount')}
-                    placeholder="0"
-                  />
-                  {Number(form.discount) > 0 && Number(form.price) > 0 && (
-                    <p className="mt-1.5 rounded-lg bg-green-500/10 px-2.5 py-1.5 text-[11px] font-bold text-green-600 dark:text-green-400">
-                      {money(Number(form.price), settings.currency)} →{' '}
-                      {money((Number(form.price) * (100 - Number(form.discount))) / 100, settings.currency)}
-                    </p>
-                  )}
-                </div>
-                <div className="animate-fade-up">
-                  <label className="label">Texto de la oferta</label>
-                  <input
-                    className="input"
-                    value={form.featured_label}
-                    onChange={set('featured_label')}
-                    placeholder="Ej: 2x1 · Regalo · Combos"
-                  />
-                </div>
-              </div>
-              <p className="text-[11px] text-ink-muted">
-                El % se calcula solo: el precio original queda tachado y se muestra el nuevo. El texto es un mensaje aparte que acompaña a la oferta.
-              </p>
-            </>
-          )}
-
-          <div className="flex justify-end gap-2 pt-2">
+      <Modal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        size="lg"
+        icon={editing ? Pencil : Plus}
+        title={editing ? 'Editar producto' : 'Nuevo producto'}
+        subtitle={editing ? editing.title : 'Se agrega a tu menú público al guardarlo.'}
+        footer={
+          <>
             <button type="button" className="btn-ghost" onClick={() => setModalOpen(false)}>
               Cancelar
             </button>
-            <button type="submit" className="btn-primary" disabled={saving}>
-              {saving ? <Loader2 className="animate-spin" size={16} /> : <Plus size={16} />}
+            <button type="submit" form="product-form" className="btn-primary" disabled={saving || uploading}>
+              {saving ? <Loader2 className="animate-spin" size={16} /> : editing ? <Pencil size={15} /> : <Plus size={16} />}
               {editing ? 'Guardar cambios' : 'Crear producto'}
             </button>
+          </>
+        }
+      >
+        <form id="product-form" onSubmit={save} className="grid gap-5 md:grid-cols-[240px_minmax(0,1fr)]">
+          {/* Imagen */}
+          <div className="space-y-2.5">
+            <button
+              type="button"
+              onClick={() => imageInput.current?.click()}
+              disabled={uploading}
+              className="group relative flex aspect-[4/3] w-full items-center justify-center overflow-hidden rounded-2xl border-2 border-dashed border-line bg-surface-alt transition hover:border-primary/50 md:aspect-square"
+            >
+              {form.image ? (
+                <>
+                  <img src={form.image} alt="Vista previa" className="h-full w-full object-cover" />
+                  <span className="absolute inset-x-2 bottom-2 rounded-xl bg-black/55 py-1.5 text-xs font-bold text-white opacity-0 transition group-hover:opacity-100">
+                    Cambiar imagen
+                  </span>
+                </>
+              ) : (
+                <span className="flex flex-col items-center gap-2 px-4 text-center text-ink-muted">
+                  <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-surface text-primary-strong shadow-sm">
+                    <ImagePlus size={20} />
+                  </span>
+                  <span className="text-sm font-semibold text-ink">Subir imagen</span>
+                  <span className="text-[11px]">JPG o PNG · se recorta en 4:3</span>
+                </span>
+              )}
+              {uploading && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+                  <Loader2 className="animate-spin text-white" size={22} />
+                </div>
+              )}
+            </button>
+            <input ref={imageInput} type="file" accept="image/*" className="hidden" onChange={onPickFile} />
+            <input className="input !text-xs" placeholder="…o pegá una URL de imagen" value={form.image} onChange={set('image')} />
+            {editing && !form.image && (
+              <button
+                type="button"
+                className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-primary/50 py-2 text-xs font-semibold text-primary-strong transition hover:bg-primary-softer disabled:opacity-60"
+                onClick={() => generateImage(editing)}
+                disabled={!!generatingId}
+              >
+                {generatingId === editing.id ? <Loader2 className="animate-spin" size={13} /> : <Sparkles size={13} />}
+                Generar con IA
+              </button>
+            )}
+          </div>
+
+          {/* Datos */}
+          <div className="space-y-4">
+            <Field label="Nombre del producto" htmlFor="p-title" required>
+              <input id="p-title" className="input" required value={form.title} onChange={set('title')} placeholder="Ej: Flat White" autoFocus />
+            </Field>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field label="Precio" htmlFor="p-price" required>
+                <div className="relative">
+                  <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-ink-muted">{settings.currency || '$'}</span>
+                  <input id="p-price" className="input !pl-9" required type="number" min="0" step="0.01" value={form.price} onChange={set('price')} placeholder="0" />
+                </div>
+              </Field>
+              <Field label="Categoría" htmlFor="p-cat">
+                <select id="p-cat" className="input" value={isNewCat ? '__new__' : form.category || ''} onChange={onCategoryChange}>
+                  <option value="">General</option>
+                  {data.categories.map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                  <option value="__new__">+ Nueva categoría…</option>
+                </select>
+                {isNewCat && (
+                  <input className="input mt-2" value={form.category} onChange={set('category')} placeholder="Nombre de la nueva categoría" autoFocus />
+                )}
+              </Field>
+            </div>
+
+            <Field label="Descripción" htmlFor="p-desc" hint="Ingredientes, tamaño o lo que ayude a elegir.">
+              <textarea id="p-desc" className="input min-h-20 resize-y" value={form.description} onChange={set('description')} placeholder="Doble ristretto con leche texturizada…" />
+            </Field>
+
+            <SwitchRow
+              checked={Boolean(form.available)}
+              onChange={(v) => setForm((f) => ({ ...f, available: v ? 1 : 0 }))}
+              icon={Eye}
+              title="Visible en el menú público"
+              subtitle="Si lo apagás, queda guardado pero tus clientes no lo ven."
+            />
+
+            <SwitchRow
+              checked={Boolean(form.featured)}
+              onChange={(v) => setForm((f) => ({ ...f, featured: v ? 1 : 0 }))}
+              icon={Star}
+              tone="amber"
+              title="Oferta especial"
+              subtitle="Se destaca arriba del menú en tu página."
+            >
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Field label="Descuento" htmlFor="p-disc">
+                  <div className="relative">
+                    <input id="p-disc" className="input !pr-9" type="number" min="0" max="100" step="1" value={form.discount} onChange={set('discount')} placeholder="0" />
+                    <span className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-ink-muted">%</span>
+                  </div>
+                </Field>
+                <Field label="Texto de la oferta" htmlFor="p-label">
+                  <input id="p-label" className="input" value={form.featured_label} onChange={set('featured_label')} placeholder="Ej: 2x1 · Solo hoy" />
+                </Field>
+              </div>
+              {Number(form.discount) > 0 && Number(form.price) > 0 && (
+                <p className="mt-2.5 flex items-center gap-2 text-sm">
+                  <span className="text-ink-muted line-through">{money(Number(form.price), settings.currency)}</span>
+                  <span className="font-heading text-lg font-bold text-primary-strong">
+                    {money((Number(form.price) * (100 - Number(form.discount))) / 100, settings.currency)}
+                  </span>
+                  <span className="rounded-full bg-gradient-to-r from-amber-400 to-orange-500 px-2 py-0.5 text-[10px] font-black text-white">−{Number(form.discount)}%</span>
+                </p>
+              )}
+            </SwitchRow>
           </div>
         </form>
       </Modal>

@@ -51,3 +51,31 @@ export function formatDateTime(value) {
   const time = d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
   return `${date} · ${time}`;
 }
+// Agrupa por día: "Hoy", "Ayer", "Esta semana", "Anteriores".
+export function groupByDay(items = []) {
+  const start = new Date();
+  start.setHours(0, 0, 0, 0);
+  const day = 86400000;
+  const buckets = [
+    ['Hoy', start.getTime()],
+    ['Ayer', start.getTime() - day],
+    ['Esta semana', start.getTime() - 6 * day],
+    ['Anteriores', -Infinity],
+  ];
+  const out = buckets.map(([label]) => ({ label, items: [] }));
+  for (const it of items) {
+    const raw = it.created_at;
+    const ts = new Date(typeof raw === 'string' && raw.includes(' ') ? raw.replace(' ', 'T') : raw).getTime() || 0;
+    const idx = buckets.findIndex(([, from]) => ts >= from);
+    out[idx === -1 ? 3 : idx].items.push(it);
+  }
+  return out.filter((g) => g.items.length);
+}
+
+// Categoría para filtrar en la central de notificaciones.
+export function notificationGroup(type = '') {
+  if (['reward_progress', 'milestone_reached'].includes(type)) return 'puntos';
+  if (['coupon_won', 'coupon_used', 'coupons_available'].includes(type)) return 'cupones';
+  if (type.startsWith('order_') || ['new_order', 'purchase_added'].includes(type)) return 'compras';
+  return 'otras';
+}

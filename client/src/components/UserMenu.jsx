@@ -63,9 +63,10 @@ export default function UserMenu() {
   return (
     <div className="relative" ref={ref}>
       <button
-        className="flex items-center gap-2 rounded-full border border-line bg-surface px-2 py-1.5 transition-colors hover:bg-surface-alt"
+        className="flex h-10 items-center gap-2 rounded-full border border-line bg-surface py-1 pl-1 pr-1 transition-colors hover:bg-surface-alt sm:pr-3"
         onClick={() => setOpen((o) => !o)}
         aria-label="Menú de usuario"
+        aria-expanded={open}
       >
         {user.image ? (
           <img src={user.image} alt={user.name} className="h-8 w-8 rounded-full object-cover" />
@@ -82,32 +83,50 @@ export default function UserMenu() {
       </button>
 
       {open && (
-        <div className="animate-fade-up absolute right-0 top-full z-50 mt-2 w-64 overflow-hidden rounded-2xl border border-line bg-surface shadow-xl">
-          <div className="border-b border-line px-4 py-3">
-            <p className="truncate text-sm font-extrabold text-ink">{user.name}</p>
-            <p className="truncate text-xs text-ink-muted">{user.email}</p>
+        <div className="animate-fade-up absolute right-0 top-full z-50 mt-3 w-72 overflow-hidden rounded-3xl border border-line bg-surface shadow-2xl">
+          <div className="flex items-center gap-3 px-4 pb-3 pt-4">
+            {user.image ? (
+              <img src={user.image} alt={user.name} className="h-11 w-11 shrink-0 rounded-full object-cover" />
+            ) : (
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary-strong font-heading text-sm font-bold text-primary-contrast">
+                {avatarInitials(user)}
+              </div>
+            )}
+            <div className="min-w-0">
+              <p className="truncate font-heading text-base font-bold text-ink">{[user.name, user.last_name].filter(Boolean).join(' ')}</p>
+              <p className="truncate text-xs text-ink-muted">{user.email}</p>
+            </div>
           </div>
-          <div className="p-1.5">
+          {user?.role === 'admin' && (
+            <p className="mx-4 mb-2 inline-flex rounded-full bg-primary-softer px-2.5 py-0.5 text-[11px] font-bold text-primary-strong">Administrador</p>
+          )}
+          <div className="border-t border-line p-2">
             {items.map((item) => (
               <button
                 key={item.label}
-                className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-semibold text-ink transition-colors hover:bg-surface-alt"
+                className="group flex w-full items-center gap-3 rounded-2xl px-2.5 py-2 text-left text-sm font-semibold text-ink transition-colors hover:bg-surface-alt"
                 onClick={go(item.to)}
               >
-                <item.icon size={15} className="shrink-0 text-ink-muted" />
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-surface-alt text-ink-muted transition-colors group-hover:bg-primary-softer group-hover:text-primary-strong">
+                  <item.icon size={15} />
+                </span>
                 <span className="truncate">{item.label}</span>
               </button>
             ))}
+          </div>
+          <div className="border-t border-line p-2">
             <button
-              className="mt-1 flex w-full items-center gap-2 rounded-xl border-t border-line px-3 py-2 text-left text-sm font-semibold text-red-500 transition-colors hover:bg-red-500/10"
+              className="flex w-full items-center gap-3 rounded-2xl px-2.5 py-2 text-left text-sm font-semibold text-red-500 transition-colors hover:bg-red-500/10"
               onClick={async () => {
                 setOpen(false);
                 await logout();
                 navigate(home());
               }}
             >
-              <LogOut size={15} />
-              Salir
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-red-500/10">
+                <LogOut size={15} />
+              </span>
+              Cerrar sesión
             </button>
           </div>
         </div>
