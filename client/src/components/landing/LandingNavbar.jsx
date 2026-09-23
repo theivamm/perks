@@ -135,11 +135,20 @@ export default function LandingNavbar() {
   const closeBtnRef = useRef(null);
   const { user, logout } = useAuth();
 
+  // Bloqueo de scroll síncrono (mismo evento, no en un effect): el primer
+  // frame del menú ya nace sin scrollbar, así el texto no reflow a 2 líneas.
+  const setMenuOpen = (next) => {
+    document.body.style.overflow = next ? 'hidden' : '';
+    setOpen(next);
+  };
+  const close = () => setMenuOpen(false);
+  const toggle = () => setMenuOpen(!open);
+
   useEffect(() => {
     if (!open) return undefined;
     const onKey = (e) => {
       if (e.key === 'Escape') {
-        setOpen(false);
+        close();
         menuBtnRef.current?.focus();
       }
     };
@@ -152,27 +161,15 @@ export default function LandingNavbar() {
     if (!open) return undefined;
     const mq = window.matchMedia('(min-width: 1024px)');
     const onChange = (e) => {
-      if (e.matches) setOpen(false);
+      if (e.matches) close();
     };
     mq.addEventListener('change', onChange);
     return () => mq.removeEventListener('change', onChange);
   }, [open]);
 
-  // Bloquea el scroll de fondo mientras el fullscreen está abierto
-  useEffect(() => {
-    if (!open) return undefined;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = prev;
-    };
-  }, [open]);
-
   useEffect(() => {
     if (open) closeBtnRef.current?.focus();
   }, [open]);
-
-  const close = () => setOpen(false);
 
   return (
     <>
@@ -210,7 +207,7 @@ export default function LandingNavbar() {
             aria-expanded={open}
             aria-controls="wt-mobile-menu"
             aria-label={open ? 'Cerrar menú' : 'Abrir menú'}
-            onClick={() => setOpen((v) => !v)}
+            onClick={toggle}
           >
             {open ? <X size={22} /> : <Menu size={22} />}
           </button>
@@ -262,13 +259,13 @@ export default function LandingNavbar() {
                   key={href}
                   href={href}
                   onClick={close}
-                  className="wt-menu-item group flex items-center gap-4 sm:gap-6"
+                  className="wt-menu-item group flex items-center gap-3 sm:gap-5"
                   style={{ '--wt-delay': `${120 + i * 80}ms` }}
                 >
-                  <span className="wt-heading text-[clamp(19px,5.4vw,26px)] font-semibold text-[var(--wt-mint-dark)] transition-colors duration-300 group-hover:text-[var(--wt-mint)]">
+                  <span className="wt-heading shrink-0 text-[clamp(19px,5.4vw,26px)] font-semibold text-[var(--wt-mint-dark)] transition-colors duration-300 group-hover:text-[var(--wt-mint)]">
                     {String(i + 1).padStart(2, '0')}
                   </span>
-                  <span className="wt-heading text-[clamp(36px,10vw,58px)] font-semibold leading-none text-[var(--wt-ink)] transition-all duration-300 group-hover:translate-x-2 group-hover:text-[var(--wt-mint-dark)]">
+                  <span className="wt-heading whitespace-nowrap text-[clamp(34px,9.6vw,56px)] font-semibold leading-none text-[var(--wt-ink)] transition-all duration-300 group-hover:translate-x-2 group-hover:text-[var(--wt-mint-dark)]">
                     {label}
                   </span>
                   <ArrowRight
