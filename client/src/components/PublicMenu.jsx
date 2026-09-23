@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Loader2, Search, SearchX, Star, UtensilsCrossed, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Flame, Loader2, Search, SearchX, Star, UtensilsCrossed, X } from 'lucide-react';
 import { api } from '../api.js';
 import { useTheme } from '../context/ThemeContext.jsx';
 import { EmptyState } from './ui.jsx';
@@ -34,6 +34,136 @@ function Thumb({ item, className = '' }) {
 
 // Si Home le pasa `query` + `onQueryChange`, el buscador vive en el Navbar
 // (controlado desde afuera); si no, PublicMenu usa su propio buscador.
+const finalPrice = (item) => (Number(item.discount) > 0 ? (Number(item.price) * (100 - Number(item.discount))) / 100 : Number(item.price));
+
+function OfferBadge({ item, big = false }) {
+  const disc = Number(item.discount) > 0;
+  return (
+    <span className={`inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-amber-400 to-orange-500 font-black text-white shadow ${big ? 'px-3 py-1.5 text-[13px]' : 'px-2.5 py-1 text-[11px]'}`}>
+      <Star size={big ? 12 : 11} className="fill-white" />
+      {disc ? `−${Number(item.discount)}% OFF` : 'Oferta'}
+    </span>
+  );
+}
+
+// Ofertas destacadas: 1 = tarjeta ancha; 2+ = carrusel de tarjetas verticales (2–3 visibles en desktop).
+function Featured({ items, currency, ring }) {
+  const track = useRef(null);
+  const [edge, setEdge] = useState({ start: true, end: false });
+
+  const onScroll = () => {
+    const el = track.current;
+    if (!el) return;
+    setEdge({ start: el.scrollLeft < 8, end: el.scrollLeft + el.clientWidth >= el.scrollWidth - 8 });
+  };
+  useEffect(() => {
+    onScroll();
+    window.addEventListener('resize', onScroll);
+    return () => window.removeEventListener('resize', onScroll);
+  }, [items.length]);
+
+  const scrollBy = (dir) => {
+    const el = track.current;
+    if (el) el.scrollBy({ left: dir * el.clientWidth * 0.85, behavior: 'smooth' });
+  };
+
+  const header = (
+    <div className="flex items-end justify-between gap-3">
+      <div className="flex items-center gap-2.5">
+        <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 text-white">
+          <Flame size={16} />
+        </span>
+        <h3 className="font-heading text-[19px] font-bold text-ink lg:text-[22px]">Ofertas de hoy</h3>
+        {items.length > 1 && <span className="text-xs font-semibold text-ink-muted">{items.length}</span>}
+      </div>
+      {items.length > 1 && (
+        <div className="hidden gap-1.5 sm:flex">
+          {[[-1, ChevronLeft, edge.start, 'Anterior'], [1, ChevronRight, edge.end, 'Siguiente']].map(([dir, Icon, off, label]) => (
+            <button
+              key={label}
+              onClick={() => scrollBy(dir)}
+              disabled={off}
+              aria-label={label}
+              className="flex h-9 w-9 items-center justify-center rounded-full border border-line bg-surface text-ink transition hover:border-primary/40 hover:bg-primary-softer disabled:pointer-events-none disabled:opacity-35"
+            >
+              <Icon size={17} />
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
+  if (items.length === 1) {
+    const item = items[0];
+    const disc = Number(item.discount) > 0;
+    return (
+      <section className="min-w-0 space-y-3">
+        {header}
+        <article
+          id={`menu-item-${item.id}`}
+          className={`group grid overflow-hidden rounded-3xl border border-amber-300/60 bg-surface shadow-[0_10px_30px_-14px_rgba(242,138,30,0.45)] sm:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] ${ring(item.id)}`}
+        >
+          <div className="relative aspect-[16/10] sm:aspect-auto sm:min-h-[220px]">
+            <Thumb item={item} className="absolute inset-0 h-full w-full" />
+            <span className="absolute left-3 top-3"><OfferBadge item={item} big /></span>
+          </div>
+          <div className="flex min-w-0 flex-col justify-center gap-1.5 p-5 sm:p-7">
+            {item.featured_label && <p className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-amber-700 dark:text-amber-400">{item.featured_label}</p>}
+            <h4 className="font-heading text-2xl font-bold leading-tight text-ink sm:text-[30px]">{item.title}</h4>
+            {item.description && <p className="max-w-md text-sm leading-relaxed text-ink-muted">{item.description}</p>}
+            <p className="mt-1.5 flex items-baseline gap-2">
+              <span className="font-heading text-3xl font-bold text-primary-strong">{money(finalPrice(item), currency)}</span>
+              {disc && <span className="text-base font-semibold text-ink-muted line-through">{money(item.price, currency)}</span>}
+            </p>
+          </div>
+        </article>
+      </section>
+    );
+  }
+
+  return (
+    <section className="min-w-0 space-y-3">
+      {header}
+      <div className="relative -mx-4 sm:mx-0">
+        <div
+          ref={track}
+          onScroll={onScroll}
+          className={`flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-px-4 px-4 pb-2 sm:scroll-px-0 sm:px-0 lg:gap-4 ${NO_SCROLLBAR}`}
+        >
+          {items.map((item) => {
+            const disc = Number(item.discount) > 0;
+            return (
+              <article
+                key={item.id}
+                id={`menu-item-${item.id}`}
+                className={`group flex w-[74%] shrink-0 snap-start flex-col overflow-hidden rounded-3xl border border-amber-300/60 bg-surface shadow-[0_10px_30px_-16px_rgba(242,138,30,0.5)] transition-transform hover:-translate-y-0.5 sm:w-[calc((100%-12px)/2)] lg:w-[calc((100%-32px)/3)] ${ring(item.id)}`}
+              >
+                <div className="relative aspect-[4/3]">
+                  <Thumb item={item} className="absolute inset-0 h-full w-full" />
+                  <span className="absolute left-3 top-3"><OfferBadge item={item} /></span>
+                </div>
+                <div className="flex min-w-0 flex-1 flex-col gap-1 p-4 lg:p-5">
+                  {item.featured_label && (
+                    <p className="truncate text-[10px] font-extrabold uppercase tracking-[0.16em] text-amber-700 dark:text-amber-400">{item.featured_label}</p>
+                  )}
+                  <h4 className="font-heading text-lg font-bold leading-tight text-ink lg:text-xl">{item.title}</h4>
+                  {item.description && <p className="line-clamp-2 text-[13px] leading-snug text-ink-muted">{item.description}</p>}
+                  <p className="mt-auto flex items-baseline gap-2 pt-2">
+                    <span className="font-heading text-2xl font-bold text-primary-strong">{money(finalPrice(item), currency)}</span>
+                    {disc && <span className="text-sm font-semibold text-ink-muted line-through">{money(item.price, currency)}</span>}
+                  </p>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+        {!edge.end && <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-16 bg-gradient-to-l from-surface-page to-transparent sm:block" />}
+      </div>
+    </section>
+  );
+}
+
 export default function PublicMenu({ query: extQuery, onQueryChange }) {
   const controlled = typeof onQueryChange === 'function';
   const { settings } = useTheme();
@@ -210,41 +340,7 @@ export default function PublicMenu({ query: extQuery, onQueryChange }) {
           <EmptyState icon={SearchX} title="Sin resultados" subtitle="Probá con otra búsqueda o elegí otra categoría." />
         ) : (
           <>
-            {featured.length > 0 && (
-              <section className="min-w-0 space-y-3">
-                {featured.map((item) => {
-                  const disc = Number(item.discount) > 0;
-                  const final = disc ? (Number(item.price) * (100 - Number(item.discount))) / 100 : item.price;
-                  return (
-                    <article
-                      key={item.id}
-                      id={`menu-item-${item.id}`}
-                      className={`group flex items-center gap-3 overflow-hidden rounded-3xl border border-amber-300/60 bg-surface p-2.5 shadow-[0_10px_30px_-14px_rgba(242,138,30,0.45)] sm:items-stretch sm:gap-0 sm:p-0 ${ring(item.id)}`}
-                    >
-                      <div className="relative h-[86px] w-[86px] shrink-0 overflow-hidden rounded-2xl sm:h-auto sm:min-h-[190px] sm:w-[300px] sm:rounded-none">
-                        <Thumb item={item} className="h-full w-full" />
-                        <span className="absolute left-1.5 top-1.5 inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-amber-400 to-orange-500 px-2 py-0.5 text-[10px] font-black text-white shadow sm:left-3.5 sm:top-3.5 sm:px-3 sm:py-1.5 sm:text-[13px]">
-                          <Star size={12} className="hidden fill-white sm:block" />
-                          {disc ? `−${Number(item.discount)}%${' '}` : item.featured_label || 'Oferta'}
-                          {disc && <span className="hidden sm:inline">OFF</span>}
-                        </span>
-                      </div>
-                      <div className="flex min-w-0 flex-1 flex-col justify-center gap-0.5 sm:gap-1.5 sm:px-6 sm:py-5">
-                        <p className="text-[9px] font-extrabold uppercase tracking-[0.16em] text-amber-700 sm:text-[10px] dark:text-amber-400">
-                          {item.featured_label && disc ? item.featured_label : 'Oferta del día'}
-                        </p>
-                        <h3 className="font-heading text-[17px] font-bold leading-tight text-ink sm:text-[28px]">{item.title}</h3>
-                        {item.description && <p className="hidden max-w-md text-sm text-ink-muted sm:line-clamp-2">{item.description}</p>}
-                        <p className="flex items-baseline gap-2 sm:mt-1.5">
-                          <span className="font-heading text-lg font-bold text-primary-strong sm:text-3xl">{money(final, currency)}</span>
-                          {disc && <span className="text-xs font-semibold text-ink-muted line-through sm:text-base">{money(item.price, currency)}</span>}
-                        </p>
-                      </div>
-                    </article>
-                  );
-                })}
-              </section>
-            )}
+            {featured.length > 0 && <Featured items={featured} currency={currency} ring={ring} />}
 
             <div className="space-y-8 lg:space-y-10">
               {Object.entries(grouped).map(([category, list]) => (
