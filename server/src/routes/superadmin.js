@@ -70,9 +70,21 @@ router.get(
       owners = Object.fromEntries((users || []).map((u) => [u.id, u]));
     }
 
+    // Estado de "primeros pasos" de cada app (sin la fila = negocio viejo = completado).
+    const setup = {};
+    if (list.length > 0) {
+      const { data: rows } = await supabase
+        .from('settings')
+        .select('tenant_id, value')
+        .eq('key', 'setupCompleted')
+        .in('tenant_id', list.map((t) => t.id));
+      for (const r of rows || []) setup[r.tenant_id] = r.value === 'true';
+    }
+
     const enriched = await Promise.all(
       list.map(async (t) => ({
         ...t,
+        setup_completed: setup[t.id] ?? true,
         owner: owners[t.owner_user_id] || null,
         counts: {
           clients: await countFor('tenant_memberships', t.id, 'cliente'),
@@ -161,7 +173,13 @@ router.post(
       key,
       value: String(value),
     }));
-    await supabase.from('settings').insert(rows);
+    // Si esto falla, la app quedaría sin `setupCompleted=false` y el dueño
+    // nunca vería los primeros pasos: deshacemos el alta y avisamos.
+    const { error: settingsError } = await supabase.from('settings').insert(rows);
+    if (settingsError) {
+      await supabase.from('tenants').delete().eq('id', tenant.id);
+      throw settingsError;
+    }
 
     if (ownerId) {
       await ensureMembership(ownerId, tenant.id, 'admin');
@@ -212,6 +230,26 @@ router.patch(
 
     resetTenancyCache();
     res.json({ tenant: data });
+  })
+);
+
+// Marcar primeros pasos como pendientes (el admin vuelve a ver el asistente) o completados.
+router.patch(
+  '/tenants/:id/setup',
+  asyncHandler(async (req, res) => {
+    const completed = req.body?.completed === true;
+    const { data: tenant } = await supabase.from('tenants').select('id, slug').eq('id', req.params.id).maybeSingle();
+    if (!tenant) return res.status(404).json({ error: 'App no encontrada' });
+    if (tenant.slug === CENTRAL_TENANT_SLUG) return res.status(403).json({ error: 'La app central Wintuu no se puede modificar' });
+
+    const { error: delError } = await supabase.from('settings').delete().eq('tenant_id', tenant.id).eq('key', 'setupCompleted');
+    if (delError) throw delError;
+    const { error } = await supabase
+      .from('settings')
+      .insert({ tenant_id: tenant.id, key: 'setupCompleted', value: completed ? 'true' : 'false' });
+    if (error) throw error;
+
+    res.json({ ok: true, setup_completed: completed });
   })
 );
 

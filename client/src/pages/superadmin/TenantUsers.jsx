@@ -1,29 +1,45 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Check, Eye, EyeOff, KeyRound, Loader2, Mail, Pencil, Plus, ShieldCheck, Trash2, User, X } from 'lucide-react';
+import { Check, Eye, EyeOff, KeyRound, Loader2, Mail, Plus, Trash2, X } from 'lucide-react';
 import { api } from '../../api.js';
+import { BTN_GHOST, BTN_INK, EYEBROW, FIELD, initials } from './SuperAdmin.jsx';
 
-function initials(name) {
-  return String(name || '?')
-    .trim()
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((word) => word[0]?.toUpperCase() || '')
-    .join('');
+function PasswordField({ value, onChange, placeholder }) {
+  const [show, setShow] = useState(false);
+  return (
+    <span className="relative block">
+      <KeyRound size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--wt-muted)]" />
+      <input
+        className={`${FIELD} !py-2 !pl-8 !pr-9 !text-[13px]`}
+        type={show ? 'text' : 'password'}
+        placeholder={placeholder}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        minLength={6}
+        autoComplete="new-password"
+      />
+      {value && (
+        <button type="button" tabIndex={-1} onClick={() => setShow((v) => !v)} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--wt-muted)] hover:text-[var(--wt-ink)]">
+          {show ? <EyeOff size={14} /> : <Eye size={14} />}
+        </button>
+      )}
+    </span>
+  );
 }
 
-function RoleBadge({ role }) {
-  if (role === 'admin') {
-    return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-xs font-bold text-emerald-600 dark:text-emerald-400">
-        <ShieldCheck size={11} />
-        Administrador
-      </span>
-    );
-  }
+function EmailField({ value, onChange, placeholder, required, autoFocus }) {
   return (
-    <span className="inline-flex items-center gap-1 rounded-full bg-surface px-2 py-0.5 text-xs font-semibold text-ink-muted">
-      <User size={11} />
-      Cliente
+    <span className="relative block">
+      <Mail size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--wt-muted)]" />
+      <input
+        className={`${FIELD} !py-2 !pl-8 !text-[13px]`}
+        type="email"
+        placeholder={placeholder}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        required={required}
+        autoFocus={autoFocus}
+        autoComplete="off"
+      />
     </span>
   );
 }
@@ -31,7 +47,6 @@ function RoleBadge({ role }) {
 function CredentialsForm({ tenantId, userId, onDone }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [showPwd, setShowPwd] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [ok, setOk] = useState(false);
@@ -47,7 +62,7 @@ function CredentialsForm({ tenantId, userId, onDone }) {
         body: { email: email || undefined, password: password || undefined },
       });
       setOk(true);
-      setTimeout(() => { setOk(false); onDone(); }, 1000);
+      setTimeout(onDone, 900);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -56,54 +71,18 @@ function CredentialsForm({ tenantId, userId, onDone }) {
   };
 
   return (
-    <form onSubmit={submit} className="mt-2 grid gap-2 rounded-2xl bg-surface-alt p-3 sm:grid-cols-[1fr,1fr,auto]">
-      <div className="relative">
-        <Mail size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted" />
-        <input
-          className="input !py-2 !pl-8 text-xs"
-          type="email"
-          placeholder="Nuevo email (opcional)"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          autoComplete="off"
-        />
-      </div>
-      <div className="relative">
-        <KeyRound size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted" />
-        <input
-          className="input !py-2 !pl-8 !pr-9 text-xs"
-          type={showPwd ? 'text' : 'password'}
-          placeholder="Nueva contraseña (opcional)"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          minLength={6}
-          autoComplete="new-password"
-        />
-        {password && (
-          <button
-            type="button"
-            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-muted hover:text-ink"
-            onClick={() => setShowPwd((v) => !v)}
-            tabIndex={-1}
-          >
-            {showPwd ? <EyeOff size={14} /> : <Eye size={14} />}
-          </button>
-        )}
-      </div>
-      <div className="flex items-center gap-2">
-        <button
-          type="submit"
-          className="btn-primary !py-2 text-xs"
-          disabled={busy || (!email && !password)}
-        >
-          {busy ? <Loader2 className="animate-spin" size={13} /> : <Check size={13} />}
-          Guardar
+    <form onSubmit={submit} className="mt-3 flex flex-col gap-2 border-t border-[rgba(20,36,37,0.08)] pt-3">
+      <EmailField value={email} onChange={setEmail} placeholder="Nuevo email (opcional)" />
+      <PasswordField value={password} onChange={setPassword} placeholder="Nueva contraseña (opcional)" />
+      {error && <p className="text-xs font-semibold text-red-600">{error}</p>}
+      <div className="flex gap-2">
+        <button className={`${BTN_INK} !px-4 !py-2 !text-xs`} disabled={busy || ok || (!email && !password)}>
+          {busy ? <Loader2 className="animate-spin" size={13} /> : <Check size={13} />} {ok ? 'Guardado' : 'Guardar'}
         </button>
-        <button type="button" className="btn-ghost !py-2 text-xs" onClick={onDone}>
-          <X size={13} />
+        <button type="button" className={`${BTN_GHOST} !px-3 !py-2 !text-xs`} onClick={onDone}>
+          Cancelar
         </button>
       </div>
-      {error && <p className="col-span-full text-xs font-medium text-red-500">{error}</p>}
     </form>
   );
 }
@@ -111,7 +90,6 @@ function CredentialsForm({ tenantId, userId, onDone }) {
 function AddAdminForm({ tenantId, onDone }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [showPwd, setShowPwd] = useState(false);
   const [name, setName] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -133,63 +111,30 @@ function AddAdminForm({ tenantId, onDone }) {
   };
 
   return (
-    <form onSubmit={submit} className="mt-3 rounded-2xl border border-dashed border-line bg-surface-alt p-4">
-      <p className="mb-3 text-xs font-extrabold uppercase tracking-wide text-ink-muted">Agregar administrador</p>
-      <div className="grid gap-2 sm:grid-cols-3">
-        <div className="relative">
-          <Mail size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted" />
-          <input
-            className="input !py-2 !pl-8 text-xs"
-            type="email"
-            placeholder="Email *"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            autoFocus
-            autoComplete="off"
-          />
-        </div>
-        <div className="relative">
-          <KeyRound size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted" />
-          <input
-            className="input !py-2 !pl-8 !pr-9 text-xs"
-            type={showPwd ? 'text' : 'password'}
-            placeholder="Contraseña (si es nuevo)"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            minLength={6}
-            autoComplete="new-password"
-          />
-          {password && (
-            <button
-              type="button"
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-muted hover:text-ink"
-              onClick={() => setShowPwd((v) => !v)}
-              tabIndex={-1}
-            >
-              {showPwd ? <EyeOff size={14} /> : <Eye size={14} />}
-            </button>
-          )}
-        </div>
-        <input
-          className="input !py-2 text-xs"
-          placeholder="Nombre (opcional)"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-        />
-      </div>
-      <p className="mt-1.5 text-[11px] text-ink-muted">Si el email ya existe, se agrega directamente. Si es nuevo, necesitás poner una contraseña.</p>
-      {error && <p className="mt-2 text-xs font-medium text-red-500">{error}</p>}
-      <div className="mt-3 flex gap-2">
-        <button type="submit" className="btn-primary !py-2 text-xs" disabled={busy || !email}>
-          {busy ? <Loader2 className="animate-spin" size={13} /> : <Plus size={13} />}
-          Agregar
+    <form onSubmit={submit} className="wt2-rise flex flex-col gap-2 rounded-2xl border border-dashed border-[rgba(20,36,37,0.25)] bg-white p-4">
+      <p className={EYEBROW}>NUEVO ADMINISTRADOR</p>
+      <EmailField value={email} onChange={setEmail} placeholder="Email *" required autoFocus />
+      <PasswordField value={password} onChange={setPassword} placeholder="Contraseña (si es nuevo)" />
+      <input className={`${FIELD} !py-2 !text-[13px]`} placeholder="Nombre (opcional)" value={name} onChange={(e) => setName(e.target.value)} />
+      <p className="text-[11.5px] text-[var(--wt-muted)]">Si el email ya existe, se agrega directamente. Si es nuevo, necesitás poner una contraseña.</p>
+      {error && <p className="text-xs font-semibold text-red-600">{error}</p>}
+      <div className="flex gap-2">
+        <button className={`${BTN_INK} !px-4 !py-2 !text-xs`} disabled={busy || !email}>
+          {busy ? <Loader2 className="animate-spin" size={13} /> : <Plus size={13} />} Agregar
         </button>
-        <button type="button" className="btn-ghost !py-2 text-xs" onClick={onDone}>
-          <X size={13} /> Cancelar
+        <button type="button" className={`${BTN_GHOST} !px-3 !py-2 !text-xs`} onClick={onDone}>
+          Cancelar
         </button>
       </div>
     </form>
+  );
+}
+
+function RemoveButton({ busy, disabled, onClick, label = 'Quitar' }) {
+  return (
+    <button onClick={onClick} disabled={disabled} className="inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1.5 text-xs font-bold text-[#9b1c4b] transition hover:bg-[#ffe3ef] disabled:opacity-50">
+      {busy ? <Loader2 className="animate-spin" size={13} /> : <Trash2 size={13} />} {label}
+    </button>
   );
 }
 
@@ -198,7 +143,8 @@ export default function TenantUsers({ tenantId }) {
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState(null);
   const [editingId, setEditingId] = useState(null);
-  const [addingAdmin, setAddingAdmin] = useState(false);
+  const [adding, setAdding] = useState(false);
+  const [query, setQuery] = useState('');
   const [error, setError] = useState('');
 
   const load = useCallback(async () => {
@@ -224,7 +170,7 @@ export default function TenantUsers({ tenantId }) {
     setError('');
     try {
       await api(`/api/superadmin/tenants/${tenantId}/users/${user.id}`, { method: 'DELETE' });
-      setUsers((current) => current.filter((item) => item.id !== user.id));
+      setUsers((cur) => cur.filter((u) => u.id !== user.id));
     } catch (err) {
       setError(err.message);
     } finally {
@@ -233,122 +179,94 @@ export default function TenantUsers({ tenantId }) {
   };
 
   const admins = users.filter((u) => u.role === 'admin');
-  const clients = users.filter((u) => u.role !== 'admin');
+  const q = query.trim().toLowerCase();
+  const clients = users.filter((u) => u.role !== 'admin' && (!q || `${u.name} ${u.email}`.toLowerCase().includes(q)));
+  const clientTotal = users.length - admins.length;
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center gap-2 py-12 text-sm text-[var(--wt-muted)]">
+        <Loader2 className="animate-spin" size={18} /> Cargando usuarios…
+      </div>
+    );
+  }
 
   return (
-    <div className="mt-4 rounded-2xl bg-surface-alt p-4">
+    <div className="flex flex-col gap-3">
+      {error && <p className="rounded-xl bg-red-50 px-3.5 py-2.5 text-[13px] font-semibold text-red-600">{error}</p>}
+
       <div className="flex items-center justify-between">
-        <p className="text-sm font-extrabold text-ink">Usuarios {!loading && `(${users.length})`}</p>
-        <button
-          className="btn-ghost !py-1.5 text-xs"
-          onClick={() => setAddingAdmin((v) => !v)}
-        >
-          {addingAdmin ? <X size={13} /> : <Plus size={13} />}
-          {addingAdmin ? 'Cancelar' : 'Agregar admin'}
+        <p className={EYEBROW}>ADMINISTRADORES</p>
+        <button onClick={() => setAdding((v) => !v)} className="inline-flex items-center gap-1 rounded-full border border-dashed border-[rgba(20,36,37,0.25)] px-3 py-1.5 text-[12.5px] font-bold text-[var(--wt-ink)] transition hover:bg-white">
+          {adding ? <X size={13} /> : <Plus size={13} />} {adding ? 'Cancelar' : 'Agregar admin'}
         </button>
       </div>
 
-      {error && <p className="mt-2 text-xs font-medium text-red-500">{error}</p>}
-
-      {addingAdmin && (
+      {adding && (
         <AddAdminForm
           tenantId={tenantId}
-          onDone={() => { setAddingAdmin(false); load(); }}
+          onDone={() => {
+            setAdding(false);
+            load();
+          }}
         />
       )}
 
-      <div className="mt-3">
-        {loading ? (
-          <div className="flex items-center justify-center gap-2 py-8 text-sm text-ink-muted">
-            <Loader2 className="animate-spin" size={18} />
-            Cargando usuarios...
+      {admins.length === 0 && !adding && <p className="text-[13px] text-[var(--wt-muted)]">Esta app no tiene administradores.</p>}
+      {admins.map((u) => (
+        <div key={u.id} className="rounded-2xl border border-[rgba(20,36,37,0.08)] bg-white p-3">
+          <div className="flex items-center gap-3">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#bff3ea] text-xs font-extrabold text-[var(--wt-mint-dark)]">{initials(u.name)}</span>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-bold">{u.name}</p>
+              <p className="truncate text-[12.5px] text-[var(--wt-muted)]">{u.email}</p>
+            </div>
+            <button
+              onClick={() => setEditingId(editingId === u.id ? null : u.id)}
+              disabled={deletingId !== null}
+              className="shrink-0 rounded-full border border-[rgba(20,36,37,0.12)] bg-white px-3 py-1.5 text-xs font-semibold transition hover:border-[var(--wt-ink)]"
+            >
+              {editingId === u.id ? 'Cerrar' : 'Credenciales'}
+            </button>
+            <RemoveButton busy={deletingId === u.id} disabled={deletingId !== null} onClick={() => remove(u)} />
           </div>
-        ) : users.length === 0 ? (
-          <p className="py-6 text-center text-xs text-ink-muted">Esta app no tiene usuarios registrados.</p>
-        ) : (
-          <>
-            {admins.length > 0 && (
-              <div className="mb-3">
-                <p className="mb-1.5 text-[11px] font-bold uppercase tracking-wide text-ink-muted">Administradores</p>
-                <div className="divide-y divide-line">
-                  {admins.map((user) => (
-                    <div key={user.id} className="py-3">
-                      <div className="flex flex-wrap items-center gap-3">
-                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 text-xs font-extrabold text-emerald-600 dark:text-emerald-400">
-                          {initials(user.name)}
-                        </span>
-                        <div className="min-w-0 flex-1">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <p className="truncate font-bold text-ink">{user.name}</p>
-                            <RoleBadge role={user.role} />
-                          </div>
-                          <p className="mt-0.5 inline-flex items-center gap-1 text-xs text-ink-muted">
-                            <Mail size={11} />
-                            {user.email}
-                          </p>
-                        </div>
-                        <button
-                          className="btn-ghost !py-1.5 text-xs"
-                          onClick={() => setEditingId(editingId === user.id ? null : user.id)}
-                          disabled={deletingId !== null}
-                        >
-                          {editingId === user.id ? <X size={13} /> : <Pencil size={13} />}
-                          {editingId === user.id ? 'Cancelar' : 'Editar'}
-                        </button>
-                        <button
-                          className="inline-flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-xs font-bold text-red-600 transition hover:bg-red-500/10 disabled:opacity-50 dark:text-red-400"
-                          onClick={() => remove(user)}
-                          disabled={deletingId !== null}
-                        >
-                          {deletingId === user.id ? <Loader2 className="animate-spin" size={14} /> : <Trash2 size={14} />}
-                          Quitar
-                        </button>
-                      </div>
-                      {editingId === user.id && (
-                        <CredentialsForm
-                          tenantId={tenantId}
-                          userId={user.id}
-                          onDone={() => { setEditingId(null); load(); }}
-                        />
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+          {editingId === u.id && (
+            <CredentialsForm
+              tenantId={tenantId}
+              userId={u.id}
+              onDone={() => {
+                setEditingId(null);
+                load();
+              }}
+            />
+          )}
+        </div>
+      ))}
 
-            {clients.length > 0 && (
-              <div>
-                <p className="mb-1.5 text-[11px] font-bold uppercase tracking-wide text-ink-muted">Clientes ({clients.length})</p>
-                <div className="divide-y divide-line">
-                  {clients.map((user) => (
-                    <div key={user.id} className="flex flex-wrap items-center gap-3 py-3">
-                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary-softer text-xs font-extrabold text-primary">
-                        {initials(user.name)}
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate font-bold text-ink">{user.name}</p>
-                        <p className="mt-0.5 inline-flex items-center gap-1 text-xs text-ink-muted">
-                          <Mail size={11} />
-                          {user.email}
-                        </p>
-                      </div>
-                      <button
-                        className="inline-flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-xs font-bold text-red-600 transition hover:bg-red-500/10 disabled:opacity-50 dark:text-red-400"
-                        onClick={() => remove(user)}
-                        disabled={deletingId !== null}
-                      >
-                        {deletingId === user.id ? <Loader2 className="animate-spin" size={14} /> : <Trash2 size={14} />}
-                        Quitar de la app
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </>
+      <div className="mt-2 flex items-center justify-between gap-3">
+        <p className={EYEBROW}>CLIENTES · {clientTotal}</p>
+        {clientTotal > 6 && (
+          <input className={`${FIELD} !w-44 !rounded-full !py-1.5 !text-xs`} placeholder="Buscar cliente" value={query} onChange={(e) => setQuery(e.target.value)} />
         )}
       </div>
+      {clientTotal === 0 ? (
+        <p className="text-[13px] text-[var(--wt-muted)]">Todavía no hay clientes registrados.</p>
+      ) : clients.length === 0 ? (
+        <p className="text-[13px] text-[var(--wt-muted)]">Ningún cliente coincide.</p>
+      ) : (
+        <div className="flex flex-col">
+          {clients.map((u) => (
+            <div key={u.id} className="flex items-center gap-3 border-b border-[rgba(20,36,37,0.06)] px-1 py-2 last:border-0">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#fff3e2] text-[11px] font-extrabold text-[var(--wt-ink)]">{initials(u.name)}</span>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-[13.5px] font-semibold">{u.name}</p>
+                <p className="truncate text-xs text-[var(--wt-muted)]">{u.email}</p>
+              </div>
+              <RemoveButton busy={deletingId === u.id} disabled={deletingId !== null} onClick={() => remove(u)} />
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
-import { Navigate, Route, Routes, useNavigate } from 'react-router-dom';
+import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
+import { Loader2 } from 'lucide-react';
 import { api } from './api.js';
 import { useAuth } from './context/AuthContext.jsx';
 import { useTenant } from './context/TenantContext.jsx';
@@ -56,12 +57,31 @@ function RedirectHome() {
   return <Navigate to={home()} replace />;
 }
 
-// Si el negocio todavía no terminó sus primeros pasos, lo mandamos al asistente.
-function DashboardIndex() {
-  const { settings } = useTheme();
+function SettingsSpinner() {
+  return (
+    <div className="flex min-h-screen items-center justify-center text-ink-muted">
+      <Loader2 className="animate-spin" size={26} />
+    </div>
+  );
+}
+
+// Espera la configuración real del negocio (no el cache ni el default).
+function RequireSettings({ children }) {
+  const { settingsLoaded } = useTheme();
+  return settingsLoaded ? children : <SettingsSpinner />;
+}
+
+// Mientras el negocio no termine sus primeros pasos, cualquier ruta del panel
+// lleva al asistente. Soporte queda libre (el asistente abre tickets ahí).
+const SETUP_FREE = ['/dashboard/soporte'];
+function RequireSetup({ children }) {
+  const { settings, settingsLoaded } = useTheme();
   const { t } = useTenant();
-  if (settings.setupCompleted !== 'true') return <Navigate to={t('/primeros-pasos')} replace />;
-  return <MenuManager />;
+  const { pathname } = useLocation();
+  if (!settingsLoaded) return <SettingsSpinner />;
+  const free = SETUP_FREE.some((p) => pathname.endsWith(p));
+  if (settings.setupCompleted !== 'true' && !free) return <Navigate to={t('/primeros-pasos')} replace />;
+  return children;
 }
 
 function TenantApp() {
@@ -106,7 +126,9 @@ function TenantApp() {
         path="primeros-pasos"
         element={
           <RequireAdmin>
-            <SetupWizard />
+            <RequireSettings>
+              <SetupWizard />
+            </RequireSettings>
           </RequireAdmin>
         }
       />
@@ -114,11 +136,13 @@ function TenantApp() {
         path="dashboard"
         element={
           <RequireAdmin>
-            <DashboardLayout />
+            <RequireSetup>
+              <DashboardLayout />
+            </RequireSetup>
           </RequireAdmin>
         }
       >
-        <Route index element={<DashboardIndex />} />
+        <Route index element={<MenuManager />} />
         <Route path="menu" element={<MenuManager />} />
         <Route path="clientes" element={<Clients />} />
         <Route path="cliente/:id" element={<ClientDetail />} />

@@ -67,6 +67,10 @@ function initialFor(slug) {
 export function ThemeProvider({ children }) {
   const { slug } = useTenant();
   const [settings, setSettings] = useState(() => initialFor(slug));
+  // `settingsLoaded` = ya llegó la respuesta del servidor para este negocio.
+  // Lo usa el panel para no decidir "primeros pasos sí/no" con el cache o el default.
+  const [loadedSlug, setLoadedSlug] = useState(null);
+  const settingsLoaded = !slug || loadedSlug === slug;
 
   useEffect(() => {
     const cached = initialFor(slug);
@@ -88,6 +92,9 @@ export function ThemeProvider({ children }) {
       })
       .catch(() => {
         /* se mantiene el cache/default */
+      })
+      .finally(() => {
+        if (alive) setLoadedSlug(slug);
       });
     return () => {
       alive = false;
@@ -145,7 +152,7 @@ export function ThemeProvider({ children }) {
   );
 
   return (
-    <ThemeContext.Provider value={{ settings, updateSettings, toggleTheme }}>
+    <ThemeContext.Provider value={{ settings, settingsLoaded, updateSettings, toggleTheme }}>
       {children}
     </ThemeContext.Provider>
   );
