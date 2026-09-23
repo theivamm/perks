@@ -134,7 +134,7 @@ export default function PublicMenu({ query: extQuery, onQueryChange }) {
   const ring = (id) => (highlightId === id ? 'ring-2 ring-primary ring-offset-2 ring-offset-surface-page' : '');
 
   return (
-    <div id="menu-top" className="mt-6 lg:mt-8 lg:grid lg:grid-cols-[240px_minmax(0,1fr)] lg:items-start lg:gap-9">
+    <div id="menu-top" className="min-w-0 mt-6 lg:mt-8 lg:grid lg:grid-cols-[240px_minmax(0,1fr)] lg:items-start lg:gap-9">
       {/* Escritorio: categorías fijas a la izquierda */}
       <aside className="hidden lg:sticky lg:top-24 lg:block">
         {controlled && query && (
@@ -211,7 +211,7 @@ export default function PublicMenu({ query: extQuery, onQueryChange }) {
         ) : (
           <>
             {featured.length > 0 && (
-              <section className="space-y-3">
+              <section className="min-w-0 space-y-3">
                 {featured.map((item) => {
                   const disc = Number(item.discount) > 0;
                   const final = disc ? (Number(item.price) * (100 - Number(item.discount))) / 100 : item.price;
@@ -254,12 +254,12 @@ export default function PublicMenu({ query: extQuery, onQueryChange }) {
                     <span className="hidden text-xs font-semibold text-ink-muted lg:inline">{list.length}</span>
                     <div className="hidden h-px flex-1 bg-line lg:block" />
                   </div>
-                  <div className="grid grid-cols-1 lg:grid-cols-2 lg:gap-3 2xl:grid-cols-3">
+                  <div className="grid grid-cols-[minmax(0,1fr)] lg:grid-cols-2 lg:gap-3 2xl:grid-cols-3">
                     {list.map((item) => (
                       <article
                         key={item.id}
                         id={`menu-item-${item.id}`}
-                        className={`group flex items-center gap-3 border-b border-line py-3 lg:gap-3.5 lg:rounded-[18px] lg:border lg:bg-surface lg:p-3 lg:transition lg:hover:border-primary/40 ${ring(item.id)}`}
+                        className={`group flex min-w-0 items-center gap-3 border-b border-line py-3 lg:gap-3.5 lg:rounded-[18px] lg:border lg:bg-surface lg:p-3 lg:transition lg:hover:border-primary/40 ${ring(item.id)}`}
                       >
                         <Thumb item={item} className="order-last h-16 w-16 shrink-0 rounded-xl lg:order-first lg:h-[76px] lg:w-[76px] lg:rounded-2xl" />
                         <div className="flex min-w-0 flex-1 flex-col gap-0.5">

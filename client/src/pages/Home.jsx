@@ -39,13 +39,13 @@ function ActiveStrip({ coupon, currency, onQr, onHow }) {
   const left = Math.max(0, target - points);
 
   return (
-    <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary to-primary-strong p-6 text-primary-contrast shadow-glow sm:p-8">
+    <div className="relative min-w-0 overflow-hidden rounded-3xl bg-gradient-to-br from-primary to-primary-strong p-5 text-primary-contrast shadow-glow sm:p-8">
       <div className="orb -right-16 -top-16 h-56 w-56 bg-primary-contrast/10" />
       <div className="relative flex items-center justify-between gap-3">
         <Eyebrow>Tu cupón activo · {typeLabel(coupon.type)}</Eyebrow>
         <span className="rounded-full bg-white/15 px-3 py-1 text-xs font-extrabold">{pct}%</span>
       </div>
-      <h1 className="relative mt-4 font-heading text-3xl font-bold leading-[1.05] sm:text-[40px]">
+      <h1 className="relative mt-4 font-heading text-[28px] font-bold leading-[1.05] [overflow-wrap:anywhere] sm:text-[40px]">
         {coupon.type === 'regalo' ? coupon.title : `${couponValue(coupon, currency)} · ${coupon.title}`}
       </h1>
       {coupon.description && <p className="relative mt-2 max-w-xl text-[15px] leading-relaxed opacity-85">{coupon.description}</p>}
@@ -85,11 +85,11 @@ function ActiveStrip({ coupon, currency, onQr, onHow }) {
 
 function IntroStrip({ isAuthed, loginTo }) {
   return (
-    <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary to-primary-strong p-6 text-primary-contrast shadow-glow sm:p-8">
+    <div className="relative min-w-0 overflow-hidden rounded-3xl bg-gradient-to-br from-primary to-primary-strong p-5 text-primary-contrast shadow-glow sm:p-8">
       <div className="orb -right-16 -top-16 h-56 w-56 bg-primary-contrast/10" />
       <div className="relative max-w-xl">
         <Eyebrow>Programa de fidelización</Eyebrow>
-        <h1 className="mt-4 font-heading text-3xl font-bold leading-[1.05] sm:text-[40px]">
+        <h1 className="mt-4 font-heading text-[28px] font-bold leading-[1.05] [overflow-wrap:anywhere] sm:text-[40px]">
           {isAuthed ? 'Elegí tu primer cupón' : 'Sumá compras, ganá premios'}
         </h1>
         <p className="mt-3 text-[15px] leading-relaxed opacity-85">
@@ -215,8 +215,8 @@ export default function Home() {
 
   const CouponRow = ({ c }) => (
     <div className={`flex items-center gap-3 rounded-2xl px-3.5 py-3 ${TYPE_TONE[c.type] || TYPE_TONE.monto}`}>
-      <span className="w-24 shrink-0 font-heading text-xl font-bold leading-none">{couponValue(c, currency)}</span>
-      <span className="min-w-0 flex-1 truncate text-xs font-semibold opacity-90">
+      <span className="w-[84px] shrink-0 font-heading text-lg font-bold leading-none sm:w-24 sm:text-xl">{couponValue(c, currency)}</span>
+      <span className="line-clamp-2 min-w-0 flex-1 text-xs font-semibold leading-snug opacity-90">
         {flat(c.title) !== flat(couponValue(c, currency)) ? c.title : c.description || ''}
       </span>
       {!isAuthed ? (
@@ -243,9 +243,9 @@ export default function Home() {
     <div className="page-aurora min-h-screen">
       <Navbar search={{ value: query, onChange: setQuery, placeholder: 'Buscar plato, bebida, postre…' }} />
 
-      <main className={`mx-auto max-w-[1600px] px-4 pt-4 sm:px-6 sm:pt-6 lg:px-8 ${isAuthed && activeCoupon ? 'pb-28 lg:pb-16' : 'pb-16'}`}>
+      <main className={`mx-auto w-full min-w-0 max-w-[1600px] overflow-x-clip px-4 pt-4 sm:px-6 sm:pt-6 lg:px-8 ${isAuthed && activeCoupon ? 'pb-28 lg:pb-16' : 'pb-16'}`}>
         {/* Franja de fidelización: estado real del cliente en lugar del hero + 3 bloques explicativos */}
-        <section className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_440px]">
+        <section className="grid grid-cols-[minmax(0,1fr)] items-start gap-4 xl:grid-cols-[minmax(0,1fr)_440px]">
           {isAuthed && activeCoupon ? (
             <ActiveStrip
               coupon={activeCoupon}
@@ -257,7 +257,7 @@ export default function Home() {
             <IntroStrip isAuthed={isAuthed} loginTo={t('/login')} />
           )}
 
-          <div className="card flex flex-col gap-2.5 p-5">
+          <div className="card flex min-w-0 flex-col gap-2.5 p-4 sm:p-5">
             <div className="flex items-baseline justify-between gap-3">
               <h2 className="font-heading text-base font-bold text-ink">
                 {isAuthed && activeCoupon ? 'Tus próximos cupones' : 'Cupones disponibles'}
