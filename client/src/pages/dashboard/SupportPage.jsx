@@ -56,16 +56,11 @@ export default function SupportPage() {
   const active = tickets.find((ticket) => ticket.id === selected);
 
   return (
-    <div className="mx-auto max-w-5xl">
-      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary-softer text-primary-strong">
-            <LifeBuoy size={22} />
-          </span>
-          <div>
-            <h1 className="text-2xl font-extrabold text-ink">Soporte</h1>
-            <p className="text-sm text-ink-muted">Creá un ticket y seguí la respuesta con su código.</p>
-          </div>
+    <div className="space-y-5">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-ink">Soporte</h1>
+          <p className="mt-1 text-sm text-ink-muted">Creá un ticket y seguí la respuesta con su código.</p>
         </div>
         <button className="btn-primary" onClick={() => setCreating((value) => !value)}>
           {creating ? <X size={16} /> : <Plus size={16} />}
@@ -73,7 +68,7 @@ export default function SupportPage() {
         </button>
       </div>
 
-      {error && <p className="mb-4 rounded-xl bg-red-500/10 px-4 py-3 text-sm font-medium text-red-500">{error}</p>}
+      {error && <p className="rounded-xl bg-red-500/10 px-4 py-3 text-sm font-medium text-red-500">{error}</p>}
       {creating && (
         <NewTicket
           onCreated={(ticket, message) => {
@@ -86,7 +81,12 @@ export default function SupportPage() {
       )}
 
       <div className="grid gap-4 md:grid-cols-[320px,1fr]">
-        <div className={`card overflow-hidden ${selected ? 'hidden md:block' : ''}`}>
+        <div className={`card self-start overflow-hidden p-2 ${selected ? 'hidden md:block' : ''}`}>
+          {tickets.length > 0 && (
+            <p className="px-3 pb-1 pt-2 text-[10px] font-extrabold uppercase tracking-[0.18em] text-ink-muted">
+              Tus tickets · {tickets.length}
+            </p>
+          )}
           {loading ? (
             <div className="flex justify-center py-16 text-ink-muted"><Loader2 className="animate-spin" size={22} /></div>
           ) : tickets.length === 0 ? (
@@ -95,11 +95,13 @@ export default function SupportPage() {
               Todavía no creaste tickets.
             </div>
           ) : (
-            <div className="divide-y divide-line">
+            <div className="space-y-1">
               {tickets.map((ticket) => (
                 <button
                   key={ticket.id}
-                  className={`w-full px-4 py-4 text-left transition ${selected === ticket.id ? 'bg-primary-softer' : 'hover:bg-surface-alt'}`}
+                  className={`w-full rounded-2xl border-l-[3px] px-4 py-3.5 text-left transition ${
+                    selected === ticket.id ? 'border-primary bg-primary-softer' : 'border-transparent hover:bg-surface-alt'
+                  }`}
                   onClick={() => setSelected(ticket.id)}
                 >
                   <div className="flex items-start justify-between gap-2">
@@ -125,9 +127,12 @@ export default function SupportPage() {
 
         <div className={`card min-h-[520px] overflow-hidden ${selected ? '' : 'hidden md:block'}`}>
           {!active ? (
-            <div className="flex h-[520px] flex-col items-center justify-center gap-2 text-ink-muted">
-              <Ticket size={30} />
-              <p className="text-sm">Elegí un ticket para ver su seguimiento.</p>
+            <div className="flex h-[520px] flex-col items-center justify-center gap-2 px-6 text-center">
+              <span className="mb-1 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-softer text-primary-strong">
+                <LifeBuoy size={26} />
+              </span>
+              <p className="font-heading text-lg font-bold text-ink">Elegí un ticket para ver su seguimiento</p>
+              <p className="max-w-xs text-sm text-ink-muted">O creá uno nuevo: te respondemos por acá y te avisamos con una notificación.</p>
             </div>
           ) : (
             <TicketDetail
@@ -167,7 +172,8 @@ function NewTicket({ onCreated }) {
   };
 
   return (
-    <form onSubmit={submit} className="card mb-4 space-y-3 p-5">
+    <form onSubmit={submit} className="card animate-fade-up space-y-3 p-5">
+      <p className="font-heading text-lg font-bold text-ink">Nuevo ticket</p>
       <div>
         <label className="label">Asunto</label>
         <input className="input" value={subject} onChange={(event) => setSubject(event.target.value)} maxLength={120} required placeholder="¿En qué necesitás ayuda?" />
@@ -220,18 +226,18 @@ function TicketDetail({ ticket, messages, onBack, onMessage }) {
         </button>
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
-            <p className="font-extrabold text-ink">{ticket.subject}</p>
+            <p className="font-heading text-lg font-bold text-ink">{ticket.subject}</p>
             <p className="font-mono text-xs text-ink-muted">{ticket.code}</p>
           </div>
           <StatusBadge status={ticket.status} />
         </div>
       </div>
-      <div className="flex-1 space-y-3 overflow-y-auto p-4">
+      <div className="flex-1 space-y-3 overflow-y-auto bg-surface-page/60 p-4">
         {messages.map((message) => {
           const mine = message.sender_role === 'admin';
           return (
             <div key={message.id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
-              <div className={`max-w-[82%] rounded-2xl px-4 py-2.5 text-sm ${mine ? 'rounded-br-md bg-primary text-primary-contrast' : 'rounded-bl-md bg-surface-alt text-ink'}`}>
+              <div className={`max-w-[82%] rounded-2xl px-4 py-2.5 text-sm ${mine ? 'rounded-br-md bg-primary text-primary-contrast' : 'rounded-bl-md border border-line bg-surface text-ink'}`}>
                 {!mine && <p className="mb-1 text-xs font-bold text-ink-muted">{message.sender_name || 'Equipo Wintuu'}</p>}
                 <p className="whitespace-pre-wrap break-words">{message.body}</p>
                 <p className={`mt-1 text-right text-[11px] ${mine ? 'text-primary-contrast/70' : 'text-ink-muted'}`}>{formatDate(message.created_at)}</p>
@@ -242,6 +248,11 @@ function TicketDetail({ ticket, messages, onBack, onMessage }) {
         <div ref={bottomRef} />
       </div>
       {error && <p className="px-4 text-sm font-medium text-red-500">{error}</p>}
+      {ticket.status === 'cerrado' && (
+        <p className="border-t border-line px-4 py-3 text-center text-xs font-semibold text-ink-muted">
+          Este ticket está cerrado. Si seguís con el problema, creá uno nuevo.
+        </p>
+      )}
       {ticket.status !== 'cerrado' && (
         <form onSubmit={send} className="flex gap-2 border-t border-line p-3">
           <input className="input flex-1" value={text} onChange={(event) => setText(event.target.value)} maxLength={2000} placeholder="Agregar un mensaje..." />

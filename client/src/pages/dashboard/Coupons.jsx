@@ -140,8 +140,18 @@ export default function Coupons() {
   };
 
   return (
-    <div>
-      <div className="mb-6 flex w-fit gap-2 rounded-2xl bg-surface-alt p-1">
+    <div className="space-y-5">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-ink">Cupones</h1>
+          <p className="mt-1 text-sm text-ink-muted">
+            {tab === 'catalog'
+              ? 'Definí los premios y cuántos puntos se necesitan para conseguirlos.'
+              : 'Cuando un cliente muestre el código en el local, comprobalo acá para canjearlo.'}
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+      <div className="flex w-fit gap-1 rounded-2xl bg-surface-alt p-1">
         <button
           className={`rounded-xl px-4 py-2 text-sm font-extrabold transition ${
             tab === 'catalog' ? 'bg-surface text-ink shadow-sm' : 'text-ink-muted hover:text-ink'
@@ -159,22 +169,17 @@ export default function Coupons() {
           Validar cupón
         </button>
       </div>
-
-      {tab === 'catalog' ? (
-        <>
-          <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <h1 className="text-2xl font-extrabold text-ink">Catálogo de cupones</h1>
-              <p className="text-sm text-ink-muted">
-                Definí los premios y cuántos puntos se necesitan para conseguirlos.
-              </p>
-            </div>
+          {tab === 'catalog' && (
             <button className="btn-primary" onClick={openNew}>
               <Plus size={16} />
               Nuevo cupón
             </button>
-          </div>
+          )}
+        </div>
+      </div>
 
+      {tab === 'catalog' ? (
+        <>
           {loading ? (
             <Spinner label="Cargando cupones..." />
           ) : list.length === 0 ? (
@@ -184,39 +189,49 @@ export default function Coupons() {
               subtitle="Creá el primer premio del catálogo para que tus clientes puedan activarlo."
             />
           ) : (
-            <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            <ul className="space-y-3">
               {list.map((c) => (
-                <li key={c.id} className={`card relative overflow-hidden p-5 ${!c.active ? 'opacity-60' : ''}`}>
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-center gap-3">
-                      <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-primary-strong text-primary-contrast shadow-glow">
-                        <Gift size={22} />
-                      </span>
-                      <div>
-                        <p className="text-xl font-black text-ink">{couponValue(c, currency)}</p>
-                        <p className="text-sm font-bold text-ink">{c.title}</p>
-                      </div>
-                    </div>
-                    <span
-                      className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${
-                        c.active ? 'bg-green-500/15 text-green-600 dark:text-green-400' : 'bg-surface-alt text-ink-muted'
-                      }`}
-                    >
-                      {c.active ? 'Activo' : 'Pausado'}
-                    </span>
-                  </div>
-
-                  {c.description && <p className="mt-2 text-sm text-ink-muted">{c.description}</p>}
-
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    <span className="badge-outline">
+                <li
+                  key={c.id}
+                  className={`flex flex-col overflow-hidden rounded-3xl border border-line bg-surface transition-opacity sm:flex-row ${!c.active ? 'opacity-55' : ''}`}
+                >
+                  <div className="relative flex shrink-0 items-center justify-between gap-3 bg-gradient-to-br from-primary to-primary-strong p-5 text-primary-contrast sm:w-44 sm:flex-col sm:items-start">
+                    <p className="font-heading text-3xl font-bold leading-none">{couponValue(c, currency)}</p>
+                    <p className="inline-flex items-center gap-1 text-xs font-extrabold opacity-90">
                       <BadgePercent size={13} />
                       {Number(c.target_points)} puntos
-                    </span>
-                    <span className="badge-outline">{TYPE_LABELS[c.type] || c.type}</span>
+                    </p>
+                    <span className="absolute -right-2.5 -top-2.5 hidden h-5 w-5 rounded-full bg-surface-page sm:block" />
+                    <span className="absolute -bottom-2.5 -right-2.5 hidden h-5 w-5 rounded-full bg-surface-page sm:block" />
                   </div>
 
-                  <div className="mt-4 flex flex-wrap gap-2 border-t border-line pt-3">
+                  <div className="flex min-w-0 flex-1 flex-col gap-4 p-5 lg:flex-row lg:items-center">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="font-heading text-lg font-bold text-ink">{c.title}</h3>
+                        <span
+                          className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold ${
+                            c.type === 'regalo'
+                              ? 'bg-rose-100 text-rose-800 dark:bg-rose-500/15 dark:text-rose-300'
+                              : c.type === 'descuento'
+                                ? 'bg-sky-100 text-sky-800 dark:bg-sky-500/15 dark:text-sky-300'
+                                : 'bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300'
+                          }`}
+                        >
+                          {TYPE_LABELS[c.type] || c.type}
+                        </span>
+                        <span
+                          className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold ${
+                            c.active ? 'bg-green-500/15 text-green-700 dark:text-green-400' : 'bg-surface-alt text-ink-muted'
+                          }`}
+                        >
+                          {c.active ? 'Activo' : 'Pausado'}
+                        </span>
+                      </div>
+                      {c.description && <p className="mt-1 text-sm text-ink-muted">{c.description}</p>}
+                    </div>
+
+                  <div className="flex shrink-0 flex-wrap gap-2">
                     <button className="btn-ghost !px-3 !py-1.5 !text-xs" onClick={() => openEdit(c)}>
                       <Pencil size={13} />
                       Editar
@@ -232,6 +247,7 @@ export default function Coupons() {
                       <Trash2 size={13} />
                       Eliminar
                     </button>
+                  </div>
                   </div>
                 </li>
               ))}
@@ -324,14 +340,7 @@ export default function Coupons() {
           </Modal>
         </>
       ) : (
-        <div>
-          <div className="mb-6">
-            <h1 className="text-2xl font-extrabold text-ink">Validar cupón</h1>
-            <p className="text-sm text-ink-muted">
-              Cuando un cliente muestre el código en el local, comprobalo acá para canjearlo.
-            </p>
-          </div>
-
+        <div className="max-w-3xl">
           <form
             onSubmit={validate}
             className="animate-fade-up flex flex-wrap items-center gap-3 rounded-3xl border border-line bg-surface p-5 shadow-sm sm:flex-nowrap"

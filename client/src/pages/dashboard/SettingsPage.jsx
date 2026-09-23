@@ -9,6 +9,12 @@ import { SYSTEM_ISOS } from '../../components/SystemIsos.jsx';
 import QRCode from 'qrcode';
 
 const CURRENCIES = ['$', '€', 'Bs', 'S/', 'Q', 'L', 'C$'];
+const TABS = [
+  { id: 'apariencia', label: 'Apariencia' },
+  { id: 'negocio', label: 'Negocio' },
+  { id: 'plan', label: 'Plan y facturación' },
+  { id: 'cuenta', label: 'Cuenta y seguridad' },
+];
 
 function billingDate(value) {
   if (!value) return 'Sin fecha informada';
@@ -63,6 +69,9 @@ function LogoUploader({ kind, label, previewBox, display, inputRef, has, uploadi
 export default function SettingsPage() {
   const { settings, updateSettings } = useTheme();
   const [saving, setSaving] = useState(false);
+  const [tab, setTab] = useState(() =>
+    new URLSearchParams(window.location.search).get('subscription') === 'success' ? 'plan' : 'apariencia'
+  );
   const [uploading, setUploading] = useState(false);
   const logoInput = useRef(null);
   const isoInput = useRef(null);
@@ -303,10 +312,10 @@ export default function SettingsPage() {
 
   return (
     <div>
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-extrabold text-ink">Configuración</h1>
-          <p className="text-sm text-ink-muted">Personaliza el aspecto de toda la aplicación.</p>
+          <h1 className="text-3xl font-bold text-ink">Configuración</h1>
+          <p className="mt-1 text-sm text-ink-muted">Personalizá el aspecto y los datos de tu app.</p>
         </div>
         {saving && (
           <span className="inline-flex items-center gap-2 text-sm text-ink-muted">
@@ -315,188 +324,23 @@ export default function SettingsPage() {
         )}
       </div>
 
+      <div className="mb-6 flex w-full gap-1 overflow-x-auto rounded-2xl bg-surface-alt p-1 [scrollbar-width:none] sm:w-fit [&::-webkit-scrollbar]:hidden">
+        {TABS.map((tb) => (
+          <button
+            key={tb.id}
+            onClick={() => setTab(tb.id)}
+            className={`shrink-0 whitespace-nowrap rounded-xl px-4 py-2 text-sm font-extrabold transition ${
+              tab === tb.id ? 'bg-surface text-ink shadow-sm' : 'text-ink-muted hover:text-ink'
+            }`}
+          >
+            {tb.label}
+          </button>
+        ))}
+      </div>
+
       <div className="space-y-6">
-        <section className="card p-6">
-          <h2 className="mb-1 flex items-center gap-2 text-lg font-extrabold text-ink">
-            <CreditCard size={20} className="text-primary-strong" />
-            Plan y facturación
-          </h2>
-          <p className="mb-5 text-sm text-ink-muted">Estado del servicio, próxima renovación e historial de cobros.</p>
-          {billingBusy ? (
-            <div className="flex items-center gap-2 py-5 text-sm text-ink-muted"><Loader2 className="animate-spin" size={17} /> Cargando facturación...</div>
-          ) : !billing ? (
-            <p className="text-sm text-ink-muted">No se pudo cargar la información de facturación.</p>
-          ) : (
-            <div className="space-y-5">
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                <div className="rounded-2xl bg-surface-alt p-4">
-                  <p className="text-xs font-bold uppercase tracking-wide text-ink-muted">Plan</p>
-                  <p className="mt-1 font-extrabold capitalize text-ink">{billing.plan}</p>
-                </div>
-                <div className="rounded-2xl bg-surface-alt p-4">
-                  <p className="text-xs font-bold uppercase tracking-wide text-ink-muted">Estado</p>
-                  <p className="mt-1 font-extrabold text-ink">{billing.subscription ? billingStatus(billing.subscription.status) : billing.tenantStatus}</p>
-                </div>
-                <div className="rounded-2xl bg-surface-alt p-4">
-                  <p className="text-xs font-bold uppercase tracking-wide text-ink-muted">Importe</p>
-                  <p className="mt-1 font-extrabold text-ink">{billing.subscription ? `$ ${Number(billing.subscription.amount || 0).toLocaleString('es-AR')}` : 'Pago único'}</p>
-                </div>
-                <div className="rounded-2xl bg-surface-alt p-4">
-                  <p className="text-xs font-bold uppercase tracking-wide text-ink-muted">Próxima renovación</p>
-                  <p className="mt-1 text-sm font-extrabold text-ink">{billing.subscription ? billingDate(billing.subscription.next_payment_date) : 'No corresponde'}</p>
-                </div>
-              </div>
-
-              {billing.subscription?.grace_until && billing.subscription.status === 'past_due' && (
-                <div className="flex items-start gap-3 rounded-2xl border border-amber-400/40 bg-amber-500/10 p-4 text-sm text-ink">
-                  <CalendarClock size={18} className="mt-0.5 shrink-0 text-amber-500" />
-                  <p>El cobro no pudo completarse. El período de gracia finaliza el <strong>{billingDate(billing.subscription.grace_until)}</strong>; luego la app se suspenderá automáticamente.</p>
-                </div>
-              )}
-
-              {billing.subscription?.status === 'authorized' && (
-                <button className="btn-ghost text-red-500 hover:bg-red-500/10" onClick={cancelSubscription} disabled={billingBusy}>
-                  Cancelar renovación automática
-                </button>
-              )}
-
-              {billing.plan === 'mensual' && !billing.subscription && (
-                <div className="rounded-2xl border border-primary/30 bg-primary-softer p-4">
-                  <p className="text-sm font-bold text-ink">La renovación automática todavía no está vinculada.</p>
-                  <p className="mt-1 text-xs text-ink-muted">Autorizá Mercado Pago para evitar interrupciones mensuales del servicio.</p>
-                  <button className="btn-primary mt-3" onClick={startSubscription} disabled={billingBusy}>
-                    Activar renovación automática
-                  </button>
-                </div>
-              )}
-
-              {billing.payments?.length > 0 && (
-                <div>
-                  <p className="mb-2 text-xs font-bold uppercase tracking-wide text-ink-muted">Últimos pagos</p>
-                  <div className="divide-y divide-line overflow-hidden rounded-2xl border border-line">
-                    {billing.payments.slice(0, 6).map((payment) => (
-                      <div key={payment.id} className="flex items-center justify-between gap-3 px-4 py-3 text-sm">
-                        <div><p className="font-bold text-ink">$ {Number(payment.amount || 0).toLocaleString('es-AR')}</p><p className="text-xs text-ink-muted">{billingDate(payment.created_at)}</p></div>
-                        <span className={`rounded-full px-2 py-1 text-xs font-bold ${payment.status === 'approved' ? 'bg-emerald-500/10 text-emerald-600' : 'bg-amber-500/10 text-amber-600'}`}>{payment.status}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-        </section>
-
-        <section className="card p-6">
-          <h2 className="mb-1 flex items-center gap-2 text-lg font-extrabold text-ink">
-            <Store size={20} className="text-primary-strong" />
-            Información del negocio
-          </h2>
-          <p className="mb-5 text-sm text-ink-muted">
-            Se usa en la pestaña del navegador y en el SEO de la página pública.
-          </p>
-          <div className="space-y-3">
-            <label className="block">
-              <span className="mb-1 block text-xs font-bold uppercase tracking-wide text-ink-muted">
-                Nombre del negocio
-              </span>
-              <input
-                className="input w-full"
-                value={biz.name}
-                onChange={(e) => setBiz((b) => ({ ...b, name: e.target.value }))}
-                maxLength={60}
-                placeholder="Nombre del negocio"
-              />
-            </label>
-            <label className="block">
-              <span className="mb-1 block text-xs font-bold uppercase tracking-wide text-ink-muted">Tagline</span>
-              <input
-                className="input w-full"
-                value={biz.tagline}
-                onChange={(e) => setBiz((b) => ({ ...b, tagline: e.target.value }))}
-                maxLength={80}
-                placeholder="Una frase corta, por ej. “Sumá compras, ganá premios”"
-              />
-            </label>
-            <div className="flex flex-wrap items-center gap-3">
-              <button className="btn-primary" onClick={saveBiz} disabled={savingBiz}>
-                {savingBiz ? <Loader2 className="animate-spin" size={15} /> : <Save size={15} />}
-                Guardar
-              </button>
-              <p className="text-xs text-ink-muted">
-                La pestaña mostrará: “{biz.name.trim() || 'Fidelización App'}
-                {biz.tagline.trim() ? ` · ${biz.tagline.trim()}` : ''}”
-              </p>
-            </div>
-          </div>
-        </section>
-
-        <section className="card p-6">
-          <h2 className="mb-1 flex items-center gap-2 text-lg font-extrabold text-ink">
-            <FileImage size={20} className="text-primary-strong" />
-            Logo de la plataforma
-          </h2>
-          <p className="mb-5 text-sm text-ink-muted">
-            Imagen horizontal de <span className="font-bold text-ink">400 x 120 px</span> (medida recomendada). Se
-            muestra completa en la barra de navegación; el recorte se ajusta automáticamente a ese tamaño.
-          </p>
-          <LogoUploader
-            kind="logo"
-            label="Logo"
-            previewBox="h-12 w-40 rounded-xl"
-            display="h-full w-full object-contain"
-            inputRef={logoInput}
-            has={settings.logo}
-            uploading={uploading}
-            onPick={(e) => pickImage(e, 'logo')}
-            onRemove={() => removeImage('logo')}
-          />
-        </section>
-
-        <section className="card p-6">
-          <h2 className="mb-1 flex items-center gap-2 text-lg font-extrabold text-ink">
-            <Square size={20} className="text-primary-strong" />
-            ISO (ícono cuadrado)
-          </h2>
-          <p className="mb-5 text-sm text-ink-muted">
-            Ícono cuadrado que se usa en el sidebar colapsado y como respaldo cuando no hay un logo horizontal cargado.
-          </p>
-          <LogoUploader
-            kind="iso"
-            label="ISO"
-            previewBox="h-20 w-20 rounded-2xl"
-            display="h-full w-full object-cover"
-            inputRef={isoInput}
-            has={settings.logoIso}
-            uploading={uploading}
-            onPick={(e) => pickImage(e, 'iso')}
-            onRemove={() => removeImage('iso')}
-          />
-          <div className="mt-5 border-t border-line pt-4">
-            <p className="mb-1 text-sm font-extrabold text-ink">ISO por defecto</p>
-            <p className="mb-3 text-xs text-ink-muted">
-              Cuando no haya un ISO cargado, se muestra uno de estos íconos del sistema.
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {SYSTEM_ISOS.map(({ key, label, Icon }) => (
-                <button
-                  key={key}
-                  onClick={() => updateSettings({ isoIcon: key })}
-                  title={label}
-                  aria-label={label}
-                  className={`flex h-11 w-11 items-center justify-center rounded-xl border-2 transition-all hover:scale-105 ${
-                    settings.isoIcon === key
-                      ? 'border-primary bg-primary-softer text-primary-strong shadow-glow'
-                      : 'border-line text-ink-muted hover:bg-surface-alt hover:text-ink'
-                  }`}
-                >
-                  <Icon size={20} />
-                </button>
-              ))}
-            </div>
-          </div>
-        </section>
-
+        {tab === 'apariencia' && (
+          <div className="space-y-5 animate-fade-up">
         <section className="card p-6">
           <h2 className="mb-1 flex items-center gap-2 text-lg font-extrabold text-ink">
             <Palette size={20} className="text-primary-strong" />
@@ -573,7 +417,8 @@ export default function SettingsPage() {
           </div>
         </section>
 
-        <section className="card p-6">
+          <div className="grid gap-5 lg:grid-cols-2">
+        <section className="card p-6 lg:col-span-2">
           <h2 className="mb-4 flex items-center gap-2 text-lg font-extrabold text-ink">
             {settings.theme === 'dark' ? <Moon size={20} className="text-primary-strong" /> : <Sun size={20} className="text-primary-strong" />}
             Tema
@@ -605,6 +450,121 @@ export default function SettingsPage() {
         </section>
 
         <section className="card p-6">
+          <h2 className="mb-1 flex items-center gap-2 text-lg font-extrabold text-ink">
+            <FileImage size={20} className="text-primary-strong" />
+            Logo de la plataforma
+          </h2>
+          <p className="mb-5 text-sm text-ink-muted">
+            Imagen horizontal de <span className="font-bold text-ink">400 x 120 px</span> (medida recomendada). Se
+            muestra completa en la barra de navegación; el recorte se ajusta automáticamente a ese tamaño.
+          </p>
+          <LogoUploader
+            kind="logo"
+            label="Logo"
+            previewBox="h-12 w-40 rounded-xl"
+            display="h-full w-full object-contain"
+            inputRef={logoInput}
+            has={settings.logo}
+            uploading={uploading}
+            onPick={(e) => pickImage(e, 'logo')}
+            onRemove={() => removeImage('logo')}
+          />
+        </section>
+
+        <section className="card p-6">
+          <h2 className="mb-1 flex items-center gap-2 text-lg font-extrabold text-ink">
+            <Square size={20} className="text-primary-strong" />
+            ISO (ícono cuadrado)
+          </h2>
+          <p className="mb-5 text-sm text-ink-muted">
+            Ícono cuadrado que se usa en el sidebar colapsado y como respaldo cuando no hay un logo horizontal cargado.
+          </p>
+          <LogoUploader
+            kind="iso"
+            label="ISO"
+            previewBox="h-20 w-20 rounded-2xl"
+            display="h-full w-full object-cover"
+            inputRef={isoInput}
+            has={settings.logoIso}
+            uploading={uploading}
+            onPick={(e) => pickImage(e, 'iso')}
+            onRemove={() => removeImage('iso')}
+          />
+          <div className="mt-5 border-t border-line pt-4">
+            <p className="mb-1 text-sm font-extrabold text-ink">ISO por defecto</p>
+            <p className="mb-3 text-xs text-ink-muted">
+              Cuando no haya un ISO cargado, se muestra uno de estos íconos del sistema.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {SYSTEM_ISOS.map(({ key, label, Icon }) => (
+                <button
+                  key={key}
+                  onClick={() => updateSettings({ isoIcon: key })}
+                  title={label}
+                  aria-label={label}
+                  className={`flex h-11 w-11 items-center justify-center rounded-xl border-2 transition-all hover:scale-105 ${
+                    settings.isoIcon === key
+                      ? 'border-primary bg-primary-softer text-primary-strong shadow-glow'
+                      : 'border-line text-ink-muted hover:bg-surface-alt hover:text-ink'
+                  }`}
+                >
+                  <Icon size={20} />
+                </button>
+              ))}
+            </div>
+          </div>
+        </section>
+
+          </div>
+          </div>
+        )}
+        {tab === 'negocio' && (
+          <div className="max-w-3xl space-y-5 animate-fade-up">
+        <section className="card p-6">
+          <h2 className="mb-1 flex items-center gap-2 text-lg font-extrabold text-ink">
+            <Store size={20} className="text-primary-strong" />
+            Información del negocio
+          </h2>
+          <p className="mb-5 text-sm text-ink-muted">
+            Se usa en la pestaña del navegador y en el SEO de la página pública.
+          </p>
+          <div className="space-y-3">
+            <label className="block">
+              <span className="mb-1 block text-xs font-bold uppercase tracking-wide text-ink-muted">
+                Nombre del negocio
+              </span>
+              <input
+                className="input w-full"
+                value={biz.name}
+                onChange={(e) => setBiz((b) => ({ ...b, name: e.target.value }))}
+                maxLength={60}
+                placeholder="Nombre del negocio"
+              />
+            </label>
+            <label className="block">
+              <span className="mb-1 block text-xs font-bold uppercase tracking-wide text-ink-muted">Tagline</span>
+              <input
+                className="input w-full"
+                value={biz.tagline}
+                onChange={(e) => setBiz((b) => ({ ...b, tagline: e.target.value }))}
+                maxLength={80}
+                placeholder="Una frase corta, por ej. “Sumá compras, ganá premios”"
+              />
+            </label>
+            <div className="flex flex-wrap items-center gap-3">
+              <button className="btn-primary" onClick={saveBiz} disabled={savingBiz}>
+                {savingBiz ? <Loader2 className="animate-spin" size={15} /> : <Save size={15} />}
+                Guardar
+              </button>
+              <p className="text-xs text-ink-muted">
+                La pestaña mostrará: “{biz.name.trim() || 'Fidelización App'}
+                {biz.tagline.trim() ? ` · ${biz.tagline.trim()}` : ''}”
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section className="card p-6">
           <h2 className="mb-4 flex items-center gap-2 text-lg font-extrabold text-ink">
             Moneda
           </h2>
@@ -631,6 +591,85 @@ export default function SettingsPage() {
           </p>
         </section>
 
+          </div>
+        )}
+        {tab === 'plan' && (
+          <div className="max-w-4xl space-y-5 animate-fade-up">
+        <section className="card p-6">
+          <h2 className="mb-1 flex items-center gap-2 text-lg font-extrabold text-ink">
+            <CreditCard size={20} className="text-primary-strong" />
+            Plan y facturación
+          </h2>
+          <p className="mb-5 text-sm text-ink-muted">Estado del servicio, próxima renovación e historial de cobros.</p>
+          {billingBusy ? (
+            <div className="flex items-center gap-2 py-5 text-sm text-ink-muted"><Loader2 className="animate-spin" size={17} /> Cargando facturación...</div>
+          ) : !billing ? (
+            <p className="text-sm text-ink-muted">No se pudo cargar la información de facturación.</p>
+          ) : (
+            <div className="space-y-5">
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="rounded-2xl bg-surface-alt p-4">
+                  <p className="text-xs font-bold uppercase tracking-wide text-ink-muted">Plan</p>
+                  <p className="mt-1 font-extrabold capitalize text-ink">{billing.plan}</p>
+                </div>
+                <div className="rounded-2xl bg-surface-alt p-4">
+                  <p className="text-xs font-bold uppercase tracking-wide text-ink-muted">Estado</p>
+                  <p className="mt-1 font-extrabold text-ink">{billing.subscription ? billingStatus(billing.subscription.status) : billing.tenantStatus}</p>
+                </div>
+                <div className="rounded-2xl bg-surface-alt p-4">
+                  <p className="text-xs font-bold uppercase tracking-wide text-ink-muted">Importe</p>
+                  <p className="mt-1 font-extrabold text-ink">{billing.subscription ? `$ ${Number(billing.subscription.amount || 0).toLocaleString('es-AR')}` : 'Pago único'}</p>
+                </div>
+                <div className="rounded-2xl bg-surface-alt p-4">
+                  <p className="text-xs font-bold uppercase tracking-wide text-ink-muted">Próxima renovación</p>
+                  <p className="mt-1 text-sm font-extrabold text-ink">{billing.subscription ? billingDate(billing.subscription.next_payment_date) : 'No corresponde'}</p>
+                </div>
+              </div>
+
+              {billing.subscription?.grace_until && billing.subscription.status === 'past_due' && (
+                <div className="flex items-start gap-3 rounded-2xl border border-amber-400/40 bg-amber-500/10 p-4 text-sm text-ink">
+                  <CalendarClock size={18} className="mt-0.5 shrink-0 text-amber-500" />
+                  <p>El cobro no pudo completarse. El período de gracia finaliza el <strong>{billingDate(billing.subscription.grace_until)}</strong>; luego la app se suspenderá automáticamente.</p>
+                </div>
+              )}
+
+              {billing.subscription?.status === 'authorized' && (
+                <button className="btn-ghost text-red-500 hover:bg-red-500/10" onClick={cancelSubscription} disabled={billingBusy}>
+                  Cancelar renovación automática
+                </button>
+              )}
+
+              {billing.plan === 'mensual' && !billing.subscription && (
+                <div className="rounded-2xl border border-primary/30 bg-primary-softer p-4">
+                  <p className="text-sm font-bold text-ink">La renovación automática todavía no está vinculada.</p>
+                  <p className="mt-1 text-xs text-ink-muted">Autorizá Mercado Pago para evitar interrupciones mensuales del servicio.</p>
+                  <button className="btn-primary mt-3" onClick={startSubscription} disabled={billingBusy}>
+                    Activar renovación automática
+                  </button>
+                </div>
+              )}
+
+              {billing.payments?.length > 0 && (
+                <div>
+                  <p className="mb-2 text-xs font-bold uppercase tracking-wide text-ink-muted">Últimos pagos</p>
+                  <div className="divide-y divide-line overflow-hidden rounded-2xl border border-line">
+                    {billing.payments.slice(0, 6).map((payment) => (
+                      <div key={payment.id} className="flex items-center justify-between gap-3 px-4 py-3 text-sm">
+                        <div><p className="font-bold text-ink">$ {Number(payment.amount || 0).toLocaleString('es-AR')}</p><p className="text-xs text-ink-muted">{billingDate(payment.created_at)}</p></div>
+                        <span className={`rounded-full px-2 py-1 text-xs font-bold ${payment.status === 'approved' ? 'bg-emerald-500/10 text-emerald-600' : 'bg-amber-500/10 text-amber-600'}`}>{payment.status}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </section>
+
+          </div>
+        )}
+        {tab === 'cuenta' && (
+          <div className="space-y-5 animate-fade-up">
         <section className="card p-6">
           <h2 className="mb-1 flex items-center gap-2 text-lg font-extrabold text-ink">
             <ShieldCheck size={20} className="text-primary-strong" />
@@ -796,18 +835,8 @@ export default function SettingsPage() {
           </div>
         </section>
 
-        <div className="flex justify-end">
-          <button
-            className="btn-primary"
-            onClick={async () => {
-              await saveBiz();
-            }}
-            disabled={savingBiz}
-          >
-            {savingBiz ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
-            Guardar configuración
-          </button>
-        </div>
+          </div>
+        )}
       </div>
 
       {cropFor && (

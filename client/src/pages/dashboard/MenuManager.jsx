@@ -12,7 +12,8 @@ import {
   Trash2,
   UtensilsCrossed,
 } from 'lucide-react';
-import { api, formatMoney } from '../../api.js';
+import { api } from '../../api.js';
+import { money } from '../../lib/money.js';
 import { useTheme } from '../../context/ThemeContext.jsx';
 import { EmptyState, Modal, Spinner, toast } from '../../components/ui.jsx';
 import ImageCropper from '../../components/ImageCropper.jsx';
@@ -55,7 +56,7 @@ export default function MenuManager() {
 
   const items = useMemo(() => {
     return data.items.filter((it) => {
-      const okCat = filter === 'Todas' || it.category === filter;
+      const okCat = filter === 'Todas' || (it.category || 'General') === filter;
       const q = search.trim().toLowerCase();
       const okSearch = !q || it.title.toLowerCase().includes(q) || (it.category || '').toLowerCase().includes(q);
       return okCat && okSearch;
@@ -67,6 +68,14 @@ export default function MenuManager() {
     for (const it of items) (map[it.category] ||= []).push(it);
     return map;
   }, [items]);
+
+  const cats = useMemo(() => {
+    const counts = new Map();
+    for (const it of data.items) counts.set(it.category || 'General', (counts.get(it.category || 'General') || 0) + 1);
+    return [{ name: 'Todas', count: data.items.length }, ...[...counts.entries()].map(([name, count]) => ({ name, count }))];
+  }, [data.items]);
+  const hiddenCount = data.items.filter((it) => !it.available).length;
+  const missingPhotos = data.items.filter((it) => !it.image).length;
 
   const openNew = () => {
     setEditing(null);
@@ -245,10 +254,14 @@ export default function MenuManager() {
 
   return (
     <div>
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+      <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-extrabold text-ink">Gestión del menú</h1>
-          <p className="text-sm text-ink-muted">Agrega, edita o importa productos.</p>
+          <h1 className="text-3xl font-bold text-ink">Menú</h1>
+          <p className="mt-1 text-sm text-ink-muted">
+            {data.items.length} productos
+            {hiddenCount > 0 && ` · ${hiddenCount} oculto${hiddenCount > 1 ? 's' : ''}`}
+            {missingPhotos > 0 && ` · ${missingPhotos} sin foto`}
+          </p>
         </div>
         <div className="flex flex-wrap gap-2">
           <div className="relative">
@@ -310,170 +323,175 @@ export default function MenuManager() {
         </div>
       </div>
 
-      <div className="mb-5 flex flex-wrap items-center gap-3">
-        <div className="relative min-w-52 flex-1">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted" />
-          <input
-            className="input pl-9"
-            placeholder="Buscar por nombre o categoría..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {['Todas', ...data.categories].map((cat) => (
-            <button
-              key={cat}
-              onClick={() => setFilter(cat)}
-              className={`rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all ${
-                filter === cat
-                  ? 'bg-primary text-primary-contrast shadow'
-                  : 'border border-line bg-surface text-ink-muted hover:bg-surface-alt'
-              }`}
-            >
-              {cat}
-            </button>
-          ))}
+      <div className="lg:grid lg:grid-cols-[220px_minmax(0,1fr)] lg:items-start lg:gap-6">
+        <aside className="card hidden p-2.5 lg:sticky lg:top-24 lg:block">
+          <p className="px-2.5 pb-2 pt-1.5 text-[10px] font-extrabold uppercase tracking-[0.18em] text-ink-muted">Categorías</p>
+          <div className="space-y-0.5">
+            {cats.map(({ name, count }) => (
+              <button
+                key={name}
+                onClick={() => setFilter(name)}
+                className={`flex w-full items-center justify-between gap-2 rounded-xl px-2.5 py-2 text-left text-sm transition ${
+                  filter === name ? 'bg-surface-alt font-bold text-primary-strong' : 'font-medium text-ink hover:bg-surface-alt'
+                }`}
+              >
+                <span className="truncate">{name === 'Todas' ? 'Todo el menú' : name}</span>
+                <span className="text-[11px] font-bold text-ink-muted">{count}</span>
+              </button>
+            ))}
+          </div>
+        </aside>
+
+        <div className="min-w-0 space-y-4">
+          <div className="flex flex-wrap gap-2">
+            <div className="relative min-w-52 flex-1">
+              <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-muted" />
+              <input className="input pl-10" placeholder="Buscar por nombre o categoría..." value={search} onChange={(e) => setSearch(e.target.value)} />
+            </div>
+            {missingPhotos > 0 && (
+              <span className="inline-flex items-center gap-1.5 rounded-2xl border border-dashed border-primary/50 px-3.5 py-2.5 text-xs font-semibold text-primary-strong">
+                <Sparkles size={14} />
+                {missingPhotos} sin foto · tocá ✦ en cada producto para generarla con IA
+              </span>
+            )}
+          </div>
+
+          <div className="-mx-4 flex gap-2 overflow-x-auto px-4 [scrollbar-width:none] lg:hidden [&::-webkit-scrollbar]:hidden">
+            {cats.map(({ name, count }) => (
+              <button
+                key={name}
+                onClick={() => setFilter(name)}
+                className={`shrink-0 whitespace-nowrap rounded-full border px-3.5 py-2 text-xs font-semibold transition ${
+                  filter === name ? 'border-primary bg-primary text-primary-contrast' : 'border-line bg-surface text-ink'
+                }`}
+              >
+                {name === 'Todas' ? 'Todo' : name} · {count}
+              </button>
+            ))}
+          </div>
+
+          {loading ? (
+            <Spinner label="Cargando menú..." />
+          ) : items.length === 0 ? (
+            <EmptyState icon={UtensilsCrossed} title="Sin productos" subtitle="Crea uno nuevo o importa un archivo Excel." />
+          ) : (
+            <div className="space-y-5">
+              {Object.entries(grouped).map(([category, list]) => (
+                <section key={category || 'General'} className="card overflow-hidden">
+                  <div className="flex items-center justify-between gap-3 border-b border-line bg-surface-alt px-4 py-2.5">
+                    <h2 className="font-sans text-[10px] font-extrabold uppercase tracking-[0.14em] text-ink-muted">{category || 'General'}</h2>
+                    <span className="text-[11px] font-bold text-ink-muted">{list.length}</span>
+                  </div>
+                  <ul className="divide-y divide-line">
+                    {list.map((item) => {
+                      const disc = Number(item.discount) > 0;
+                      const final = disc ? (Number(item.price) * (100 - Number(item.discount))) / 100 : item.price;
+                      const busy = generatingId === item.id;
+                      return (
+                        <li
+                          key={item.id}
+                          className={`grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-2.5 px-4 py-3 md:grid-cols-[auto_minmax(0,1fr)_110px_130px_auto] md:gap-x-4 ${
+                            item.featured ? 'bg-amber-50/60 dark:bg-amber-400/5' : ''
+                          }`}
+                        >
+                          <div className={`relative h-[52px] w-[52px] shrink-0 overflow-hidden rounded-xl ${!item.available ? 'opacity-50' : ''}`}>
+                            {item.image ? (
+                              <img src={item.image} alt={item.title} className="h-full w-full object-cover" />
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => generateImage(item)}
+                                disabled={!!generatingId}
+                                title="Generar imagen con IA"
+                                className="flex h-full w-full flex-col items-center justify-center rounded-xl border-[1.5px] border-dashed border-primary/60 text-[10px] font-bold text-primary-strong transition hover:bg-primary-softer disabled:opacity-60"
+                              >
+                                <Sparkles size={14} />
+                                IA
+                              </button>
+                            )}
+                            {busy && (
+                              <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-black/55">
+                                <Loader2 className="animate-spin text-white" size={16} />
+                                <span className="text-[10px] font-black text-white">{Math.round(progress[item.id] || 0)}%</span>
+                              </div>
+                            )}
+                          </div>
+
+                          <div className={`min-w-0 ${!item.available ? 'opacity-50' : ''}`}>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <h3 className="font-sans text-sm font-semibold text-ink">{item.title}</h3>
+                              {item.featured && (
+                                <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-amber-400 to-orange-500 px-2 py-0.5 text-[10px] font-black text-white">
+                                  <Star size={10} className="fill-white" />
+                                  {disc ? `OFERTA · −${Number(item.discount)}%` : item.featured_label || 'Oferta'}
+                                </span>
+                              )}
+                            </div>
+                            {item.description && <p className="truncate text-xs text-ink-muted">{item.description}</p>}
+                          </div>
+
+                          <div className="col-span-2 flex items-center justify-between gap-3 md:contents">
+                            <div className={`flex items-baseline gap-2 md:justify-end ${!item.available ? 'opacity-50' : ''}`}>
+                              {disc && <span className="text-xs text-ink-muted line-through">{money(item.price, settings.currency)}</span>}
+                              <span className="font-heading text-base font-bold text-primary-strong">{money(final, settings.currency)}</span>
+                            </div>
+
+                            <button
+                              onClick={(e) => toggleAvailable(item, e)}
+                              className="flex items-center gap-2"
+                              role="switch"
+                              aria-checked={Boolean(item.available)}
+                              title="Cambiar disponibilidad"
+                            >
+                              <span className={`relative h-[22px] w-[38px] shrink-0 rounded-full transition-colors ${item.available ? 'bg-primary' : 'bg-line'}`}>
+                                <span className={`absolute top-[2px] h-[18px] w-[18px] rounded-full bg-white shadow transition-all ${item.available ? 'left-[18px]' : 'left-[2px]'}`} />
+                              </span>
+                              <span className="hidden text-xs font-semibold text-ink sm:inline">{item.available ? 'Visible' : 'Oculto'}</span>
+                            </button>
+
+                            <div className="flex items-center justify-end gap-1.5">
+                              <button
+                                className={`btn-icon !h-8 !w-8 border ${item.featured ? 'border-amber-400/60 text-amber-500' : 'border-line'}`}
+                                onClick={(e) => toggleFeatured(item, e)}
+                                title={item.featured ? 'Quitar de ofertas' : 'Marcar como oferta especial'}
+                                aria-label={item.featured ? 'Quitar de ofertas' : 'Marcar como oferta especial'}
+                              >
+                                <Star size={14} className={item.featured ? 'fill-amber-400' : ''} />
+                              </button>
+                              {item.image && (
+                                <button
+                                  className="btn-icon !h-8 !w-8 border border-line"
+                                  onClick={() => generateImage(item)}
+                                  disabled={!!generatingId}
+                                  title="Regenerar imagen con IA"
+                                  aria-label="Regenerar imagen con IA"
+                                >
+                                  {busy ? <Loader2 className="animate-spin" size={14} /> : <Sparkles size={14} />}
+                                </button>
+                              )}
+                              <button className="btn-ghost !px-3 !py-1.5 !text-xs" onClick={() => openEdit(item)}>
+                                <Pencil size={13} />
+                                Editar
+                              </button>
+                              <button
+                                className="btn-icon !h-8 !w-8 border border-red-200 text-red-500 hover:!bg-red-500/10 dark:border-red-400/30"
+                                onClick={() => remove(item)}
+                                aria-label={`Eliminar ${item.title}`}
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </section>
+              ))}
+            </div>
+          )}
         </div>
       </div>
-
-      {loading ? (
-        <Spinner label="Cargando menú..." />
-      ) : items.length === 0 ? (
-        <EmptyState
-          icon={UtensilsCrossed}
-          title="Sin productos"
-          subtitle="Crea uno nuevo o importa un archivo Excel."
-        />
-      ) : (
-        <div className="space-y-8">
-          {Object.entries(grouped).map(([category, list]) => (
-            <section key={category || 'General'}>
-              <div className="mb-3 flex items-center gap-3">
-                <h2 className="text-lg font-extrabold text-ink">{category || 'General'}</h2>
-                <span className="badge">{list.length}</span>
-                <div className="h-px flex-1 bg-line" />
-              </div>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                {list.map((item) => (
-                  <div key={item.id} className="card overflow-hidden">
-                    <div className="relative aspect-square bg-gradient-to-br from-primary to-primary-strong">
-                      {item.image ? (
-                        <img src={item.image} alt={item.title} className="h-full w-full object-cover" />
-                      ) : (
-                        <div className="flex h-full w-full items-center justify-center text-3xl font-extrabold text-primary-contrast/60">
-                          {(item.title || '?').slice(0, 2).toUpperCase()}
-                        </div>
-                      )}
-                      <div className="absolute right-2 top-2 flex flex-wrap items-center justify-end gap-1.5">
-                        {Number(item.discount) > 0 ? (
-                          <>
-                            <span className="rounded-full bg-surface/90 px-2.5 py-1 text-xs font-bold text-ink-muted line-through">
-                              {formatMoney(item.price, settings.currency)}
-                            </span>
-                            <span className="rounded-full bg-green-500 px-3 py-1 text-sm font-black text-white shadow">
-                              {formatMoney((Number(item.price) * (100 - Number(item.discount))) / 100, settings.currency)}
-                            </span>
-                            <span className="rounded-full bg-red-500 px-2 py-1 text-xs font-black text-white shadow">
-                              -{Number(item.discount)}%
-                            </span>
-                          </>
-                        ) : (
-                          <span className="rounded-full bg-surface/90 px-2.5 py-1 text-xs font-bold text-primary-strong">
-                            {formatMoney(item.price, settings.currency)}
-                          </span>
-                        )}
-                      </div>
-                      <div className="absolute left-2 top-2 flex flex-col items-start gap-1">
-                        <button
-                          onClick={(e) => toggleAvailable(item, e)}
-                          className={`rounded-full px-2.5 py-1 text-xs font-bold shadow ${
-                            item.available
-                              ? 'bg-green-500 text-white'
-                              : 'bg-red-500 text-white'
-                          }`}
-                          title="Cambiar disponibilidad"
-                        >
-                          {item.available ? 'Visible' : 'Oculto'}
-                        </button>
-                        {item.featured && (
-                          <span className="rounded-full bg-gradient-to-r from-amber-400 to-orange-500 px-2.5 py-1 text-xs font-black text-white shadow-glow">
-                            <Star size={12} className="inline-block" /> {item.featured_label || 'Oferta'}
-                          </span>
-                        )}
-                      </div>
-                      {generatingId === item.id && (
-                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2.5 overflow-hidden bg-black/55 backdrop-blur-[2px]">
-                          <div className="animate-shimmer pointer-events-none absolute inset-0 bg-[linear-gradient(100deg,transparent,rgba(255,255,255,0.35)_42%,rgba(255,255,255,0.35)_50%,transparent_58%)] bg-[length:200%_100%]" />
-                          <div className="relative h-14 w-14">
-                            <div className="absolute inset-0 rounded-full border-2 border-white/25" />
-                            <div
-                              className="absolute inset-0 animate-spin rounded-full border-2 border-transparent border-t-primary-contrast"
-                              style={{ animationDuration: '1s' }}
-                            />
-                            <div className="absolute inset-2.5 rounded-full bg-white/25" />
-                            <Sparkles size={14} className="absolute inset-0 m-auto text-white" />
-                          </div>
-                          <span className="text-sm font-black text-white">
-                            {Math.round(progress[item.id] || 0)}%
-                          </span>
-                          <div className="h-1.5 w-28 overflow-hidden rounded-full bg-white/25">
-                            <div
-                              className="h-full rounded-full bg-gradient-to-r from-amber-300 to-orange-500 shadow-glow transition-[width] duration-300"
-                              style={{ width: `${Math.round(progress[item.id] || 0)}%` }}
-                            />
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                    <div className="p-4">
-                      <h3 className="font-bold text-ink">{item.title}</h3>
-                      {item.description && (
-                        <p className="mt-1 line-clamp-2 text-sm text-ink-muted">{item.description}</p>
-                      )}
-                      <div className="mt-3 flex gap-2">
-                        <button className="btn-ghost flex-1 !py-1.5 !text-xs" onClick={() => openEdit(item)}>
-                          <Pencil size={14} />
-                          Editar
-                        </button>
-                        <button
-                          className={`btn-ghost !px-2.5 !py-1.5 !text-xs ${item.featured ? 'border-amber-400/60 text-amber-600 dark:text-amber-400' : ''}`}
-                          onClick={(e) => toggleFeatured(item, e)}
-                          title={item.featured ? 'Quitar de ofertas' : 'Marcar como oferta especial'}
-                          aria-label={item.featured ? 'Quitar de ofertas' : 'Marcar como oferta especial'}
-                        >
-                          <Star size={14} className={item.featured ? 'fill-amber-400 text-amber-500' : ''} />
-                        </button>
-                        <button
-                          className="btn-danger !py-1.5 !text-xs"
-                          onClick={() => remove(item)}
-                          aria-label={`Eliminar ${item.title}`}
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
-                      <button
-                        type="button"
-                        className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-primary/40 py-2.5 text-xs font-semibold text-primary-strong transition-colors hover:bg-primary-soft active:scale-[0.98]"
-                        style={{ touchAction: 'manipulation' }}
-                        onClick={() => generateImage(item)}
-                        disabled={!!generatingId}
-                      >
-                        {generatingId === item.id ? (
-                          <Loader2 className="animate-spin" size={14} />
-                        ) : (
-                          <Sparkles size={14} />
-                        )}
-                        {generatingId === item.id ? 'Generando...' : generatingId ? 'Esperá...' : 'Generar imagen con IA'}
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </section>
-          ))}
-        </div>
-      )}
 
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={editing ? 'Editar producto' : 'Nuevo producto'}>
         <form onSubmit={save} className="space-y-4">
@@ -612,8 +630,8 @@ export default function MenuManager() {
                   />
                   {Number(form.discount) > 0 && Number(form.price) > 0 && (
                     <p className="mt-1.5 rounded-lg bg-green-500/10 px-2.5 py-1.5 text-[11px] font-bold text-green-600 dark:text-green-400">
-                      {formatMoney(Number(form.price), settings.currency)} →{' '}
-                      {formatMoney((Number(form.price) * (100 - Number(form.discount))) / 100, settings.currency)}
+                      {money(Number(form.price), settings.currency)} →{' '}
+                      {money((Number(form.price) * (100 - Number(form.discount))) / 100, settings.currency)}
                     </p>
                   )}
                 </div>
