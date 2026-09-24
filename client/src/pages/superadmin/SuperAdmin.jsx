@@ -3,6 +3,7 @@ import { AlertTriangle, ExternalLink, KeyRound, Loader2, LogIn, Mail, Plus, Refr
 import { api } from '../../api.js';
 import { useAuth } from '../../context/AuthContext.jsx';
 import TenantUsers from './TenantUsers.jsx';
+import SocialContentTab from './SocialContentTab.jsx';
 import '../../styles/wintuu-landing.css';
 import '../../styles/wintuu-landing-v2.css';
 import WintuuLogo from '../../components/landing/WintuuLogo.jsx';
@@ -43,12 +44,14 @@ const NAV = [
   ['tenants', 'Negocios', '#ffe9a8'],
   ['pay', 'Pagos', '#c9bbff'],
   ['sup', 'Soporte', '#ffc4e1'],
+  ['social', 'Redes', '#bff3ea'],
 ];
 const HEADS = {
   home: ['PANEL DE WINTUU', 'Buen día, equipo.'],
   tenants: ['NEGOCIOS', 'Todas las apps'],
   pay: ['PAGOS', 'Cobros de planes'],
   sup: ['SOPORTE', 'Conversaciones'],
+  social: ['CONTENIDO', 'Piezas para redes'],
 };
 
 export function slugify(value) {
@@ -415,6 +418,7 @@ function Panel({ email, onLogout }) {
         {tab === 'tenants' && <TenantsTab tenants={tenants} loading={loading} selectedId={selectedId} onOpen={setSelectedId} />}
         {tab === 'pay' && <PaymentsTab payments={payments} loading={loading} />}
         {tab === 'sup' && <SupportTab tickets={tickets} selected={ticketId} onSelect={setTicketId} reload={loadTickets} />}
+        {tab === 'social' && <SocialContentTab />}
       </main>
 
       {selected && (
