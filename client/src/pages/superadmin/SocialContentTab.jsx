@@ -7,12 +7,7 @@ const FORMATS = {
   story: { w: 1080, h: 1920, label: 'Historia', dims: '1080 × 1920 · 9:16' },
 };
 const ACCENTS = ['#00cfcd', '#ffe9a8', '#ffc4e1', '#c9bbff', '#08282c'];
-const TEMPLATES = [
-  { id: 'bottom', label: 'Foto + texto abajo' },
-  { id: 'top', label: 'Foto + texto arriba' },
-  { id: 'coupon', label: 'Cupón destacado' },
-  { id: 'frame', label: 'Marco con imagen' },
-];
+const LOGO_COLORS = ['#ffffff', '#00cfcd', '#08282c'];
 
 /* ── Helpers de canvas (dibujo puro, sin estado de React) ── */
 function roundRect(ctx, x, y, w, h, r) {
@@ -23,24 +18,6 @@ function roundRect(ctx, x, y, w, h, r) {
   ctx.arcTo(x, y + h, x, y, r);
   ctx.arcTo(x, y, x + w, y, r);
   ctx.closePath();
-}
-function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
-  const words = String(text || '').split(/\s+/);
-  let line = '';
-  let cy = y;
-  for (const w of words) {
-    const test = line ? `${line} ${w}` : w;
-    if (line && ctx.measureText(test).width > maxWidth) {
-      ctx.fillText(line, x, cy);
-      line = w;
-      cy += lineHeight;
-    } else line = test;
-  }
-  if (line) {
-    ctx.fillText(line, x, cy);
-    cy += lineHeight;
-  }
-  return cy;
 }
 function coverImage(ctx, img, x, y, w, h) {
   const ir = img.width / img.height;
@@ -86,49 +63,83 @@ function contrastColor(hex) {
   const b = parseInt(c.substr(4, 2), 16);
   return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.6 ? '#08282c' : '#fff';
 }
-function fitFontSize(ctx, text, maxWidth, maxSize, minSize, family, weight) {
-  let size = maxSize;
-  while (size > minSize) {
-    ctx.font = `${weight} ${Math.round(size)}px ${family}`;
-    if (ctx.measureText(text).width <= maxWidth) break;
-    size -= 4;
-  }
-  return Math.round(size);
+function shade(hex, amt) {
+  const c = hex.replace('#', '');
+  let r = parseInt(c.substr(0, 2), 16), g = parseInt(c.substr(2, 2), 16), b = parseInt(c.substr(4, 2), 16);
+  r = Math.max(0, Math.min(255, Math.round(r * (1 + amt))));
+  g = Math.max(0, Math.min(255, Math.round(g * (1 + amt))));
+  b = Math.max(0, Math.min(255, Math.round(b * (1 + amt))));
+  return '#' + [r, g, b].map((v) => v.toString(16).padStart(2, '0')).join('');
 }
-function drawPhotoText(ctx, W, H, s, pos, img) {
+function hexToRgba(hex, a) {
+  const c = hex.replace('#', '');
+  const r = parseInt(c.substr(0, 2), 16), g = parseInt(c.substr(2, 2), 16), b = parseInt(c.substr(4, 2), 16);
+  return `rgba(${r},${g},${b},${a})`;
+}
+function layoutWrap(ctx, text, maxWidth) {
+  const words = String(text || '').split(/\s+/);
+  const lines = [];
+  let line = '';
+  for (const w of words) {
+    const test = line ? `${line} ${w}` : w;
+    if (line && ctx.measureText(test).width > maxWidth) {
+      lines.push(line);
+      line = w;
+    } else line = test;
+  }
+  if (line) lines.push(line);
+  return lines;
+}
+function drawLines(ctx, lines, x, y, lineHeight) {
+  lines.forEach((l) => {
+    ctx.fillText(l, x, y);
+    y += lineHeight;
+  });
+  return y;
+}
+function drawLogo(ctx, x, y, size, color, align) {
+  ctx.font = `700 ${Math.round(size)}px Fredoka`;
+  ctx.fillStyle = color;
+  ctx.textAlign = align === 'center' ? 'center' : 'left';
+  ctx.textBaseline = 'alphabetic';
+  ctx.fillText('wintuu', x, y);
+  ctx.textAlign = 'left';
+}
+function drawPhoto(ctx, W, H, s, img) {
   if (img) coverImage(ctx, img, 0, 0, W, H);
   else placeholderImg(ctx, 0, 0, W, H, s.accent);
   const grad = ctx.createLinearGradient(0, 0, 0, H);
-  if (pos === 'bottom') {
-    grad.addColorStop(0, 'rgba(8,40,44,0)');
-    grad.addColorStop(0.55, 'rgba(8,40,44,0)');
-    grad.addColorStop(1, 'rgba(8,40,44,0.88)');
-  } else {
-    grad.addColorStop(0, 'rgba(8,40,44,0.85)');
-    grad.addColorStop(0.45, 'rgba(8,40,44,0)');
-    grad.addColorStop(1, 'rgba(8,40,44,0)');
-  }
+  grad.addColorStop(0, 'rgba(8,40,44,0.82)');
+  grad.addColorStop(0.5, 'rgba(8,40,44,0.15)');
+  grad.addColorStop(1, 'rgba(8,40,44,0)');
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, W, H);
   const pad = W * 0.08;
-  let y = pos === 'bottom' ? H * 0.72 : H * 0.08;
+  let y = H * 0.075;
   ctx.textAlign = 'left';
-  ctx.textBaseline = 'middle';
-  ctx.font = `700 ${Math.round(W * 0.032)}px Inter`;
-  const tagW = ctx.measureText(s.tag.toUpperCase()).width + W * 0.06;
-  ctx.fillStyle = s.accent;
-  roundRect(ctx, pad, y, tagW, W * 0.07, W * 0.035);
-  ctx.fill();
-  ctx.fillStyle = contrastColor(s.accent);
-  ctx.fillText(s.tag.toUpperCase(), pad + W * 0.03, y + W * 0.035);
-  y += W * 0.07 + W * 0.06;
   ctx.textBaseline = 'alphabetic';
+  if (s.showLogo) {
+    drawLogo(ctx, pad, y + W * 0.05, W * 0.055, s.logoColor, 'left');
+    y += W * 0.11;
+  }
+  if (s.tag) {
+    ctx.font = `700 ${Math.round(W * 0.032)}px Inter`;
+    const tagW = ctx.measureText(s.tag.toUpperCase()).width + W * 0.06;
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = s.accent;
+    roundRect(ctx, pad, y, tagW, W * 0.07, W * 0.035);
+    ctx.fill();
+    ctx.fillStyle = contrastColor(s.accent);
+    ctx.fillText(s.tag.toUpperCase(), pad + W * 0.03, y + W * 0.035);
+    y += W * 0.07 + W * 0.05;
+    ctx.textBaseline = 'alphabetic';
+  }
   ctx.fillStyle = '#fff';
-  ctx.font = `600 ${Math.round(W * 0.09)}px Fredoka`;
-  y = wrapText(ctx, s.title, pad, y, W - pad * 2, W * 0.1);
+  ctx.font = `600 ${Math.round(W * 0.085)}px Fredoka`;
+  y = drawLines(ctx, layoutWrap(ctx, s.title, W - pad * 2), pad, y + W * 0.075, W * 0.095);
   ctx.font = `500 ${Math.round(W * 0.038)}px Inter`;
-  ctx.fillStyle = 'rgba(255,255,255,.88)';
-  y = wrapText(ctx, s.subtitle, pad, y + W * 0.02, W - pad * 2, W * 0.05) + W * 0.03;
+  ctx.fillStyle = 'rgba(255,255,255,.9)';
+  y = drawLines(ctx, layoutWrap(ctx, s.subtitle, W - pad * 2), pad, y + W * 0.025, W * 0.05) + W * 0.03;
   if (s.cta) {
     ctx.font = `700 ${Math.round(W * 0.034)}px Inter`;
     const ctaW = ctx.measureText(s.cta).width + W * 0.09;
@@ -140,107 +151,79 @@ function drawPhotoText(ctx, W, H, s, pos, img) {
     ctx.fillText(s.cta, pad + W * 0.045, y + W * 0.0375);
   }
 }
-function drawCoupon(ctx, W, H, s) {
-  ctx.fillStyle = '#fffbf5';
+function drawSolid(ctx, W, H, s) {
+  if (s.bgStyle === 'gradient') {
+    const grad = ctx.createLinearGradient(0, 0, W, H);
+    grad.addColorStop(0, s.accent);
+    grad.addColorStop(1, shade(s.accent, -0.42));
+    ctx.fillStyle = grad;
+  } else ctx.fillStyle = s.accent;
   ctx.fillRect(0, 0, W, H);
-  ctx.fillStyle = s.accent;
-  ctx.fillRect(0, 0, W, H * 0.42);
-  const cardX = W * 0.08, cardY = H * 0.36, cardW = W * 0.84, cardH = H * 0.5;
-  ctx.fillStyle = '#fff';
-  roundRect(ctx, cardX, cardY, cardW, cardH, W * 0.04);
-  ctx.fill();
-  ctx.setLineDash([W * 0.02, W * 0.015]);
-  ctx.strokeStyle = s.accent;
-  ctx.lineWidth = W * 0.006;
-  roundRect(ctx, cardX + W * 0.03, cardY + W * 0.03, cardW - W * 0.06, cardH - W * 0.06, W * 0.03);
-  ctx.stroke();
-  ctx.setLineDash([]);
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.font = `700 ${Math.round(W * 0.034)}px Inter`;
-  ctx.fillStyle = contrastColor(s.accent);
-  ctx.fillText(s.tag.toUpperCase(), W / 2, H * 0.18);
-  const titleSize = fitFontSize(ctx, s.title, cardW * 0.82, W * 0.17, W * 0.06, 'Fredoka', '600');
-  ctx.font = `600 ${titleSize}px Fredoka`;
-  ctx.fillStyle = '#08282c';
-  ctx.fillText(s.title, W / 2, cardY + cardH * 0.4);
-  ctx.font = `500 ${Math.round(W * 0.04)}px Inter`;
-  ctx.fillStyle = '#66787a';
-  wrapText(ctx, s.subtitle, W / 2, cardY + cardH * 0.62, cardW * 0.78, W * 0.048);
-  if (s.cta) {
-    ctx.font = `700 ${Math.round(W * 0.036)}px ui-monospace, monospace`;
-    ctx.fillStyle = s.accent;
-    ctx.fillText(s.cta.toUpperCase(), W / 2, cardY + cardH * 0.88);
+  const ink = contrastColor(s.accent);
+  const center = s.align === 'center';
+  const pad = W * 0.1;
+  const x = center ? W / 2 : pad;
+  const maxW = center ? W * 0.82 : W - pad * 2;
+  ctx.textAlign = center ? 'center' : 'left';
+  const logoSize = W * 0.07, tagSize = W * 0.034, titleSize = W * 0.11, subSize = W * 0.042, ctaSize = W * 0.036;
+  const logoH = s.showLogo ? logoSize * 1.5 : 0;
+  const tagH = s.tag ? tagSize * 1.9 : 0;
+  ctx.font = `700 ${Math.round(titleSize)}px Fredoka`;
+  const titleLines = layoutWrap(ctx, s.title, maxW);
+  const titleLH = titleSize * 1.06;
+  ctx.font = `500 ${Math.round(subSize)}px Inter`;
+  const subLines = s.subtitle ? layoutWrap(ctx, s.subtitle, maxW) : [];
+  const subLH = subSize * 1.35;
+  const ctaH = s.cta ? ctaSize * 2.3 : 0;
+  const total = logoH + tagH + titleLines.length * titleLH + (subLines.length ? subLH * subLines.length + subSize * 0.7 : 0) + ctaH + (ctaH ? subSize * 0.6 : 0);
+  let y = H / 2 - total / 2;
+  if (s.showLogo) {
+    drawLogo(ctx, x, y + logoSize * 0.78, logoSize, s.logoColor, s.align);
+    y += logoH;
   }
-  ctx.textAlign = 'left';
   ctx.textBaseline = 'alphabetic';
-}
-function drawFrame(ctx, W, H, s, img) {
-  ctx.fillStyle = '#fffbf5';
-  ctx.fillRect(0, 0, W, H);
-  ctx.fillStyle = s.accent;
-  ctx.fillRect(0, 0, W, H * 0.06);
-  const imgX = W * 0.08, imgY = H * 0.12, imgW = W * 0.84, imgH = H * 0.46;
-  ctx.save();
-  roundRect(ctx, imgX, imgY, imgW, imgH, W * 0.05);
-  ctx.clip();
-  if (img) coverImage(ctx, img, imgX, imgY, imgW, imgH);
-  else placeholderImg(ctx, imgX, imgY, imgW, imgH, s.accent);
-  ctx.restore();
-  let y = imgY + imgH + H * 0.07;
-  ctx.textAlign = 'left';
-  ctx.textBaseline = 'alphabetic';
-  ctx.font = `700 ${Math.round(W * 0.032)}px Inter`;
-  ctx.fillStyle = s.accent;
-  ctx.fillText(s.tag.toUpperCase(), imgX, y);
-  y += W * 0.09;
-  ctx.font = `600 ${Math.round(W * 0.075)}px Fredoka`;
-  ctx.fillStyle = '#08282c';
-  y = wrapText(ctx, s.title, imgX, y, W - imgX * 2, W * 0.085);
-  ctx.font = `500 ${Math.round(W * 0.036)}px Inter`;
-  ctx.fillStyle = '#66787a';
-  y = wrapText(ctx, s.subtitle, imgX, y + W * 0.015, W - imgX * 2, W * 0.05) + W * 0.03;
+  if (s.tag) {
+    ctx.font = `700 ${Math.round(tagSize)}px Inter`;
+    ctx.fillStyle = hexToRgba(ink, 0.72);
+    ctx.fillText(s.tag.toUpperCase(), x, y + tagSize);
+    y += tagH;
+  }
+  ctx.font = `700 ${Math.round(titleSize)}px Fredoka`;
+  ctx.fillStyle = ink;
+  y = drawLines(ctx, titleLines, x, y + titleSize * 0.9, titleLH) - titleLH + titleLines.length * titleLH;
+  if (subLines.length) {
+    ctx.font = `500 ${Math.round(subSize)}px Inter`;
+    ctx.fillStyle = hexToRgba(ink, 0.82);
+    y = drawLines(ctx, subLines, x, y + subSize * 1.1, subLH) + subSize * 0.5;
+  }
   if (s.cta) {
-    ctx.font = `700 ${Math.round(W * 0.032)}px Inter`;
-    const ctaW = ctx.measureText(s.cta).width + W * 0.08;
-    ctx.fillStyle = '#08282c';
-    roundRect(ctx, imgX, y, ctaW, W * 0.07, W * 0.035);
+    ctx.font = `700 ${Math.round(ctaSize)}px Inter`;
+    const ctaW = ctx.measureText(s.cta).width + W * 0.09;
+    const ctaX = center ? x - ctaW / 2 : x;
+    ctx.textAlign = 'left';
+    ctx.fillStyle = ink;
+    roundRect(ctx, ctaX, y, ctaW, ctaSize * 2.2, ctaSize * 1.1);
     ctx.fill();
-    ctx.fillStyle = '#fff';
+    ctx.fillStyle = s.accent;
     ctx.textBaseline = 'middle';
-    ctx.fillText(s.cta, imgX + W * 0.04, y + W * 0.035);
+    ctx.fillText(s.cta, ctaX + W * 0.045, y + ctaSize * 1.1);
   }
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'alphabetic';
 }
 
 /* ── Miniaturas de plantilla (solo CSS) ── */
 function TemplateThumb({ id }) {
-  const base = 'relative h-[52px] w-full overflow-hidden rounded-lg bg-[#e8e2d8]';
-  if (id === 'bottom')
+  if (id === 'photo')
     return (
-      <div className={base} style={{ background: 'linear-gradient(180deg,#e8e2d8 0%,#e8e2d8 55%,#08282c 100%)' }}>
-        <div className="absolute bottom-4 left-1.5 h-2 w-[40%] rounded-sm bg-[#00cfcd]" />
-        <div className="absolute bottom-1.5 left-1.5 h-1.5 w-[60%] rounded-sm bg-white" />
-      </div>
-    );
-  if (id === 'top')
-    return (
-      <div className={base} style={{ background: 'linear-gradient(0deg,#e8e2d8 0%,#e8e2d8 55%,#08282c 100%)' }}>
+      <div className="relative h-[52px] w-full overflow-hidden rounded-lg" style={{ background: 'linear-gradient(0deg,#e8e2d8 0%,#e8e2d8 55%,#08282c 100%)' }}>
         <div className="absolute top-4 left-1.5 h-2 w-[40%] rounded-sm bg-[#00cfcd]" />
         <div className="absolute top-1.5 left-1.5 h-1.5 w-[60%] rounded-sm bg-white" />
       </div>
     );
-  if (id === 'coupon')
-    return (
-      <div className={base}>
-        <div className="absolute inset-x-1 top-1 h-4 rounded bg-[#00cfcd]" />
-        <div className="absolute inset-x-3.5 bottom-1.5 h-5 rounded border-[1.5px] border-dashed border-[#00cfcd] bg-white" />
-      </div>
-    );
   return (
-    <div className={base}>
-      <div className="absolute inset-x-2.5 top-1 h-6 rounded-md bg-[#00cfcd]" />
-      <div className="absolute bottom-3.5 left-2.5 h-1.5 w-[70%] rounded-sm bg-[#66787a]" />
-      <div className="absolute bottom-1.5 left-2.5 h-1.5 w-[50%] rounded-sm bg-[#08282c]" />
+    <div className="relative h-[52px] w-full overflow-hidden rounded-lg" style={{ background: 'linear-gradient(135deg,#00cfcd,#08282c)' }}>
+      <div className="absolute top-1/2 left-1/2 h-1.5 w-[60%] -translate-x-1/2 -translate-y-1/2 rounded-sm bg-white" />
     </div>
   );
 }
@@ -251,7 +234,11 @@ export default function SocialContentTab() {
   const fileRef = useRef(null);
   const imgRef = useRef(null);
   const [format, setFormat] = useState('post');
-  const [template, setTemplate] = useState('bottom');
+  const [template, setTemplate] = useState('photo');
+  const [bgStyle, setBgStyle] = useState('gradient');
+  const [align, setAlign] = useState('center');
+  const [showLogo, setShowLogo] = useState(true);
+  const [logoColor, setLogoColor] = useState('#ffffff');
   const [accent, setAccent] = useState('#00cfcd');
   const [tag, setTag] = useState('PROMO');
   const [title, setTitle] = useState('20% OFF');
@@ -283,17 +270,15 @@ export default function SocialContentTab() {
     const ctx = canvas.getContext('2d');
     const { w: W, h: H } = dims;
     ctx.clearRect(0, 0, W, H);
-    const state = { accent, tag, title, subtitle, cta };
-    const img = getImage();
-    if (template === 'coupon') drawCoupon(ctx, W, H, state);
-    else if (template === 'frame') drawFrame(ctx, W, H, state, img);
-    else drawPhotoText(ctx, W, H, state, template === 'top' ? 'top' : 'bottom', img);
+    const state = { accent, tag, title, subtitle, cta, showLogo, logoColor, bgStyle, align };
+    if (template === 'solid') drawSolid(ctx, W, H, state);
+    else drawPhoto(ctx, W, H, state, getImage());
   }
 
   useEffect(() => {
     draw();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [format, template, accent, tag, title, subtitle, cta, imageSrc]);
+  }, [format, template, bgStyle, align, showLogo, logoColor, accent, tag, title, subtitle, cta, imageSrc]);
 
   useEffect(() => {
     if (document.fonts?.ready) document.fonts.ready.then(draw);
@@ -324,10 +309,11 @@ export default function SocialContentTab() {
   const scale = 620 / dims.h;
   const previewW = Math.round(dims.w * scale);
   const previewH = Math.round(dims.h * scale);
-  const labels =
-    template === 'coupon'
-      ? { tag: 'Etiqueta (ej. CUPÓN)', title: 'Descuento grande', subtitle: 'Condición', cta: 'Código' }
-      : { tag: 'Etiqueta', title: 'Título', subtitle: 'Subtítulo', cta: 'Texto del botón (opcional)' };
+
+  const segBtn = (active) => ({
+    background: active ? '#08282c' : 'transparent',
+    color: active ? '#fff' : '#66787a',
+  });
 
   return (
     <div className="grid gap-4 lg:grid-cols-[320px_minmax(0,1fr)] lg:items-start">
@@ -353,20 +339,54 @@ export default function SocialContentTab() {
         <div>
           <p className={`mb-2 ${EYEBROW}`}>PLANTILLA</p>
           <div className="grid grid-cols-2 gap-2">
-            {TEMPLATES.map((t) => (
+            {[
+              ['photo', 'Foto + texto arriba'],
+              ['solid', 'Fondo de color'],
+            ].map(([id, label]) => (
               <button
-                key={t.id}
+                key={id}
                 type="button"
-                onClick={() => setTemplate(t.id)}
+                onClick={() => setTemplate(id)}
                 className="flex flex-col gap-1.5 rounded-[14px] border-[1.5px] p-2"
-                style={{ background: template === t.id ? '#e6faf6' : '#fff', borderColor: template === t.id ? '#00cfcd' : 'rgba(20,36,37,.12)' }}
+                style={{ background: template === id ? '#e6faf6' : '#fff', borderColor: template === id ? '#00cfcd' : 'rgba(20,36,37,.12)' }}
               >
-                <TemplateThumb id={t.id} />
-                <span className="text-[11px] font-bold text-[#08282c]">{t.label}</span>
+                <TemplateThumb id={id} />
+                <span className="text-[11px] font-bold text-[#08282c]">{label}</span>
               </button>
             ))}
           </div>
         </div>
+
+        {template === 'solid' && (
+          <>
+            <div>
+              <p className={`mb-2 ${EYEBROW}`}>ESTILO DE FONDO</p>
+              <div className="flex gap-1 rounded-full border border-[rgba(20,36,37,.08)] bg-[var(--wt-bg)] p-1">
+                {[
+                  ['solid', 'Sólido'],
+                  ['gradient', 'Degradado'],
+                ].map(([id, label]) => (
+                  <button key={id} type="button" onClick={() => setBgStyle(id)} className="flex-1 rounded-full py-2 text-[12px] font-bold" style={segBtn(bgStyle === id)}>
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <p className={`mb-2 ${EYEBROW}`}>ALINEACIÓN DE TEXTO</p>
+              <div className="flex gap-1 rounded-full border border-[rgba(20,36,37,.08)] bg-[var(--wt-bg)] p-1">
+                {[
+                  ['center', 'Centrado'],
+                  ['left', 'Izquierda'],
+                ].map(([id, label]) => (
+                  <button key={id} type="button" onClick={() => setAlign(id)} className="flex-1 rounded-full py-2 text-[12px] font-bold" style={segBtn(align === id)}>
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
 
         <div>
           <p className={`mb-2 ${EYEBROW}`}>COLOR DE ACENTO</p>
@@ -385,51 +405,81 @@ export default function SocialContentTab() {
         </div>
 
         <div>
-          <p className={`mb-2 ${EYEBROW}`}>IMAGEN</p>
-          <input ref={fileRef} type="file" accept="image/*" onChange={handleFile} className="hidden" />
-          {imageSrc ? (
-            <div className="flex items-center gap-2">
-              <img src={imageSrc} alt="" className="h-11 w-11 shrink-0 rounded-[10px] object-cover" />
-              <span className="min-w-0 flex-1 truncate text-[12.5px] text-[var(--wt-text)]">{imageName}</span>
-              <button
-                type="button"
-                onClick={() => {
-                  imgRef.current = null;
-                  setImageSrc(null);
-                  setImageName('');
-                }}
-                className="shrink-0 text-[12px] font-bold text-[#9b1c4b]"
-              >
-                Quitar
+          <p className={`mb-2 ${EYEBROW}`}>LOGO WINTUU</p>
+          <div className="mb-2 flex gap-1 rounded-full border border-[rgba(20,36,37,.08)] bg-[var(--wt-bg)] p-1">
+            {[
+              [true, 'Con logo'],
+              [false, 'Sin logo'],
+            ].map(([val, label]) => (
+              <button key={label} type="button" onClick={() => setShowLogo(val)} className="flex-1 rounded-full py-2 text-[12px] font-bold" style={segBtn(showLogo === val)}>
+                {label}
               </button>
+            ))}
+          </div>
+          {showLogo && (
+            <div className="flex gap-2">
+              {LOGO_COLORS.map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => setLogoColor(c)}
+                  aria-label={`Logo ${c}`}
+                  className="h-7 w-7 rounded-full shadow-[0_0_0_1px_rgba(20,36,37,.1)_inset]"
+                  style={{ background: c, border: logoColor === c ? '3px solid #08282c' : '3px solid rgba(20,36,37,.15)' }}
+                />
+              ))}
             </div>
-          ) : (
-            <button
-              type="button"
-              onClick={() => fileRef.current?.click()}
-              className="flex w-full items-center justify-center gap-2 rounded-[14px] border-[1.5px] border-dashed border-[rgba(20,36,37,.25)] bg-[var(--wt-bg)] px-4 py-4 text-[13px] font-semibold text-[var(--wt-muted)]"
-            >
-              <Upload size={15} /> Cargar imagen
-            </button>
           )}
         </div>
+
+        {template === 'photo' && (
+          <div>
+            <p className={`mb-2 ${EYEBROW}`}>IMAGEN</p>
+            <input ref={fileRef} type="file" accept="image/*" onChange={handleFile} className="hidden" />
+            {imageSrc ? (
+              <div className="flex items-center gap-2">
+                <div className="h-11 w-11 shrink-0 rounded-[10px] bg-[var(--wt-bg)] bg-cover bg-center" style={{ backgroundImage: `url(${imageSrc})` }} />
+                <span className="min-w-0 flex-1 truncate text-[12.5px] text-[var(--wt-text)]">{imageName}</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    imgRef.current = null;
+                    setImageSrc(null);
+                    setImageName('');
+                  }}
+                  className="shrink-0 text-[12px] font-bold text-[#9b1c4b]"
+                >
+                  Quitar
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => fileRef.current?.click()}
+                className="flex w-full items-center justify-center gap-2 rounded-[14px] border-[1.5px] border-dashed border-[rgba(20,36,37,.25)] bg-[var(--wt-bg)] px-4 py-4 text-[13px] font-semibold text-[var(--wt-muted)]"
+              >
+                <Upload size={15} /> Cargar imagen
+              </button>
+            )}
+          </div>
+        )}
 
         <div className="flex flex-col gap-2.5">
           <p className={EYEBROW}>TEXTOS</p>
           <label className="flex flex-col gap-1.5 text-[12.5px] font-semibold text-[#08282c]">
-            {labels.tag}
+            Etiqueta
             <input className={FIELD} value={tag} onChange={(e) => setTag(e.target.value)} />
           </label>
           <label className="flex flex-col gap-1.5 text-[12.5px] font-semibold text-[#08282c]">
-            {labels.title}
+            Título
             <input className={FIELD} value={title} onChange={(e) => setTitle(e.target.value)} />
           </label>
           <label className="flex flex-col gap-1.5 text-[12.5px] font-semibold text-[#08282c]">
-            {labels.subtitle}
+            Subtítulo
             <input className={FIELD} value={subtitle} onChange={(e) => setSubtitle(e.target.value)} />
           </label>
           <label className="flex flex-col gap-1.5 text-[12.5px] font-semibold text-[#08282c]">
-            {labels.cta}
+            Texto del botón (opcional)
             <input className={FIELD} value={cta} onChange={(e) => setCta(e.target.value)} />
           </label>
         </div>
