@@ -63,6 +63,9 @@ export default function Coupons() {
   const [historyLoading, setHistoryLoading] = useState(true);
   const [historyDetail, setHistoryDetail] = useState(null);
 
+  const [activeList, setActiveList] = useState([]);
+  const [activeLoading, setActiveLoading] = useState(true);
+
   const load = async () => {
     try {
       const res = await api('/api/coupons/catalog/all');
@@ -88,9 +91,22 @@ export default function Coupons() {
     }
   };
 
+  const loadActive = async () => {
+    setActiveLoading(true);
+    try {
+      const res = await api('/api/coupons/active');
+      setActiveList(res.coupons || []);
+    } catch (e) {
+      toast(e.message);
+    } finally {
+      setActiveLoading(false);
+    }
+  };
+
   useEffect(() => {
     load();
     loadHistory();
+    loadActive();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -205,7 +221,9 @@ export default function Coupons() {
               ? 'Definí los premios y cuántos puntos se necesitan para conseguirlos.'
               : tab === 'validate'
                 ? 'Cuando un cliente muestre el código en el local, comprobalo acá para canjearlo.'
-                : 'Todos los cupones ya canjeados, con quién y cuándo.'}
+                : tab === 'active'
+                  ? 'Quién tiene un cupón en curso y cuánto le falta para completarlo.'
+                  : 'Todos los cupones ya canjeados, con quién y cuándo.'}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -228,6 +246,14 @@ export default function Coupons() {
         </button>
         <button
           className={`rounded-xl px-4 py-2 text-sm font-extrabold transition ${
+            tab === 'active' ? 'bg-surface text-ink shadow-sm' : 'text-ink-muted hover:text-ink'
+          }`}
+          onClick={() => setTab('active')}
+        >
+          Cupones activos
+        </button>
+        <button
+          className={`rounded-xl px-4 py-2 text-sm font-extrabold transition ${
             tab === 'history' ? 'bg-surface text-ink shadow-sm' : 'text-ink-muted hover:text-ink'
           }`}
           onClick={() => setTab('history')}
@@ -244,7 +270,52 @@ export default function Coupons() {
         </div>
       </div>
 
-      {tab === 'history' ? (
+      {tab === 'active' ? (
+        <div className="max-w-3xl">
+          {activeLoading ? (
+            <Spinner label="Cargando cupones activos..." />
+          ) : activeList.length === 0 ? (
+            <EmptyState icon={Sparkles} title="Nadie tiene un cupón activo" subtitle="Cuando un cliente active un premio, va a aparecer acá con su progreso." />
+          ) : (
+            <ul className="space-y-2">
+              {activeList.map((c) => {
+                const pts = Number(c.points) || 0;
+                const target = Number(c.target_points) || 1;
+                const pct = Math.min(100, Math.round((pts / target) * 100));
+                const ready = c.status === 'completado';
+                return (
+                  <li key={c.id} className="rounded-2xl border border-line bg-surface p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary-strong text-sm font-extrabold text-primary-contrast">
+                        {customerInitials(c)}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-bold text-ink">{customerName(c)}</p>
+                        <p className="truncate text-xs text-ink-muted">{c.title || TYPE_LABELS[c.type] || c.type}</p>
+                      </div>
+                      <div className="shrink-0 text-right">
+                        <p className="text-sm font-extrabold text-ink">{couponValue(c, currency)}</p>
+                        <span
+                          className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                            ready ? 'bg-green-500/15 text-green-700 dark:text-green-400' : 'bg-amber-500/15 text-amber-600 dark:text-amber-400'
+                          }`}
+                        >
+                          {ready ? 'Listo para canjear' : `${pts}/${target} pts`}
+                        </span>
+                      </div>
+                    </div>
+                    {!ready && (
+                      <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-surface-alt">
+                        <div className="h-full rounded-full bg-gradient-to-r from-primary to-primary-strong transition-all" style={{ width: `${pct}%` }} />
+                      </div>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+      ) : tab === 'history' ? (
         <div className="max-w-3xl">
           {historyLoading ? (
             <Spinner label="Cargando historial..." />

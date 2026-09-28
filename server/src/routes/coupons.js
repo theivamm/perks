@@ -228,6 +228,36 @@ router.post(
   })
 );
 
+// Cupones activos (admin): quién tiene un cupón en curso y su progreso
+router.get(
+  '/active',
+  requireAdmin,
+  asyncHandler(async (req, res) => {
+    const { data, error } = await supabase
+      .from('user_coupons')
+      .select('*')
+      .eq('tenant_id', req.tenant.id)
+      .in('status', ['activado', 'completado'])
+      .order('created_at', { ascending: false })
+      .limit(200);
+    if (error) throw error;
+    const coupons = data || [];
+
+    const userIds = [...new Set(coupons.map((c) => c.user_id).filter(Boolean))];
+    let usersById = {};
+    if (userIds.length) {
+      const { data: users, error: uErr } = await supabase
+        .from('users')
+        .select('id, name, last_name, email, image')
+        .in('id', userIds);
+      if (uErr) throw uErr;
+      usersById = Object.fromEntries((users || []).map((u) => [u.id, u]));
+    }
+
+    res.json({ coupons: coupons.map((c) => ({ ...c, customer: usersById[c.user_id] || null })) });
+  })
+);
+
 // Historial de cupones canjeados (admin): quién lo canjeó y cuándo
 router.get(
   '/history',
