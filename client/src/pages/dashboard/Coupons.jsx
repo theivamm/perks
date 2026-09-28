@@ -1,11 +1,14 @@
 import { useEffect, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   BadgePercent,
   CheckCircle2,
+  Clock,
   Coins,
   Percent,
   Eye,
   Gift,
+  History,
   Loader2,
   Pencil,
   Plus,
@@ -13,18 +16,34 @@ import {
   ShieldCheck,
   Sparkles,
   Trash2,
+  User as UserIcon,
   XCircle,
 } from 'lucide-react';
 import { api, formatDate } from '../../api.js';
 import { useTheme } from '../../context/ThemeContext.jsx';
+import { useTenant } from '../../context/TenantContext.jsx';
 import { EmptyState, Field, Modal, Spinner, Stepper, SwitchRow, confirmDialog, toast } from '../../components/ui.jsx';
 import { couponValue } from '../../components/CouponCards.jsx';
+
+function customerName(c) {
+  const u = c.customer;
+  if (!u) return 'Cliente';
+  return [u.name, u.last_name].filter(Boolean).join(' ') || u.email || 'Cliente';
+}
+
+function customerInitials(c) {
+  const name = customerName(c);
+  return name.slice(0, 1).toUpperCase() || '?';
+}
 
 const EMPTY = { title: '', description: '', type: 'monto', value: '', target_points: '10', active: true };
 const TYPE_LABELS = { monto: 'Monto', descuento: 'Descuento', regalo: 'Regalo' };
 
 export default function Coupons() {
   const { settings } = useTheme();
+  const { t } = useTenant();
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const currency = settings.currency || '$';
 
   const [tab, setTab] = useState('catalog');
@@ -40,6 +59,10 @@ export default function Coupons() {
   const [err, setErr] = useState('');
   const [checking, setChecking] = useState(false);
 
+  const [history, setHistory] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(true);
+  const [historyDetail, setHistoryDetail] = useState(null);
+
   const load = async () => {
     try {
       const res = await api('/api/coupons/catalog/all');
@@ -51,10 +74,40 @@ export default function Coupons() {
     }
   };
 
+  const loadHistory = async () => {
+    setHistoryLoading(true);
+    try {
+      const res = await api('/api/coupons/history');
+      setHistory(res.coupons || []);
+      return res.coupons || [];
+    } catch (e) {
+      toast(e.message);
+      return [];
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
   useEffect(() => {
     load();
+    loadHistory();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Deep-link desde la notificación "un cliente completó un cupón": ?historial=<user_coupon_id>
+  useEffect(() => {
+    const id = searchParams.get('historial');
+    if (!id) return;
+    setTab('history');
+    (async () => {
+      const found = history.find((h) => h.id === id) || (await loadHistory()).find((h) => h.id === id);
+      if (found) setHistoryDetail(found);
+      const next = new URLSearchParams(searchParams);
+      next.delete('historial');
+      setSearchParams(next, { replace: true });
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   const openNew = () => {
     setEditing(null);
@@ -150,7 +203,9 @@ export default function Coupons() {
           <p className="mt-1 text-sm text-ink-muted">
             {tab === 'catalog'
               ? 'Definí los premios y cuántos puntos se necesitan para conseguirlos.'
-              : 'Cuando un cliente muestre el código en el local, comprobalo acá para canjearlo.'}
+              : tab === 'validate'
+                ? 'Cuando un cliente muestre el código en el local, comprobalo acá para canjearlo.'
+                : 'Todos los cupones ya canjeados, con quién y cuándo.'}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -171,6 +226,14 @@ export default function Coupons() {
         >
           Validar cupón
         </button>
+        <button
+          className={`rounded-xl px-4 py-2 text-sm font-extrabold transition ${
+            tab === 'history' ? 'bg-surface text-ink shadow-sm' : 'text-ink-muted hover:text-ink'
+          }`}
+          onClick={() => setTab('history')}
+        >
+          Historial
+        </button>
       </div>
           {tab === 'catalog' && (
             <button className="btn-primary" onClick={openNew}>
@@ -181,7 +244,38 @@ export default function Coupons() {
         </div>
       </div>
 
-      {tab === 'catalog' ? (
+      {tab === 'history' ? (
+        <div className="max-w-3xl">
+          {historyLoading ? (
+            <Spinner label="Cargando historial..." />
+          ) : history.length === 0 ? (
+            <EmptyState icon={History} title="Todavía no hay cupones canjeados" subtitle="Cuando valides un cupón, va a aparecer acá." />
+          ) : (
+            <ul className="space-y-2">
+              {history.map((c) => (
+                <li key={c.id}>
+                  <button
+                    className="flex w-full items-center gap-3 rounded-2xl border border-line bg-surface p-4 text-left transition-colors hover:bg-surface-alt"
+                    onClick={() => setHistoryDetail(c)}
+                  >
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary-strong text-sm font-extrabold text-primary-contrast">
+                      {customerInitials(c)}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-bold text-ink">{customerName(c)}</p>
+                      <p className="truncate text-xs text-ink-muted">{c.title || TYPE_LABELS[c.type] || c.type}</p>
+                    </div>
+                    <div className="shrink-0 text-right">
+                      <p className="text-sm font-extrabold text-ink">{couponValue(c, currency)}</p>
+                      <p className="text-[11px] text-ink-muted">{formatDate(c.redeemed_at)}</p>
+                    </div>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      ) : tab === 'catalog' ? (
         <>
           {loading ? (
             <Spinner label="Cargando cupones..." />
@@ -470,6 +564,63 @@ export default function Coupons() {
           )}
         </div>
       )}
+
+      <Modal
+        open={!!historyDetail}
+        onClose={() => setHistoryDetail(null)}
+        icon={Gift}
+        title={historyDetail ? historyDetail.title || TYPE_LABELS[historyDetail.type] || 'Cupón canjeado' : ''}
+        subtitle="Detalle del canje"
+      >
+        {historyDetail && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-3 rounded-2xl bg-surface-alt p-4">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary-strong font-heading text-sm font-bold text-primary-contrast">
+                {customerInitials(historyDetail)}
+              </div>
+              <div className="min-w-0">
+                <p className="truncate font-heading text-base font-bold text-ink">{customerName(historyDetail)}</p>
+                <p className="truncate text-xs text-ink-muted">{historyDetail.customer?.email}</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="rounded-2xl border border-line p-3">
+                <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-ink-muted">
+                  <Gift size={13} />
+                  Premio
+                </p>
+                <p className="mt-1 font-extrabold text-ink">{couponValue(historyDetail, currency)}</p>
+              </div>
+              <div className="rounded-2xl border border-line p-3">
+                <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-ink-muted">
+                  <Clock size={13} />
+                  Canjeado
+                </p>
+                <p className="mt-1 font-extrabold text-ink">{formatDate(historyDetail.redeemed_at)}</p>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between gap-2 rounded-2xl border border-dashed border-line p-3">
+              <span className="text-xs font-semibold text-ink-muted">Código</span>
+              <span className="text-sm font-black tracking-widest text-primary-strong">{historyDetail.code}</span>
+            </div>
+
+            {historyDetail.user_id && (
+              <button
+                className="btn-primary w-full"
+                onClick={() => {
+                  setHistoryDetail(null);
+                  navigate(t(`/dashboard/cliente/${historyDetail.user_id}`));
+                }}
+              >
+                <UserIcon size={16} />
+                Ver perfil del cliente
+              </button>
+            )}
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }

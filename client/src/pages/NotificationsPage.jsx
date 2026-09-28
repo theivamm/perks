@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Archive, Bell, CheckCheck, History as HistoryIcon } from 'lucide-react';
 import { api } from '../api.js';
+import { useTenant } from '../context/TenantContext.jsx';
 import { EmptyState, Segmented, Spinner, toast } from '../components/ui.jsx';
 import Navbar from '../components/Navbar.jsx';
 import { formatDateTime, formatWhen, groupByDay, notificationGroup, notificationMeta } from '../lib/notifications.js';
@@ -14,6 +16,8 @@ const FILTERS = [
 ];
 
 export default function NotificationsPage() {
+  const navigate = useNavigate();
+  const { t } = useTenant();
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState([]);
   const [tab, setTab] = useState('activas');
@@ -60,6 +64,25 @@ export default function NotificationsPage() {
   const unread = active.filter((n) => !n.read).length;
 
   const isCelebration = (n) => ['reward_progress', 'coupon_won'].includes(n.type) && n.data?.user_coupon_id;
+  const isMilestone = (n) => n.type === 'milestone_reached' && n.data?.user_coupon_id;
+  const clickableFn = (n) => isCelebration(n) || isMilestone(n);
+
+  const markRead = (n) => {
+    if (n.read) return;
+    setItems((list) => list.map((x) => (x.id === n.id ? { ...x, read: true } : x)));
+    api(`/api/notifications/${n.id}/read`, { method: 'POST' }).catch(() => {});
+  };
+
+  const openItem = (n) => {
+    markRead(n);
+    if (isCelebration(n)) {
+      setCelebrate(n);
+      return;
+    }
+    if (isMilestone(n)) {
+      navigate(`${t('/dashboard/cupones')}?historial=${n.data.user_coupon_id}`);
+    }
+  };
 
   return (
     <div className="page-aurora min-h-screen">
@@ -132,14 +155,14 @@ export default function NotificationsPage() {
                   {list.map((n) => {
                     const meta = notificationMeta(n.type);
                     const Icon = meta.icon;
-                    const clickable = isCelebration(n);
+                    const clickable = clickableFn(n);
                     return (
                       <li
                         key={n.id}
                         className={`group flex items-start gap-3 px-4 py-3.5 sm:px-5 ${!n.read ? 'bg-primary-softer/60' : ''} ${
                           clickable ? 'cursor-pointer transition-colors hover:bg-surface-alt' : ''
                         }`}
-                        onClick={() => clickable && setCelebrate(n)}
+                        onClick={() => clickable && openItem(n)}
                       >
                         <span className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${meta.style}`}>
                           <Icon size={18} />
@@ -155,7 +178,9 @@ export default function NotificationsPage() {
                             </p>
                           </div>
                           <p className="mt-0.5 text-sm leading-relaxed text-ink-muted">{n.body}</p>
-                          {clickable && <p className="mt-1 text-xs font-bold text-primary-strong">Ver progreso →</p>}
+                          {clickable && (
+                            <p className="mt-1 text-xs font-bold text-primary-strong">{isMilestone(n) ? 'Ver detalle →' : 'Ver progreso →'}</p>
+                          )}
                         </div>
                         {tab === 'activas' && (
                           <button

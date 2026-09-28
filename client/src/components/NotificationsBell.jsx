@@ -98,10 +98,24 @@ export default function NotificationsBell() {
     }
   };
 
+  // Al hacer click en una notificación la marcamos como leída y la sacamos de la lista
+  // (se archiva del lado del server para que no vuelva a aparecer en el próximo poll).
+  const readAndDismiss = (n) => {
+    setItems((list) => list.filter((x) => x.id !== n.id));
+    if (!n.read) setUnread((u) => Math.max(0, u - 1));
+    api(`/api/notifications/${n.id}/read`, { method: 'POST' }).catch(() => {});
+    api(`/api/notifications/${n.id}/archive`, { method: 'POST' }).catch(() => {});
+  };
+
   const openItem = (n) => {
     setOpen(false);
+    readAndDismiss(n);
     if (['reward_progress', 'coupon_won'].includes(n.type) && n.data?.user_coupon_id) {
       setCelebrate(n);
+      return;
+    }
+    if (n.type === 'milestone_reached' && n.data?.user_coupon_id) {
+      navigate(`${t('/dashboard/cupones')}?historial=${n.data.user_coupon_id}`);
       return;
     }
     if (n.link && /^https?:\/\//i.test(n.link)) {
