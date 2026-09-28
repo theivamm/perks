@@ -244,6 +244,12 @@ router.post(
           external_reference: `wintuu:${req.user.id}:mensual`,
           payer_email: req.user.email,
           back_url: `${origin}/comenzar?plan=mensual&subscription=success`,
+          // Sin esto, el registro de la suscripción depende 100% de que el
+          // cliente vuelva a hacer click en "volver al sitio" tras pagar. Con
+          // notification_url, MP nos avisa server-to-server apenas autoriza
+          // la suscripción, así el alta no se pierde si el cliente cierra la
+          // pestaña o el back_url falla.
+          notification_url: `${origin}/api/payments/mercadopago/webhook`,
           status: 'pending',
           auto_recurring: {
             frequency: 1,
@@ -342,6 +348,7 @@ router.post(
         external_reference: `wintuu:${req.user.id}:${req.tenant.id}`,
         payer_email: req.user.email,
         back_url: `${origin}/${req.tenant.slug}/dashboard/configuracion?subscription=success`,
+        notification_url: `${origin}/api/payments/mercadopago/webhook`,
         status: 'pending',
         auto_recurring: {
           frequency: 1,
