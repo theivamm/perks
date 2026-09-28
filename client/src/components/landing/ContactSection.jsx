@@ -1,6 +1,6 @@
 import friendsPhoto from '../../assets/landing/friends-cafe.jpg';
 
-const WA = 'https://wa.me/541161120433?text=Hola%2C%20tengo%20una%20consulta%20sobre%20Wintuu.';
+const WA = 'https://wa.me/541124026647?text=Hola%2C%20tengo%20una%20consulta%20sobre%20Wintuu.';
 
 export default function ContactSection() {
   return (
@@ -25,7 +25,7 @@ export default function ContactSection() {
               </svg>
               Escribinos por WhatsApp
             </a>
-            <span className="text-[14px] font-semibold text-[#35494b]">+54 11 6112-0433</span>
+            <span className="text-[14px] font-semibold text-[#35494b]">+54 11 2402-6647</span>
           </div>
         </div>
 

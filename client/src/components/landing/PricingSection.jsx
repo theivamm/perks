@@ -27,7 +27,7 @@ const SHARED = [
   'Progreso de clientes y validación de canjes',
   'Menú digital con fotos generadas por IA',
 ];
-const WA = 'https://wa.me/541161120433?text=Hola%2C%20tengo%20una%20consulta%20sobre%20Wintuu.';
+const WA = 'https://wa.me/541124026647?text=Hola%2C%20tengo%20una%20consulta%20sobre%20Wintuu.';
 const fmtPrice = (v) => `$${Number(v || 0).toLocaleString('es-AR')}`;
 
 export default function PricingSection() {

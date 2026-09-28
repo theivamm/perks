@@ -52,7 +52,7 @@ export default function FaqSection() {
           <h2 className="wt-heading text-[clamp(36px,4.4vw,56px)] font-bold leading-none text-[var(--wt-ink)]">Algunas dudas, resueltas.</h2>
           <p className="text-[17px] leading-relaxed text-[var(--wt-muted)]">Y si te queda alguna más, estamos a un mensaje.</p>
           <a
-            href="https://wa.me/541161120433?text=Hola%2C%20tengo%20una%20consulta%20sobre%20Wintuu."
+            href="https://wa.me/541124026647?text=Hola%2C%20tengo%20una%20consulta%20sobre%20Wintuu."
             target="_blank"
             rel="noopener noreferrer"
             className="wt2-btn mt-2 inline-flex items-center gap-2 self-start rounded-full border-[1.5px] border-[var(--wt-border)] bg-[var(--wt-surface)] px-5 py-3 text-[14px] font-bold text-[var(--wt-ink)] hover:border-[var(--wt-ink)]"

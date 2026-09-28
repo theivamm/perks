@@ -4,7 +4,7 @@ import { ArrowRight, Check, Loader2, ShieldCheck } from 'lucide-react';
 import { api } from '../api.js';
 import AuthShell, { mintBtn } from '../components/landing/AuthShell.jsx';
 
-const WHATSAPP_URL = 'https://wa.me/541161120433?text=Hola%2C%20quiero%20contratar%20WINTUU%20y%20necesito%20hablar%20con%20un%20agente%20de%20ventas.';
+const WHATSAPP_URL = 'https://wa.me/541124026647?text=Hola%2C%20quiero%20contratar%20WINTUU%20y%20necesito%20hablar%20con%20un%20agente%20de%20ventas.';
 export const FLOW_STEPS = ['Plan', 'Cuenta', 'Pago', 'Tu negocio'];
 const INCLUDED = ['App con tu marca y enlace', 'Panel de administración', 'Clientes con Google', 'Cupones y premios', 'Códigos QR', 'Menú digital', 'Soporte de Wintuu'];
 
