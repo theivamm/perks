@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { MessageCircle,
+  EyeOff,
   FileSpreadsheet,
   HelpCircle,
   ImagePlus,
@@ -25,8 +26,22 @@ const EMPTY_FORM = { title: '', description: '', price: '', category: 'General',
 const PRICE_MODES = [['fixed', 'Precio fijo'], ['from', 'Desde'], ['ask', 'A consultar']];
 
 export default function MenuManager() {
-  const { settings } = useTheme();
+  const { settings, updateSettings } = useTheme();
   const v = useVocab();
+  const menuEnabled = settings.menuEnabled !== 'false';
+  const [togglingMenu, setTogglingMenu] = useState(false);
+
+  const toggleMenuEnabled = async (next) => {
+    setTogglingMenu(true);
+    try {
+      await updateSettings({ menuEnabled: next ? 'true' : 'false' });
+      toast(next ? `${v.section} visible en el inicio` : `${v.section} desactivado: el inicio solo muestra cupones`);
+    } catch (e) {
+      toast(e.message);
+    } finally {
+      setTogglingMenu(false);
+    }
+  };
   const [data, setData] = useState({ items: [], categories: [] });
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('Todas');
@@ -259,6 +274,23 @@ export default function MenuManager() {
 
   return (
     <div>
+      <div className="mb-5">
+        <SwitchRow
+          checked={!menuEnabled}
+          onChange={(off) => toggleMenuEnabled(!off)}
+          icon={menuEnabled ? Eye : EyeOff}
+          tone="amber"
+          title={`Desactivar ${v.section.toLowerCase()}`}
+          subtitle={
+            togglingMenu
+              ? 'Guardando...'
+              : menuEnabled
+                ? `Si lo activás, el inicio no muestra ${v.items} ni buscador: queda solo la sección de cupones.`
+                : `Está desactivado: el inicio de tu app solo muestra la sección de cupones, sin ${v.items} ni buscador.`
+          }
+        />
+      </div>
+
       <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-ink">{v.section}</h1>

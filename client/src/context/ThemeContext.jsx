@@ -15,6 +15,7 @@ const DEFAULT_SETTINGS = {
   businessName: 'Mi negocio',
   tagline: '',
   setupCompleted: 'true',
+  menuEnabled: 'true',
 };
 
 // Datos de contacto del local (footer + botón flotante). Se guardan en la misma tabla settings.
@@ -36,6 +37,7 @@ function normalize(data) {
     businessName: data.businessName || DEFAULT_SETTINGS.businessName,
     tagline: data.tagline || '',
     setupCompleted: String(data.setupCompleted ?? DEFAULT_SETTINGS.setupCompleted),
+    menuEnabled: String(data.menuEnabled ?? DEFAULT_SETTINGS.menuEnabled) !== 'false' ? 'true' : 'false',
     ...Object.fromEntries(CONTACT_KEYS.map((k) => [k, data[k] || ''])),
     ...Object.fromEntries(VOCAB_KEYS.map((k) => [k, data[k] || ''])),
   };

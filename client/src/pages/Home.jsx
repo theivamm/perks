@@ -128,6 +128,7 @@ export default function Home() {
   const { settings } = useTheme();
   const { t } = useTenant();
   const currency = settings.currency || '$';
+  const menuEnabled = settings.menuEnabled !== 'false';
 
   const [catalog, setCatalog] = useState([]);
   const [mine, setMine] = useState([]);
@@ -242,7 +243,7 @@ export default function Home() {
 
   return (
     <div className="page-aurora min-h-screen">
-      <Navbar search={{ value: query, onChange: setQuery, placeholder: 'Buscar plato, bebida, postre…' }} />
+      <Navbar search={menuEnabled ? { value: query, onChange: setQuery, placeholder: 'Buscar plato, bebida, postre…' } : undefined} />
 
       <main className={`mx-auto w-full min-w-0 max-w-[1600px] overflow-x-clip px-4 pt-4 sm:px-6 sm:pt-6 lg:px-8 ${isAuthed && activeCoupon ? 'pb-28 lg:pb-16' : 'pb-16'}`}>
         {/* Franja de fidelización: estado real del cliente en lugar del hero + 3 bloques explicativos */}
@@ -295,7 +296,7 @@ export default function Home() {
           </div>
         </section>
 
-        <PublicMenu query={query} onQueryChange={setQuery} />
+        {menuEnabled && <PublicMenu query={query} onQueryChange={setQuery} />}
       </main>
 
       <SiteFooter />

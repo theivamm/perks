@@ -81,6 +81,44 @@ export async function addActiveCouponPoint(userId, targetId, tenantId, attempt =
   return { status: 'progress', coupon };
 }
 
+// Completa el cupón activo directamente, sin importar cuántos puntos le falten
+// (acción manual del admin: "dar por completado"). Devuelve el mismo shape que
+// addActiveCouponPoint: { status: 'no_active' } | { status: 'completed', coupon }.
+export async function completeActiveCoupon(userId, targetId, tenantId, attempt = 0) {
+  if (!userId) return { status: 'no_active' };
+
+  let query = supabase.from('user_coupons').select('*').eq('user_id', userId);
+  if (targetId) query = query.eq('id', targetId);
+  if (tenantId) query = query.eq('tenant_id', tenantId);
+  query = query.eq('status', 'activado');
+
+  const { data: active, error } = await query.maybeSingle();
+  if (error) throw error;
+  if (!active) return { status: 'no_active' };
+
+  const target = Math.max(1, Number(active.target_points) || 1);
+  const baseQr = await ensureCouponQrCode(active.id);
+  const { data: coupon, error: upErr } = await supabase
+    .from('user_coupons')
+    .update({
+      points: target,
+      status: 'completado',
+      completed_at: new Date().toISOString(),
+      code: newCouponCode(),
+    })
+    .eq('id', active.id)
+    .eq('points', active.points)
+    .select()
+    .maybeSingle();
+  if (upErr) throw upErr;
+  if (!coupon) {
+    if (attempt >= 1) return { status: 'no_active' };
+    return completeActiveCoupon(userId, targetId, tenantId, attempt + 1);
+  }
+  coupon.qr_code = baseQr || coupon.qr_code;
+  return { status: 'completed', coupon };
+}
+
 // Canjea un cupón completado: lo pasa a 'canjeado' para que no se use de nuevo.
 // Devuelve el cupón actualizado o null si no está listo para canjear.
 export async function redeemReadyCoupon(userCouponId) {

@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CameraOff, Check, Eye, Gift, Loader2, PlusCircle, ScanLine, Ticket, UserCheck } from 'lucide-react';
+import { CameraOff, Check, Eye, Gift, Loader2, PlusCircle, ScanLine, Sparkles, Ticket, UserCheck } from 'lucide-react';
 import { Html5Qrcode } from 'html5-qrcode';
 import { api } from '../../api.js';
 import { useTenant } from '../../context/TenantContext.jsx';
-import { toast } from '../../components/ui.jsx';
+import { confirmDialog, toast } from '../../components/ui.jsx';
 
 const SCAN_ELEMENT = 'qr-reader-region';
 
@@ -21,6 +21,7 @@ export default function ScanPage() {
   const [redeemed, setRedeemed] = useState(null);
   const [progress, setProgress] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [completing, setCompleting] = useState(false);
 
   const setPausedState = (v) => {
     pausedRef.current = v;
@@ -122,6 +123,36 @@ export default function ScanPage() {
     }
   };
 
+  const completeNow = async () => {
+    if (!progress) return;
+    const missing = Math.max(0, (Number(progress.coupon?.target_points) || 0) - (Number(progress.coupon?.points) || 0));
+    const ok = await confirmDialog({
+      title: '¿Completar el cupón ahora?',
+      message: `Esto le va a dar de una los ${missing} punto${missing === 1 ? '' : 's'} que le faltan para completarlo, sin sumarlos uno por uno.`,
+      confirmLabel: 'Sí, completar',
+      cancelLabel: 'Cancelar',
+      tone: 'primary',
+    });
+    if (!ok) return;
+    setCompleting(true);
+    try {
+      const res = await api(`/api/clients/registered/${progress.client.id}/completar`, {
+        method: 'POST',
+        body: { user_coupon_id: progress.user_coupon_id },
+      });
+      if (res.result?.status === 'completed') {
+        toast('¡Cupón completado! Se generó el código de canje y el cliente fue notificado.');
+        resumeScanning();
+      } else {
+        toast(res.result?.error || 'No se pudo completar el cupón.');
+      }
+    } catch (err) {
+      toast(err.message);
+    } finally {
+      setCompleting(false);
+    }
+  };
+
   return (
 <div>
           <div className="mb-6">
@@ -156,20 +187,29 @@ export default function ScanPage() {
               canjear.
             </p>
             <div className="mt-5 flex flex-wrap justify-center gap-3">
-              <button className="btn-primary" onClick={addPoint} disabled={saving}>
+              <button className="btn-primary" onClick={addPoint} disabled={saving || completing}>
                 {saving ? <Loader2 className="animate-spin" size={16} /> : <PlusCircle size={16} />}
                 Sumar 1 punto
               </button>
               <button
                 className="btn-ghost"
                 onClick={() => navigate(t(`/dashboard/cliente/${progress.client.id}?cupon=${progress.user_coupon_id}`))}
+                disabled={saving || completing}
               >
                 <Eye size={16} />
                 Ver perfil
               </button>
-              <button className="btn-ghost" onClick={resumeScanning}>
+              <button className="btn-ghost" onClick={resumeScanning} disabled={saving || completing}>
                 <ScanLine size={16} />
                 Escanear otro
+              </button>
+              <button
+                className="inline-flex items-center gap-2 rounded-full bg-amber-500 px-4 py-2.5 text-sm font-extrabold text-white shadow-sm transition hover:bg-amber-600 disabled:opacity-60"
+                onClick={completeNow}
+                disabled={saving || completing}
+              >
+                {completing ? <Loader2 className="animate-spin" size={16} /> : <Sparkles size={16} />}
+                Completar cupón
               </button>
             </div>
           </div>

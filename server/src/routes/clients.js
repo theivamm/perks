@@ -7,7 +7,7 @@ import { supabase, uploadImage } from '../supabase.js';
 import { requireAdmin } from '../middleware/auth.js';
 import { asyncHandler } from '../asyncHandler.js';
 import { imageUpload, excelUpload, uploadsDir } from '../upload.js';
-import { addActiveCouponPoint, countCompletedOrders } from '../rewards.js';
+import { addActiveCouponPoint, completeActiveCoupon, countCompletedOrders } from '../rewards.js';
 import { notifyPointAdded, notifyUser, redeemReadyCouponAndNotify } from '../notify.js';
 import { getMembership } from '../memberships.js';
 
@@ -344,6 +344,68 @@ router.post(
     }
 
     const result = await addActiveCouponPoint(user.id, userCouponId, req.tenant.id);
+
+    try {
+      await notifyPointAdded(user.id, result, req.tenant.id);
+    } catch (err) {
+      console.warn('[Notificaciones] No se pudieron crear:', err.message);
+    }
+
+    res.status(201).json({ result, activeCoupon: result.coupon || null });
+  })
+);
+
+// Completa el cupón activo del cliente de una sola vez (acción manual del
+// admin desde el scanner), saltando los puntos que falten.
+router.post(
+  '/registered/:id/completar',
+  requireAdmin,
+  asyncHandler(async (req, res) => {
+    const userId = req.params.id;
+    const userCouponId = (req.body || {}).user_coupon_id || null;
+
+    const membership = await getMembership(userId, req.tenant.id);
+    if (membership?.role !== 'cliente') return res.status(404).json({ error: 'Cliente no encontrado' });
+    const { data: user, error: userErr } = await supabase
+      .from('users')
+      .select('id, name, email')
+      .eq('id', userId)
+      .maybeSingle();
+    if (userErr) throw userErr;
+    if (!user) return res.status(404).json({ error: 'Cliente no encontrado' });
+
+    if (userCouponId) {
+      const { data: target, error: tErr } = await supabase
+        .from('user_coupons')
+        .select('id')
+        .eq('id', userCouponId)
+        .eq('user_id', user.id)
+        .eq('status', 'activado')
+        .eq('tenant_id', req.tenant.id)
+        .maybeSingle();
+      if (tErr) throw tErr;
+      if (!target) {
+        return res
+          .status(400)
+          .json({ error: 'El cupón escaneado ya no está activo para completar.' });
+      }
+    } else {
+      const { data: active, error: aErr } = await supabase
+        .from('user_coupons')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('status', 'activado')
+        .eq('tenant_id', req.tenant.id)
+        .maybeSingle();
+      if (aErr) throw aErr;
+      if (!active) {
+        return res
+          .status(400)
+          .json({ error: 'El cliente no tiene un cupón activo para completar.' });
+      }
+    }
+
+    const result = await completeActiveCoupon(user.id, userCouponId, req.tenant.id);
 
     try {
       await notifyPointAdded(user.id, result, req.tenant.id);

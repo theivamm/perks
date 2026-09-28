@@ -40,11 +40,14 @@ const DEFAULTS = {
   hours: '',
   contactButton: '',
   contactMessage: '',
+  // Si 'false', el inicio no muestra menú/catálogo ni buscador (home solo de cupones)
+  menuEnabled: 'true',
 };
 
 const ALLOWED = ['primaryColor', 'theme', 'currency', 'logo', 'logoIso', 'isoIcon', 'businessName', 'tagline', 'setupCompleted',
   'businessType', 'businessTypeOther', 'catalogKind', 'catalogLabel', 'itemLabel', 'itemLabelPlural',
   'businessDescription', 'address', 'mapsUrl', 'phone', 'whatsapp', 'email', 'website', 'instagram', 'facebook', 'tiktok', 'hours', 'contactButton', 'contactMessage',
+  'menuEnabled',
 ];
 
 async function readSettings(tenantId) {

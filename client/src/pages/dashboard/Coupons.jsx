@@ -96,8 +96,10 @@ export default function Coupons() {
     try {
       const res = await api('/api/coupons/active');
       setActiveList(res.coupons || []);
+      return res.coupons || [];
     } catch (e) {
       toast(e.message);
+      return [];
     } finally {
       setActiveLoading(false);
     }
@@ -111,12 +113,23 @@ export default function Coupons() {
   }, []);
 
   // Deep-link desde la notificación "un cliente completó un cupón": ?historial=<user_coupon_id>
+  // El cupón puede estar recién completado (listo para canjear, vive en "active")
+  // o ya canjeado (vive en "history") — buscamos en los dos.
   useEffect(() => {
     const id = searchParams.get('historial');
     if (!id) return;
-    setTab('history');
     (async () => {
-      const found = history.find((h) => h.id === id) || (await loadHistory()).find((h) => h.id === id);
+      let found = history.find((h) => h.id === id);
+      if (found) {
+        setTab('history');
+      } else {
+        found = activeList.find((h) => h.id === id) || (await loadActive()).find((h) => h.id === id);
+        if (found) setTab('active');
+        else {
+          found = (await loadHistory()).find((h) => h.id === id);
+          if (found) setTab('history');
+        }
+      }
       if (found) setHistoryDetail(found);
       const next = new URLSearchParams(searchParams);
       next.delete('historial');
@@ -284,7 +297,11 @@ export default function Coupons() {
                 const pct = Math.min(100, Math.round((pts / target) * 100));
                 const ready = c.status === 'completado';
                 return (
-                  <li key={c.id} className="rounded-2xl border border-line bg-surface p-4">
+                  <li
+                    key={c.id}
+                    className={`rounded-2xl border border-line bg-surface p-4 ${ready ? 'cursor-pointer transition-colors hover:bg-surface-alt' : ''}`}
+                    onClick={() => ready && setHistoryDetail(c)}
+                  >
                     <div className="flex items-center gap-3">
                       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary-strong text-sm font-extrabold text-primary-contrast">
                         {customerInitials(c)}
@@ -640,8 +657,8 @@ export default function Coupons() {
         open={!!historyDetail}
         onClose={() => setHistoryDetail(null)}
         icon={Gift}
-        title={historyDetail ? historyDetail.title || TYPE_LABELS[historyDetail.type] || 'Cupón canjeado' : ''}
-        subtitle="Detalle del canje"
+        title={historyDetail ? historyDetail.title || TYPE_LABELS[historyDetail.type] || 'Cupón' : ''}
+        subtitle={historyDetail?.status === 'canjeado' ? 'Detalle del canje' : 'Listo para canjear'}
       >
         {historyDetail && (
           <div className="space-y-4">
@@ -655,6 +672,12 @@ export default function Coupons() {
               </div>
             </div>
 
+            {historyDetail.status !== 'canjeado' && (
+              <p className="rounded-xl border border-amber-300/60 bg-amber-50 px-3 py-2.5 text-xs font-semibold leading-relaxed text-amber-800 dark:border-amber-400/40 dark:bg-amber-400/10 dark:text-amber-200">
+                Todavía no fue canjeado: el cliente tiene el código listo para mostrar en el local.
+              </p>
+            )}
+
             <div className="grid grid-cols-2 gap-3">
               <div className="rounded-2xl border border-line p-3">
                 <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-ink-muted">
@@ -666,9 +689,11 @@ export default function Coupons() {
               <div className="rounded-2xl border border-line p-3">
                 <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-ink-muted">
                   <Clock size={13} />
-                  Canjeado
+                  {historyDetail.status === 'canjeado' ? 'Canjeado' : 'Completado'}
                 </p>
-                <p className="mt-1 font-extrabold text-ink">{formatDate(historyDetail.redeemed_at)}</p>
+                <p className="mt-1 font-extrabold text-ink">
+                  {formatDate(historyDetail.status === 'canjeado' ? historyDetail.redeemed_at : historyDetail.completed_at)}
+                </p>
               </div>
             </div>
 
