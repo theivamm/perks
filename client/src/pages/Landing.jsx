@@ -10,6 +10,7 @@ import PricingSection from '../components/landing/PricingSection.jsx';
 import FaqSection from '../components/landing/FaqSection.jsx';
 import ContactSection from '../components/landing/ContactSection.jsx';
 import LandingFooter from '../components/landing/LandingFooter.jsx';
+import WhatsAppFab from '../components/landing/WhatsAppFab.jsx';
 
 const TITLE = 'Wintuu | Con Wintuu ganamos todos';
 const DESCRIPTION =
@@ -36,6 +37,7 @@ export default function Landing() {
       <FaqSection />
       <ContactSection />
       <LandingFooter />
+      <WhatsAppFab />
     </div>
   );
 }
