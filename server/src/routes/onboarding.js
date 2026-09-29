@@ -6,6 +6,7 @@ import { DEFAULT_PLAN, isValidPlan } from '../plans.js';
 import { slugify, slugError, slugTaken } from '../slug.js';
 import { signToken } from './auth.js';
 import { ensureMembership } from '../memberships.js';
+import { TERMS_VERSION, clientIp } from '../legal.js';
 
 const router = Router();
 
@@ -122,7 +123,10 @@ router.post(
   '/create',
   requireIdentity,
   asyncHandler(async (req, res) => {
-    const { businessName, slug, plan } = req.body || {};
+    const { businessName, slug, plan, acceptedTerms } = req.body || {};
+    if (acceptedTerms !== true) {
+      return res.status(400).json({ error: 'Tenés que aceptar los Términos del Servicio y la Política de Privacidad para crear tu app.' });
+    }
     const name = String(businessName || '').trim();
     if (!name) return res.status(400).json({ error: 'Poné el nombre de tu negocio' });
     if (name.length > 60) return res.status(400).json({ error: 'El nombre es demasiado largo (máx. 60)' });
@@ -190,6 +194,19 @@ router.post(
     if (sInsErr) throw sInsErr;
 
     const membership = await ensureMembership(user.id, tenant.id, 'admin');
+
+    // Firma digital de aceptación de Términos/Privacidad: queda registrada al
+    // crear la app, con fecha, IP y user-agent, visible para el superadmin.
+    const { error: legalErr } = await supabase.from('legal_acceptances').insert({
+      tenant_id: tenant.id,
+      user_id: user.id,
+      email: user.email,
+      terms_version: TERMS_VERSION,
+      ip: clientIp(req),
+      user_agent: req.headers['user-agent'] || null,
+      context: 'onboarding',
+    });
+    if (legalErr) console.error('[Onboarding] No se pudo registrar la aceptación de términos:', legalErr.message);
 
     if (payment) {
       await supabase.from('payments').update({ tenant_id: tenant.id }).eq('id', payment.id);

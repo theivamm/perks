@@ -88,12 +88,31 @@ router.get(
       }
     }
 
+    // "Firma digital": quién aceptó los Términos/Privacidad al crear la app,
+    // cuándo y desde qué IP. Una app puede tener una sola fila de este tipo
+    // (se registra una vez, al crearla), así que nos quedamos con la más
+    // reciente por las dudas.
+    const legalByTenant = {};
+    if (list.length > 0) {
+      const ids = list.map((t) => t.id);
+      const { data: rows, error: legalErr } = await supabase
+        .from('legal_acceptances')
+        .select('tenant_id, email, terms_version, ip, user_agent, context, accepted_at')
+        .in('tenant_id', ids)
+        .order('accepted_at', { ascending: false });
+      if (legalErr && !isMissingTable(legalErr)) throw legalErr;
+      for (const r of rows || []) {
+        if (!legalByTenant[r.tenant_id]) legalByTenant[r.tenant_id] = r;
+      }
+    }
+
     const enriched = await Promise.all(
       list.map(async (t) => ({
         ...t,
         setup_completed: setup[t.id] ?? true,
         onboarding_reset_used: resetUsed[t.id] ?? false,
         owner: owners[t.owner_user_id] || null,
+        legal_acceptance: legalByTenant[t.id] || null,
         counts: {
           clients: await countFor('tenant_memberships', t.id, 'cliente'),
           orders: await countFor('orders', t.id),

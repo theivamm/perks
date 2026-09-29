@@ -237,13 +237,6 @@ export default function PrivacyPolicy() {
           y te respondemos nosotros, no un bot.
         </p>
       </Section>
-
-      <p className="mt-2 rounded-2xl border border-[var(--wt-border)] bg-[var(--wt-surface-raised)] p-4 text-[13px] leading-relaxed text-[var(--wt-muted)]">
-        Este documento fue redactado con la mayor precisión posible en base al funcionamiento real de Wintuu y a la
-        normativa argentina de protección de datos, pero no reemplaza el asesoramiento de un abogado matriculado. Antes
-        de tratarlo como definitivo, te recomendamos que lo revise un profesional especializado en protección de datos
-        personales.
-      </p>
     </LegalLayout>
   );
 }

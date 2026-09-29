@@ -313,14 +313,6 @@ export default function TermsOfService() {
           antes de aceptar, si algo no te queda claro.
         </p>
       </Section>
-
-      <p className="mt-2 rounded-2xl border border-[var(--wt-border)] bg-[var(--wt-surface-raised)] p-4 text-[13px] leading-relaxed text-[var(--wt-muted)]">
-        Este documento fue redactado con la mayor precisión posible en base al funcionamiento real de Wintuu y a la
-        normativa argentina vigente (Código Civil y Comercial, Ley 24.240 de Defensa del Consumidor, Ley 25.326 de
-        Protección de Datos Personales), pero no reemplaza el asesoramiento de un abogado matriculado. Antes de
-        tratarlo como definitivo, te recomendamos que lo revise un profesional especializado en derecho comercial y de
-        consumidor, sobre todo si vas a operar con Clientes fuera de la Argentina.
-      </p>
     </LegalLayout>
   );
 }

@@ -99,6 +99,7 @@ export default function Onboarding() {
   const [slugInfo, setSlugInfo] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [paymentLoading, setPaymentLoading] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   const selectedPlan = useMemo(
     () => plans.find((p) => p.id === activePlanId) || null,
@@ -262,12 +263,13 @@ export default function Onboarding() {
     e.preventDefault();
     if (submitting) return;
     if (slugInfo && !slugInfo.available) { setError(slugInfo.reason || 'Ese link no está disponible'); return; }
+    if (!acceptedTerms) { setError('Tenés que aceptar los Términos del Servicio y la Política de Privacidad para crear tu app.'); return; }
     setSubmitting(true);
     setError('');
     try {
       const res = await api('/api/onboarding/create', {
         method: 'POST',
-        body: { businessName, slug, plan: activePlanId },
+        body: { businessName, slug, plan: activePlanId, acceptedTerms },
       });
       if (res.token) adoptSession(res, res.slug);
       navigate(`/${res.slug}/primeros-pasos`, { replace: true });
@@ -442,7 +444,27 @@ export default function Onboarding() {
               <span className="ml-auto shrink-0 text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--wt-muted)]">Vista previa</span>
             </div>
 
-            <button className={primaryBtn} disabled={submitting || !businessName || !slugOk}>
+            <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-[var(--wt-border)] bg-[var(--wt-surface)] p-4">
+              <input
+                type="checkbox"
+                checked={acceptedTerms}
+                onChange={(e) => setAcceptedTerms(e.target.checked)}
+                className="mt-0.5 h-[18px] w-[18px] shrink-0 accent-[var(--wt-mint-dark)]"
+              />
+              <span className="text-[13px] leading-relaxed text-[var(--wt-text)]">
+                Leí y acepto los{' '}
+                <a href="/terminos" target="_blank" rel="noopener noreferrer" className="font-bold text-[var(--wt-mint-dark)] underline underline-offset-4">
+                  Términos del Servicio
+                </a>{' '}
+                y la{' '}
+                <a href="/privacidad" target="_blank" rel="noopener noreferrer" className="font-bold text-[var(--wt-mint-dark)] underline underline-offset-4">
+                  Política de Privacidad
+                </a>{' '}
+                de Wintuu, y confirmo que soy responsable del contenido y de mis clientes en esta app.
+              </span>
+            </label>
+
+            <button className={primaryBtn} disabled={submitting || !businessName || !slugOk || !acceptedTerms}>
               {submitting ? <Loader2 className="animate-spin" size={19} /> : <Rocket size={19} />}
               Crear mi app
             </button>

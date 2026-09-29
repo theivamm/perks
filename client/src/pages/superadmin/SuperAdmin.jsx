@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { AlertTriangle, ExternalLink, KeyRound, Loader2, LogIn, Mail, Plus, RefreshCw, Search, Send, ShieldAlert, Trash2, X } from 'lucide-react';
+import { AlertTriangle, ExternalLink, FileSignature, KeyRound, Loader2, LogIn, Mail, Plus, RefreshCw, Search, Send, ShieldAlert, Trash2, X } from 'lucide-react';
 import { api } from '../../api.js';
 import { useAuth } from '../../context/AuthContext.jsx';
 import TenantUsers from './TenantUsers.jsx';
@@ -766,6 +766,33 @@ function TenantDrawer({ tenant, onClose, onSaved, onDeleted }) {
                   Dueño: <strong className="text-[var(--wt-text)]">{tenant.owner?.email || 'sin dueño'}</strong>
                   {tenant.created_at && ` · Alta ${formatDate(tenant.created_at)}`}
                 </p>
+              </div>
+
+              <div className="flex flex-col gap-2 rounded-[18px] border border-[rgba(20,36,37,0.08)] bg-white p-4">
+                <p className="flex items-center gap-2 text-sm font-bold text-[var(--wt-ink)]">
+                  <FileSignature size={16} className="text-[var(--wt-mint-dark)]" /> Firma digital de Términos
+                </p>
+                {tenant.legal_acceptance ? (
+                  <>
+                    <p className="text-[12.5px] leading-relaxed text-[var(--wt-muted)]">
+                      Aceptado por <strong className="text-[var(--wt-text)]">{tenant.legal_acceptance.email || 'sin email'}</strong> el{' '}
+                      <strong className="text-[var(--wt-text)]">{formatDateTime(tenant.legal_acceptance.accepted_at)}</strong>.
+                    </p>
+                    <div className="flex flex-wrap gap-1.5 font-mono text-[11px] text-[var(--wt-muted)]">
+                      <span className="rounded-full bg-[#f3efe8] px-2 py-1">IP: {tenant.legal_acceptance.ip || '—'}</span>
+                      <span className="rounded-full bg-[#f3efe8] px-2 py-1">Versión: {tenant.legal_acceptance.terms_version}</span>
+                    </div>
+                    {tenant.legal_acceptance.user_agent && (
+                      <p className="truncate text-[11px] text-[var(--wt-muted)]/80" title={tenant.legal_acceptance.user_agent}>
+                        {tenant.legal_acceptance.user_agent}
+                      </p>
+                    )}
+                  </>
+                ) : (
+                  <p className="text-[12.5px] text-[var(--wt-muted)]">
+                    Sin registro (app creada antes de habilitar este control, o por el superadmin desde "Nueva app").
+                  </p>
+                )}
               </div>
 
               {!central && (
