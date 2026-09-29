@@ -72,9 +72,13 @@ export default function Checkout() {
                   <span className="font-sans text-[14px] font-medium text-[var(--wt-muted)]"> {lifetime ? 'una vez' : '/mes'}</span>
                 </p>
                 <p className="text-[13px] text-[var(--wt-muted)]">{item.period}</p>
-                {lifetime && (
+                {lifetime ? (
                   <span className="self-start rounded-full bg-[var(--wt-yellow)] px-2.5 py-1 text-[11px] font-extrabold text-[#7a4f00]">
                     {months > 1 ? `Equivale a ${months} meses` : 'Pagás una vez'}
+                  </span>
+                ) : (
+                  <span className="self-start rounded-full bg-[var(--wt-mint)] px-2.5 py-1 text-[11px] font-extrabold text-[#08282c]">
+                    7 días de prueba gratis
                   </span>
                 )}
               </button>
@@ -96,10 +100,11 @@ export default function Checkout() {
 
       <div className="mt-6 flex flex-col gap-4 rounded-[26px] border border-[var(--wt-border)] bg-[var(--wt-surface)] p-5 sm:flex-row sm:items-center">
         <div className="min-w-0 flex-1">
-          <p className="text-[13px] text-[var(--wt-muted)]">Total</p>
+          <p className="text-[13px] text-[var(--wt-muted)]">{selected === 'mensual' ? 'Después de la prueba' : 'Total'}</p>
           <p className="wt-heading text-[26px] font-bold leading-tight text-[var(--wt-ink)]">
             {plan ? fmt(plan.price) : '—'} <span className="font-sans text-[13px] font-medium text-[var(--wt-muted)]">{plan?.period}</span>
           </p>
+          {selected === 'mensual' && <p className="mt-0.5 text-[12.5px] font-semibold text-[var(--wt-mint-dark)]">Hoy no se cobra nada.</p>}
         </div>
         <Link
           to={`/comenzar?plan=${selected}`}

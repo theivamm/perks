@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { CalendarClock, Check, CreditCard, FileImage, ImagePlus, KeyRound, Loader2, Moon, Palette, Save, ShieldCheck, Smartphone, Square, Store, Sun, Trash2 } from 'lucide-react';
+import { CalendarClock, Check, CreditCard, FileImage, Gift, ImagePlus, KeyRound, Loader2, Moon, Palette, Save, ShieldCheck, Smartphone, Square, Store, Sun, Trash2 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext.jsx';
 import { api } from '../../api.js';
 import { PRESET_COLORS, hexToHsl } from '../../color.js';
@@ -157,7 +157,12 @@ export default function SettingsPage() {
   };
 
   const cancelSubscription = async () => {
-    if (!(await confirmDialog({ title: '¿Cancelar la renovación automática?', message: 'Tu app sigue activa hasta el final del período abonado. Podés volver a suscribirte cuando quieras.', confirmLabel: 'Sí, cancelar', cancelLabel: 'Volver' }))) return;
+    const inTrial = billing?.subscription?.trial_ends_at && new Date(billing.subscription.trial_ends_at) > new Date();
+    const until = billingDate(billing?.subscription?.next_payment_date);
+    const message = inTrial
+      ? `No se te va a cobrar nada. Tu app sigue activa con la prueba gratuita hasta el ${until} y después se suspende, sin cargo.`
+      : `Tu app sigue activa hasta el ${until} (fin del período ya abonado) y después se suspende. Podés volver a suscribirte cuando quieras.`;
+    if (!(await confirmDialog({ title: '¿Cancelar la renovación automática?', message, confirmLabel: 'Sí, cancelar', cancelLabel: 'Volver' }))) return;
     setBillingBusy(true);
     try {
       const data = await api('/api/payments/subscription/cancel', { method: 'POST' });
@@ -631,10 +636,23 @@ export default function SettingsPage() {
                   <p className="mt-1 font-extrabold text-ink">{billing.subscription ? `$ ${Number(billing.subscription.amount || 0).toLocaleString('es-AR')}` : 'Pago único'}</p>
                 </div>
                 <div className="rounded-2xl bg-surface-alt p-4">
-                  <p className="text-xs font-bold uppercase tracking-wide text-ink-muted">Próxima renovación</p>
+                  <p className="text-xs font-bold uppercase tracking-wide text-ink-muted">
+                    {billing.subscription && new Date(billing.subscription.trial_ends_at || 0) > new Date() ? 'Primer cobro' : 'Próxima renovación'}
+                  </p>
                   <p className="mt-1 text-sm font-extrabold text-ink">{billing.subscription ? billingDate(billing.subscription.next_payment_date) : 'No corresponde'}</p>
                 </div>
               </div>
+
+              {billing.subscription?.trial_ends_at && new Date(billing.subscription.trial_ends_at) > new Date() && (
+                <div className="flex items-start gap-3 rounded-2xl border border-primary/30 bg-primary-softer p-4 text-sm text-ink">
+                  <Gift size={18} className="mt-0.5 shrink-0 text-primary-strong" />
+                  <p>
+                    Estás en la <strong>prueba gratuita</strong>. No se cobró nada todavía. El primer cobro automático de{' '}
+                    <strong>$ {Number(billing.subscription.amount || 0).toLocaleString('es-AR')}</strong> es el{' '}
+                    <strong>{billingDate(billing.subscription.trial_ends_at)}</strong>. Si cancelás antes, la app se suspende esa misma fecha sin cargo.
+                  </p>
+                </div>
+              )}
 
               {billing.subscription?.grace_until && billing.subscription.status === 'past_due' && (
                 <div className="flex items-start gap-3 rounded-2xl border border-amber-400/40 bg-amber-500/10 p-4 text-sm text-ink">

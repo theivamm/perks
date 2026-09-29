@@ -2,7 +2,7 @@ import crypto from 'crypto';
 import { Router } from 'express';
 import { supabase } from '../supabase.js';
 import { asyncHandler } from '../asyncHandler.js';
-import { getPlans, isValidPlan, DEFAULT_PLAN } from '../plans.js';
+import { getPlans, isValidPlan, DEFAULT_PLAN, getTrialDays } from '../plans.js';
 import { requireAdmin, requireIdentity } from '../middleware/auth.js';
 import { resetTenancyCache } from '../tenancy.js';
 
@@ -148,6 +148,9 @@ async function saveSubscription(preapproval, context = {}) {
     next_payment_date: preapproval.next_payment_date || existing?.next_payment_date || null,
     grace_until: existing?.grace_until || null,
     last_payment_status: existing?.last_payment_status || null,
+    // Solo se define al crear la suscripción (ver /mercadopago/preference);
+    // las actualizaciones posteriores (webhook, reconcile) la conservan tal cual.
+    trial_ends_at: context.trialEndsAt || existing?.trial_ends_at || null,
     raw: preapproval,
     updated_at: new Date().toISOString(),
   };
@@ -158,6 +161,20 @@ async function saveSubscription(preapproval, context = {}) {
     .single();
   if (error) throw error;
   return data;
+}
+
+// Una cuenta no puede reclamar la prueba gratuita dos veces: alcanza con
+// haber empezado una alguna vez (aunque la haya cancelado después).
+async function userAlreadyUsedTrial(userId) {
+  if (!userId) return false;
+  const { data, error } = await supabase
+    .from('subscriptions')
+    .select('id')
+    .eq('user_id', userId)
+    .not('trial_ends_at', 'is', null)
+    .limit(1);
+  if (error) throw error;
+  return (data || []).length > 0;
 }
 
 async function latestPendingSubscription(userId) {
@@ -237,10 +254,27 @@ router.post(
       if (existing?.status === 'authorized') {
         return res.json({ approved: true, type: 'subscription' });
       }
+
+      const wantsTrial = Boolean(req.body?.trial);
+      const alreadyUsedTrial = wantsTrial && (await userAlreadyUsedTrial(req.user.id));
+      const trialDays = wantsTrial && !alreadyUsedTrial ? getTrialDays() : 0;
+      const trialEndsAt = trialDays > 0 ? addDays(new Date(), trialDays) : null;
+
+      const autoRecurring = {
+        frequency: 1,
+        frequency_type: 'months',
+        transaction_amount: plan.price,
+        currency_id: plan.currency,
+      };
+      // Con free_trial, MP autoriza la tarjeta ahora mismo pero recién cobra
+      // al vencer el período de prueba: el primer cobro automático llega solo,
+      // sin que nuestro backend tenga que disparar nada ese día.
+      if (trialDays > 0) autoRecurring.free_trial = { frequency: trialDays, frequency_type: 'days' };
+
       const preapproval = await mercadoPago('/preapproval', {
         method: 'POST',
         body: JSON.stringify({
-          reason: 'Wintuu · Plan Mensual',
+          reason: trialDays > 0 ? `Wintuu · Plan Mensual (prueba ${trialDays} días)` : 'Wintuu · Plan Mensual',
           external_reference: `wintuu:${req.user.id}:mensual`,
           payer_email: req.user.email,
           back_url: `${origin}/comenzar?plan=mensual&subscription=success`,
@@ -251,16 +285,17 @@ router.post(
           // pestaña o el back_url falla.
           notification_url: `${origin}/api/payments/mercadopago/webhook`,
           status: 'pending',
-          auto_recurring: {
-            frequency: 1,
-            frequency_type: 'months',
-            transaction_amount: plan.price,
-            currency_id: plan.currency,
-          },
+          auto_recurring: autoRecurring,
         }),
       });
-      const subscription = await saveSubscription(preapproval, { userId: req.user.id });
-      return res.json({ checkoutUrl: preapproval.init_point, subscriptionId: subscription.id, type: 'subscription' });
+      const subscription = await saveSubscription(preapproval, { userId: req.user.id, trialEndsAt });
+      return res.json({
+        checkoutUrl: preapproval.init_point,
+        subscriptionId: subscription.id,
+        type: 'subscription',
+        trialDays,
+        alreadyUsedTrial,
+      });
     }
 
     const preference = await mercadoPago('/checkout/preferences', {

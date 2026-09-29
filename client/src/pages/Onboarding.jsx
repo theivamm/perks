@@ -92,6 +92,7 @@ export default function Onboarding() {
   const [error, setError] = useState('');
 
   const [activePlanId, setActivePlanId] = useState(desiredPlan);
+  const [wantsTrial, setWantsTrial] = useState(true);
   const [businessName, setBusinessName] = useState('');
   const [slug, setSlug] = useState('');
   const [slugTouched, setSlugTouched] = useState(false);
@@ -247,7 +248,7 @@ export default function Onboarding() {
     try {
       const data = await api('/api/payments/mercadopago/preference', {
         method: 'POST',
-        body: { plan: activePlanId },
+        body: { plan: activePlanId, trial: activePlanId === 'mensual' && wantsTrial },
       });
       if (data.approved) { await loadStatus(); setPaymentLoading(false); return; }
       window.location.assign(data.checkoutUrl);
@@ -355,6 +356,25 @@ export default function Onboarding() {
               })}
             </div>
 
+            {activePlanId === 'mensual' && (
+              <label className="flex cursor-pointer items-start gap-3 rounded-2xl border-2 border-[var(--wt-mint)]/40 bg-[var(--wt-mint)]/10 p-4 transition hover:border-[var(--wt-mint)]/70">
+                <input
+                  type="checkbox"
+                  checked={wantsTrial}
+                  onChange={(e) => setWantsTrial(e.target.checked)}
+                  className="mt-0.5 h-[18px] w-[18px] shrink-0 accent-[var(--wt-mint-dark)]"
+                />
+                <span>
+                  <span className="flex items-center gap-1.5 text-[13.5px] font-bold text-[var(--wt-ink)]">
+                    <Gift size={15} className="text-[var(--wt-mint-dark)]" /> Empezar con 7 días de prueba
+                  </span>
+                  <span className="mt-1 block text-[12.5px] leading-relaxed text-[var(--wt-muted)]">
+                    Autorizás la tarjeta ahora pero no se te cobra nada hoy. Recién a los 7 días Mercado Pago cobra {formatPrice(monthlyPlan?.price)} en forma automática, salvo que canceles antes desde Configuración.
+                  </span>
+                </span>
+              </label>
+            )}
+
             {desiredPlan === 'mensual' && activePlanId === 'mensual' && (
               <p className="flex items-start gap-2.5 rounded-2xl bg-[var(--wt-yellow)]/50 px-4 py-3 text-[13px] leading-relaxed text-[#5c3d00]">
                 <Zap size={16} className="mt-0.5 shrink-0" />
@@ -364,7 +384,9 @@ export default function Onboarding() {
 
             <button className={mintBtn} onClick={startPayment} disabled={paymentLoading || !selectedPlan}>
               {paymentLoading ? <Loader2 className="animate-spin" size={19} /> : <CreditCard size={19} />}
-              {selectedPlan ? `Pagar ${formatPrice(selectedPlan.price)} con Mercado Pago` : 'Pagar con Mercado Pago'}
+              {activePlanId === 'mensual' && wantsTrial
+                ? 'Empezar prueba de 7 días gratis'
+                : selectedPlan ? `Pagar ${formatPrice(selectedPlan.price)} con Mercado Pago` : 'Pagar con Mercado Pago'}
             </button>
             <div className="flex flex-wrap items-center justify-between gap-2 text-[12.5px] text-[var(--wt-muted)]">
               <span className="flex items-center gap-1.5"><Check size={14} className="text-[var(--wt-mint-dark)]" /> Pago 100% seguro</span>

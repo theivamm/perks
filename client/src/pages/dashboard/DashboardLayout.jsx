@@ -27,6 +27,7 @@ import { iconFor } from '../../components/CatalogIcon.jsx';
 import { useTenant } from '../../context/TenantContext.jsx';
 import NotificationsBell from '../../components/NotificationsBell.jsx';
 import Logo from '../../components/Logo.jsx';
+import TrialBanner from '../../components/TrialBanner.jsx';
 
 function initials(name = '') {
   return name
@@ -340,6 +341,8 @@ export default function DashboardLayout() {
             </div>
           </div>
         </header>
+
+        {user?.role === 'admin' && <TrialBanner />}
 
         <main className="flex-1 px-4 pb-28 pt-5 sm:px-7 lg:pb-10 lg:pt-7">
           {settings.setupCompleted !== 'true' && (
