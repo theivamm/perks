@@ -23,30 +23,35 @@ export default function AuthShell({ children, variant = 'client', back = '/', ba
 
         <div className={`relative mx-auto flex w-full flex-1 flex-col justify-center py-10 ${wide ? 'max-w-[640px]' : 'max-w-[440px]'}`}>
           {steps && (
-            <ol className="wt2-rise mb-8 flex items-center gap-2" style={{ '--d': '60ms' }} aria-label="Pasos">
-              {steps.map((label, i) => {
-                const n = i + 1;
-                const done = n < step;
-                const on = n === step;
-                return (
-                  <li key={label} className="flex min-w-0 flex-1 items-center gap-2">
-                    <span
-                      className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[12px] font-extrabold transition ${
-                        done ? 'bg-[var(--wt-mint)] text-[#08282c]' : on ? 'bg-[#08282c] text-white' : 'border-[1.5px] border-[var(--wt-border)] text-[var(--wt-muted)]'
-                      }`}
-                    >
-                      {done ? <Check size={14} strokeWidth={3} /> : n}
-                    </span>
-                    <span className={`truncate text-[12.5px] font-bold ${on ? 'text-[var(--wt-ink)]' : 'text-[var(--wt-muted)]'}`}>{label}</span>
-                    {i < steps.length - 1 && (
-                      <span className="h-[2px] min-w-4 flex-1 overflow-hidden rounded-full bg-[var(--wt-border)]">
-                        <span className="block h-full bg-[var(--wt-mint)] transition-[width] duration-700" style={{ width: done ? '100%' : '0%' }} />
+            <div className="wt2-rise mb-8" style={{ '--d': '60ms' }}>
+              <ol className="flex items-center gap-1.5 sm:gap-2" aria-label="Pasos">
+                {steps.map((label, i) => {
+                  const n = i + 1;
+                  const done = n < step;
+                  const on = n === step;
+                  return (
+                    <li key={label} className="flex min-w-0 items-center gap-2">
+                      <span
+                        className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[12px] font-extrabold transition ${
+                          done ? 'bg-[var(--wt-mint)] text-[#08282c]' : on ? 'bg-[#08282c] text-white' : 'border-[1.5px] border-[var(--wt-border)] text-[var(--wt-muted)]'
+                        }`}
+                      >
+                        {done ? <Check size={14} strokeWidth={3} /> : n}
                       </span>
-                    )}
-                  </li>
-                );
-              })}
-            </ol>
+                      <span className={`hidden truncate text-[12.5px] font-bold sm:inline ${on ? 'text-[var(--wt-ink)]' : 'text-[var(--wt-muted)]'}`}>{label}</span>
+                      {i < steps.length - 1 && (
+                        <span className="h-[2px] w-4 shrink-0 overflow-hidden rounded-full bg-[var(--wt-border)] sm:min-w-4 sm:flex-1">
+                          <span className="block h-full bg-[var(--wt-mint)] transition-[width] duration-700" style={{ width: done ? '100%' : '0%' }} />
+                        </span>
+                      )}
+                    </li>
+                  );
+                })}
+              </ol>
+              <p className="mt-2.5 text-[13px] font-bold text-[var(--wt-ink)] sm:hidden">
+                Paso {step} de {steps.length} · <span className="text-[var(--wt-muted)]">{steps[step - 1]}</span>
+              </p>
+            </div>
           )}
           <div className="wt2-rise" style={{ '--d': '120ms' }}>{children}</div>
         </div>

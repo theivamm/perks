@@ -181,14 +181,30 @@ export default function Onboarding() {
     if (!isAuthed || params.get('subscription') !== 'success') return;
     let active = true;
     setPaymentLoading(true);
-    api('/api/payments/mercadopago/subscription/confirm', { method: 'POST' })
-      .then(async (result) => {
+    // MP a veces tarda unos segundos en autorizar la suscripción después de
+    // volver del checkout. Reintentamos unas cuantas veces antes de resignarnos
+    // a mostrar "todavía pendiente" (el webhook la termina de confirmar sola
+    // si el reintento no alcanza).
+    const attempt = async (n = 0) => {
+      try {
+        const result = await api('/api/payments/mercadopago/subscription/confirm', { method: 'POST' });
         if (!active) return;
-        if (!result.approved) setError('La suscripción todavía está pendiente de autorización.');
+        if (result.approved) {
+          await loadStatus();
+          return;
+        }
+        if (n < 5) {
+          await new Promise((r) => setTimeout(r, 2000));
+          if (active) await attempt(n + 1);
+          return;
+        }
+        setError('La suscripción todavía está pendiente de autorización. Probá recargar esta página en un minuto.');
         await loadStatus();
-      })
-      .catch((err) => { if (active) setError(err.message); })
-      .finally(() => { if (active) setPaymentLoading(false); });
+      } catch (err) {
+        if (active) setError(err.message);
+      }
+    };
+    attempt().finally(() => { if (active) setPaymentLoading(false); });
     return () => { active = false; };
   }, [isAuthed, loadStatus, params]);
 

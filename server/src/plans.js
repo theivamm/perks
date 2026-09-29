@@ -5,9 +5,7 @@ export function getPlans() {
       id: 'mensual',
       name: 'Mensual',
       period: 'por mes',
-      // TEMPORAL: precio bajado a $100 para probar un cobro real de punta a
-      // punta. Volver a 30000 (o setear PLAN_MONTHLY_PRICE) después de probar.
-      price: Number(process.env.PLAN_MONTHLY_PRICE || 100),
+      price: Number(process.env.PLAN_MONTHLY_PRICE || 30000),
       currency: 'ARS',
     },
     {
