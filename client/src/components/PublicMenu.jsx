@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ChevronLeft, ChevronRight, Flame, Loader2, Search, SearchX, Star, UtensilsCrossed, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Flame, Grid3x3, Loader2, List, Search, SearchX, Star, UtensilsCrossed, X } from 'lucide-react';
 import { api } from '../api.js';
 import { useTheme } from '../context/ThemeContext.jsx';
 import { getVocab, priceLabel, durationLabel, whatsappBookingUrl } from '../lib/businessTypes.js';
@@ -204,6 +204,7 @@ export default function PublicMenu({ query: extQuery, onQueryChange }) {
   const setQuery = controlled ? onQueryChange : setOwnQuery;
   const [catFilter, setCatFilter] = useState('Todas');
   const [highlightId, setHighlightId] = useState(null);
+  const [viewMode, setViewMode] = useState('list'); // 'list' o 'cards'
   const highlightTimer = useRef(null);
 
   useEffect(() => {
@@ -365,6 +366,28 @@ export default function PublicMenu({ query: extQuery, onQueryChange }) {
           </div>
         </div>
 
+        {filtered.length > 0 && (
+          <div className="-mb-3 flex items-center justify-between gap-3">
+            <p className="text-xs font-semibold text-ink-muted">{filtered.length} {filtered.length === 1 ? 'producto' : 'productos'}</p>
+            <div className="inline-flex gap-1 rounded-full border border-line bg-surface p-1" role="group" aria-label="Vista">
+              {[['list', List, 'Lista'], ['cards', Grid3x3, 'Tarjetas']].map(([mode, Icon, label]) => (
+                <button
+                  key={mode}
+                  onClick={() => setViewMode(mode)}
+                  aria-pressed={viewMode === mode}
+                  aria-label={label}
+                  className={`flex h-8 items-center gap-1.5 rounded-full px-3 text-xs font-semibold transition ${
+                    viewMode === mode ? 'bg-primary text-primary-contrast shadow-sm' : 'text-ink-muted hover:text-ink'
+                  }`}
+                >
+                  <Icon size={14} />
+                  <span className="hidden sm:inline">{label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {filtered.length === 0 ? (
           <EmptyState icon={SearchX} title="Sin resultados" subtitle="Probá con otra búsqueda o elegí otra categoría." />
         ) : (
@@ -379,24 +402,44 @@ export default function PublicMenu({ query: extQuery, onQueryChange }) {
                     <span className="hidden text-xs font-semibold text-ink-muted lg:inline">{list.length}</span>
                     <div className="hidden h-px flex-1 bg-line lg:block" />
                   </div>
-                  <div className="grid grid-cols-[minmax(0,1fr)] lg:grid-cols-2 lg:gap-3 2xl:grid-cols-3">
-                    {list.map((item) => (
-                      <article
-                        key={item.id}
-                        id={`menu-item-${item.id}`}
-                        className={`group flex min-w-0 items-center gap-3 border-b border-line py-3 lg:gap-3.5 lg:rounded-[18px] lg:border lg:bg-surface lg:p-3 lg:transition lg:hover:border-primary/40 ${ring(item.id)}`}
-                      >
-                        <Thumb item={item} className="order-last h-16 w-16 shrink-0 rounded-xl lg:order-first lg:h-[76px] lg:w-[76px] lg:rounded-2xl" />
-                        <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                          <h4 className="text-sm font-semibold text-ink lg:text-[15px]">{item.title}</h4>
-                          {item.description && <p className="line-clamp-2 text-xs leading-snug text-ink-muted lg:text-[13px]">{item.description}</p>}
-                          <ServiceMeta item={item} settings={settings} />
-                          <p className="mt-1 font-heading text-[15px] font-bold text-primary-strong lg:hidden">{priceLabel(item, money(item.price, currency))}</p>
-                        </div>
-                        <p className="hidden shrink-0 pr-1.5 font-heading text-[17px] font-bold text-primary-strong lg:block">{priceLabel(item, money(item.price, currency))}</p>
-                      </article>
-                    ))}
-                  </div>
+                  {viewMode === 'cards' ? (
+                    <div className="mt-3 grid grid-cols-2 gap-3 lg:grid-cols-3 lg:gap-4 2xl:grid-cols-4">
+                      {list.map((item) => (
+                        <article
+                          key={item.id}
+                          id={`menu-item-${item.id}`}
+                          className={`group flex min-w-0 flex-col overflow-hidden rounded-2xl border border-line bg-surface transition hover:border-primary/40 ${ring(item.id)}`}
+                        >
+                          <Thumb item={item} className="aspect-[4/3] w-full" />
+                          <div className="flex min-w-0 flex-1 flex-col gap-1 p-3 lg:p-4">
+                            <h4 className="text-sm font-semibold leading-snug text-ink lg:text-[15px]">{item.title}</h4>
+                            {item.description && <p className="line-clamp-2 text-xs leading-snug text-ink-muted">{item.description}</p>}
+                            <ServiceMeta item={item} settings={settings} />
+                            <p className="mt-auto pt-2 font-heading text-base font-bold text-primary-strong lg:text-lg">{priceLabel(item, money(item.price, currency))}</p>
+                          </div>
+                        </article>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-[minmax(0,1fr)] lg:grid-cols-2 lg:gap-3 2xl:grid-cols-3">
+                      {list.map((item) => (
+                        <article
+                          key={item.id}
+                          id={`menu-item-${item.id}`}
+                          className={`group flex min-w-0 items-center gap-3 border-b border-line py-3 lg:gap-3.5 lg:rounded-[18px] lg:border lg:bg-surface lg:p-3 lg:transition lg:hover:border-primary/40 ${ring(item.id)}`}
+                        >
+                          <Thumb item={item} className="order-last h-16 w-16 shrink-0 rounded-xl lg:order-first lg:h-[76px] lg:w-[76px] lg:rounded-2xl" />
+                          <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                            <h4 className="text-sm font-semibold text-ink lg:text-[15px]">{item.title}</h4>
+                            {item.description && <p className="line-clamp-2 text-xs leading-snug text-ink-muted lg:text-[13px]">{item.description}</p>}
+                            <ServiceMeta item={item} settings={settings} />
+                            <p className="mt-1 font-heading text-[15px] font-bold text-primary-strong lg:hidden">{priceLabel(item, money(item.price, currency))}</p>
+                          </div>
+                          <p className="hidden shrink-0 pr-1.5 font-heading text-[17px] font-bold text-primary-strong lg:block">{priceLabel(item, money(item.price, currency))}</p>
+                        </article>
+                      ))}
+                    </div>
+                  )}
                 </section>
               ))}
             </div>
