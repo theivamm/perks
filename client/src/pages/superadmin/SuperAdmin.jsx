@@ -776,13 +776,29 @@ function TenantDrawer({ tenant, onClose, onSaved, onDeleted }) {
                       <Pill {...(tenant.setup_completed ? { label: 'Completados', bg: '#dff8f1', ink: '#00705f' } : { label: 'Pendientes', bg: '#fff3cf', ink: '#8a5a00' })} />
                     </p>
                     <p className="mt-0.5 text-[12.5px] text-[var(--wt-muted)]">
-                      {tenant.setup_completed ? 'El administrador ya configuró su app.' : 'El administrador verá el asistente al entrar al panel.'}
+                      {tenant.setup_completed
+                        ? tenant.onboarding_reset_used
+                          ? 'El administrador ya configuró su app. El reinicio de onboarding ya se usó y no está disponible de nuevo.'
+                          : 'El administrador ya configuró su app. Podés reiniciar el onboarding una única vez.'
+                        : 'El administrador verá el asistente al entrar al panel.'}
                     </p>
                   </div>
-                  <button onClick={() => setSetup(!tenant.setup_completed)} disabled={setupBusy} className={`${BTN_GHOST} shrink-0 !px-3.5 !py-2 !text-[12.5px]`}>
-                    {setupBusy && <Loader2 className="animate-spin" size={13} />}
-                    {tenant.setup_completed ? 'Volver a mostrar' : 'Marcar hechos'}
-                  </button>
+                  {tenant.setup_completed ? (
+                    <button
+                      onClick={() => setSetup(false)}
+                      disabled={setupBusy || tenant.onboarding_reset_used}
+                      title={tenant.onboarding_reset_used ? 'Esta cuenta ya usó su única opción de reiniciar el onboarding.' : undefined}
+                      className={`${BTN_GHOST} shrink-0 !px-3.5 !py-2 !text-[12.5px] disabled:cursor-not-allowed disabled:opacity-45`}
+                    >
+                      {setupBusy && <Loader2 className="animate-spin" size={13} />}
+                      {tenant.onboarding_reset_used ? 'Ya se reinició' : 'Reiniciar onboarding'}
+                    </button>
+                  ) : (
+                    <button onClick={() => setSetup(true)} disabled={setupBusy} className={`${BTN_GHOST} shrink-0 !px-3.5 !py-2 !text-[12.5px]`}>
+                      {setupBusy && <Loader2 className="animate-spin" size={13} />}
+                      Marcar hechos
+                    </button>
+                  )}
                 </div>
               )}
 

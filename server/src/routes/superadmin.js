@@ -74,19 +74,25 @@ router.get(
 
     // Estado de "primeros pasos" de cada app (sin la fila = negocio viejo = completado).
     const setup = {};
+    const resetUsed = {};
     if (list.length > 0) {
+      const ids = list.map((t) => t.id);
       const { data: rows } = await supabase
         .from('settings')
-        .select('tenant_id, value')
-        .eq('key', 'setupCompleted')
-        .in('tenant_id', list.map((t) => t.id));
-      for (const r of rows || []) setup[r.tenant_id] = r.value === 'true';
+        .select('tenant_id, key, value')
+        .in('key', ['setupCompleted', 'onboardingResetUsed'])
+        .in('tenant_id', ids);
+      for (const r of rows || []) {
+        if (r.key === 'setupCompleted') setup[r.tenant_id] = r.value === 'true';
+        if (r.key === 'onboardingResetUsed') resetUsed[r.tenant_id] = r.value === 'true';
+      }
     }
 
     const enriched = await Promise.all(
       list.map(async (t) => ({
         ...t,
         setup_completed: setup[t.id] ?? true,
+        onboarding_reset_used: resetUsed[t.id] ?? false,
         owner: owners[t.owner_user_id] || null,
         counts: {
           clients: await countFor('tenant_memberships', t.id, 'cliente'),
@@ -235,7 +241,8 @@ router.patch(
   })
 );
 
-// Marcar primeros pasos como pendientes (el admin vuelve a ver el asistente) o completados.
+// Marcar primeros pasos como pendientes (reiniciar el onboarding, solo puede
+// hacerse UNA vez por cuenta) o como completados (sin límite, uso interno).
 router.patch(
   '/tenants/:id/setup',
   asyncHandler(async (req, res) => {
@@ -244,12 +251,31 @@ router.patch(
     if (!tenant) return res.status(404).json({ error: 'App no encontrada' });
     if (tenant.slug === CENTRAL_TENANT_SLUG) return res.status(403).json({ error: 'La app central Wintuu no se puede modificar' });
 
+    if (!completed) {
+      const { data: resetRow } = await supabase
+        .from('settings')
+        .select('value')
+        .eq('tenant_id', tenant.id)
+        .eq('key', 'onboardingResetUsed')
+        .maybeSingle();
+      if (resetRow?.value === 'true') {
+        return res.status(400).json({ error: 'Esta cuenta ya usó su única opción de reiniciar el onboarding.' });
+      }
+    }
+
     const { error: delError } = await supabase.from('settings').delete().eq('tenant_id', tenant.id).eq('key', 'setupCompleted');
     if (delError) throw delError;
     const { error } = await supabase
       .from('settings')
       .insert({ tenant_id: tenant.id, key: 'setupCompleted', value: completed ? 'true' : 'false' });
     if (error) throw error;
+
+    if (!completed) {
+      const { error: markErr } = await supabase
+        .from('settings')
+        .upsert({ tenant_id: tenant.id, key: 'onboardingResetUsed', value: 'true' }, { onConflict: 'tenant_id,key' });
+      if (markErr) throw markErr;
+    }
 
     res.json({ ok: true, setup_completed: completed });
   })
