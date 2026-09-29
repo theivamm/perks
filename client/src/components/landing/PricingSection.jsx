@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Check, RotateCw } from 'lucide-react';
+import { ArrowRight, Check, Gift, RotateCw } from 'lucide-react';
 import { api } from '../../api.js';
 
 const PLAN_COPY = {
@@ -8,7 +8,7 @@ const PLAN_COPY = {
     name: 'Mensual',
     aclaracion: 'ARS · por mes',
     suffix: ' /mes',
-    description: 'Para sumar Wintuu al día a día de tu negocio, mes a mes. Cancelás la renovación cuando quieras.',
+    description: 'Empezás con 7 días de prueba gratis, sin cargo. Después, mes a mes. Cancelás la renovación cuando quieras.',
     cta: 'Continuar con el mensual',
   },
   vitalicia: {
@@ -59,6 +59,9 @@ export default function PricingSection() {
           <p className="max-w-[520px] text-[17px] leading-relaxed text-[var(--wt-muted)]">
             Las mismas herramientas en los dos planes. Solo cambia cómo pagás: mes a mes o una única vez.
           </p>
+          <p className="inline-flex items-center gap-2 rounded-full bg-[var(--wt-mint)] px-4 py-2 text-[13.5px] font-extrabold text-[#08282c] shadow-[0_10px_26px_-14px_rgba(0,207,205,0.9)]">
+            <Gift size={16} /> El plan Mensual arranca con 7 días de prueba gratis
+          </p>
         </div>
 
         {error ? (
@@ -85,8 +88,10 @@ export default function PricingSection() {
                   }`}
                   style={{ '--wt-delay': `${i * 90}ms` }}
                 >
-                  {featured && (
+                  {featured ? (
                     <span className="absolute right-6 top-6 rounded-full bg-[var(--wt-yellow)] px-3 py-1.5 text-[11px] font-extrabold tracking-wide text-[#7a4f00]">PAGÁS UNA VEZ</span>
+                  ) : (
+                    <span className="absolute right-6 top-6 rounded-full bg-[var(--wt-mint)] px-3 py-1.5 text-[11px] font-extrabold tracking-wide text-[#08282c]">7 DÍAS GRATIS</span>
                   )}
                   <div className="flex flex-col gap-1">
                     <p className="wt-heading text-[24px] font-bold">{plan?.name || copy.name}</p>

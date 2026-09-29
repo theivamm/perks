@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { ArrowRight, Check, Loader2, ShieldCheck } from 'lucide-react';
+import { ArrowRight, Check, Gift, Loader2, ShieldCheck } from 'lucide-react';
 import { api } from '../api.js';
 import AuthShell, { mintBtn } from '../components/landing/AuthShell.jsx';
 
@@ -33,6 +33,15 @@ export default function Checkout() {
       <p className="mt-3 text-[16px] leading-relaxed text-[var(--wt-muted)]">
         Las mismas herramientas en los dos. Después del pago elegís el nombre y el enlace de tu app.
       </p>
+
+      <div className="mt-5 flex items-center gap-3 rounded-[22px] border-2 border-[var(--wt-mint)] bg-[var(--wt-mint)]/12 px-5 py-4">
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[var(--wt-mint)] text-[#08282c]">
+          <Gift size={22} />
+        </span>
+        <p className="text-[14.5px] font-bold leading-snug text-[var(--wt-ink)]">
+          El plan Mensual arranca con <span className="text-[var(--wt-mint-dark)]">7 días de prueba gratis</span>. No se te cobra nada hasta el día 8, y podés cancelar antes sin costo.
+        </p>
+      </div>
 
       {error && <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-600">{error}</div>}
 
