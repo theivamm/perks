@@ -4,6 +4,7 @@ import {
   ArrowRight,
   BadgePercent,
   Check,
+  CheckCircle2,
   Coffee,
   ImagePlus,
   LifeBuoy,
@@ -47,6 +48,7 @@ export default function SetupWizard() {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [openingTicket, setOpeningTicket] = useState(false);
+  const [ticketOpened, setTicketOpened] = useState(false);
   const [crop, setCrop] = useState(null);
   const logoInput = useRef(null);
   const isoInput = useRef(null);
@@ -118,7 +120,7 @@ export default function SetupWizard() {
         },
       });
       toast(`Ticket ${ticket.code} creado`);
-      navigate(t('/dashboard/soporte'));
+      setTicketOpened(true);
     } catch (err) {
       toast(err.message);
     } finally {
@@ -367,10 +369,23 @@ export default function SetupWizard() {
                 Aunque podés continuar sin subirlo, se usa como favicon del navegador y mejora notablemente la experiencia visual de la página.
                 Si todavía no tenés las piezas en estas medidas, administración puede ayudarte a prepararlas o revisarlas.
               </p>
-              <button className="wt2-btn inline-flex items-center gap-2 rounded-full border-[1.5px] border-[var(--wt-border)] bg-[var(--wt-surface)] px-4 py-2.5 text-[13.5px] font-bold text-[var(--wt-ink)] hover:border-[var(--wt-ink)] mt-3" onClick={requestLogoReview} disabled={openingTicket}>
-                {openingTicket ? <Loader2 className="animate-spin" size={15} /> : <LifeBuoy size={15} />}
-                Abrir ticket con administración
+              <button
+                className={`wt2-btn inline-flex items-center gap-2 rounded-full border-[1.5px] px-4 py-2.5 text-[13.5px] font-bold mt-3 ${
+                  ticketOpened
+                    ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
+                    : 'border-[var(--wt-border)] bg-[var(--wt-surface)] text-[var(--wt-ink)] hover:border-[var(--wt-ink)]'
+                }`}
+                onClick={requestLogoReview}
+                disabled={openingTicket || ticketOpened}
+              >
+                {openingTicket ? <Loader2 className="animate-spin" size={15} /> : ticketOpened ? <CheckCircle2 size={15} /> : <LifeBuoy size={15} />}
+                {ticketOpened ? 'Listo, ticket abierto' : 'Abrir ticket con administración'}
               </button>
+              {ticketOpened && (
+                <p className="mt-2.5 text-[12.5px] leading-relaxed text-[var(--wt-muted)]">
+                  Vas a poder ver el ticket y hablar con administración en <strong className="text-[var(--wt-text)]">Soporte</strong> una vez que termines estos pasos y entres al panel.
+                </p>
+              )}
             </div>
 
             <StepFooter onSkip={next} onNext={next} nextLabel="Continuar" />
@@ -379,40 +394,43 @@ export default function SetupWizard() {
 
         {step === 4 && (
           <div className="rounded-[32px] border border-[var(--wt-border)] bg-[var(--wt-surface)] p-6 shadow-[0_24px_60px_-40px_rgba(8,40,44,0.5)] sm:p-9">
-            <StepHeader icon={UtensilsCrossed} title={`${vocab.section} y recompensas`} subtitle={`Cargá tus ${vocab.items} y qué premios ganan tus clientes.`} />
+            <StepHeader icon={UtensilsCrossed} title={`${vocab.section} y recompensas`} subtitle={`Ahora vas a poder cargar tus ${vocab.items} y qué premios ganan tus clientes.`} />
             <div className="grid gap-3 sm:grid-cols-2">
-              <button
-                onClick={() => finish(t('/dashboard/menu'))}
-                className="wt2-lift flex flex-col items-start gap-2 rounded-[24px] border-2 border-[var(--wt-border)] p-5 text-left transition-colors hover:border-[var(--wt-mint)]"
+              <div
+                className="flex flex-col items-start gap-2 rounded-[24px] border-2 border-[var(--wt-border)] p-5 text-left"
                 style={{ background: 'rgba(255,255,255,0.5)' }}
               >
                 <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[rgba(0,207,205,0.14)] text-[var(--wt-mint-dark)]">
                   <UtensilsCrossed size={20} />
                 </span>
-                <span className="wt-heading font-semibold text-[var(--wt-text)]">Cargar {vocab.items}</span>
+                <span className="wt-heading font-semibold text-[var(--wt-text)]">Ahora vas a poder cargar {vocab.items}</span>
                 <span className="text-xs text-[var(--wt-muted)]">
                   {vocab.Items} con su precio, por ej. {vocab.ph.title}. Es lo que acumula puntos por compra.
                 </span>
-              </button>
-              <button
-                onClick={() => finish(t('/dashboard/cupones'))}
-                className="wt2-lift flex flex-col items-start gap-2 rounded-[24px] border-2 border-[var(--wt-border)] p-5 text-left transition-colors hover:border-[var(--wt-mint)]"
+              </div>
+              <div
+                className="flex flex-col items-start gap-2 rounded-[24px] border-2 border-[var(--wt-border)] p-5 text-left"
                 style={{ background: 'rgba(255,255,255,0.5)' }}
               >
                 <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[rgba(0,207,205,0.14)] text-[var(--wt-mint-dark)]">
                   <BadgePercent size={20} />
                 </span>
-                <span className="wt-heading font-semibold text-[var(--wt-text)]">Crear recompensas</span>
+                <span className="wt-heading font-semibold text-[var(--wt-text)]">Ahora vas a poder crear recompensas</span>
                 <span className="text-xs text-[var(--wt-muted)]">
                   Cupones y premios canjeables por puntos. Es lo que hace que vuelvan.
                 </span>
-              </button>
+              </div>
             </div>
             <p className="mt-4 text-xs text-[var(--wt-muted)]">
-              Al tocar una opción terminamos la configuración y te llevamos directo a esa sección.
+              Estas dos secciones te van a estar esperando en el panel.
             </p>
 
-            <StepFooter onSkip={next} onNext={next} nextLabel="Lo hago después" />
+            <div className="mt-8 flex justify-center border-t border-[var(--wt-border)] pt-6">
+              <button className="wt2-btn wt2-shine inline-flex items-center gap-2 rounded-full bg-[#08282c] px-7 py-3.5 text-[15px] font-bold text-white hover:bg-[var(--wt-mint-dark)] disabled:opacity-50" onClick={next} disabled={saving}>
+                Comenzar ya
+                <ArrowRight size={16} />
+              </button>
+            </div>
           </div>
         )}
 
@@ -442,10 +460,12 @@ export default function SetupWizard() {
         )}
         </main>
 
-        <aside className="hidden lg:sticky lg:top-6 lg:block">
-          <p className="mb-3 text-[11px] font-extrabold tracking-[0.16em] text-[var(--wt-muted)]">ASÍ SE VE TU APP</p>
-          <LivePreview settings={settings} biz={biz} />
-        </aside>
+        {step > 0 && step < STEPS.length - 1 && (
+          <aside className="lg:sticky lg:top-6">
+            <p className="mb-3 text-center text-[11px] font-extrabold tracking-[0.16em] text-[var(--wt-muted)] lg:text-left">ASÍ SE VE TU APP</p>
+            <LivePreview settings={settings} biz={biz} />
+          </aside>
+        )}
       </div>
 
       {crop && (
