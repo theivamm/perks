@@ -13,7 +13,7 @@ export default function TrialAnnouncementBar() {
   const close = () => setDismissed(true);
 
   return (
-    <div className="flex justify-center px-4 pt-4 sm:px-8 lg:px-12">
+    <div className="flex justify-center px-4 sm:px-8 lg:px-12">
       <div
         className="flex w-full max-w-[860px] items-center gap-3 rounded-full border border-[var(--wt-mint)]/25 py-2.5 pl-5 pr-2.5 shadow-[0_10px_30px_-18px_rgba(0,207,205,0.55)] sm:gap-4"
         style={{ background: 'linear-gradient(135deg, #e3fbf9, #eef8fc)' }}

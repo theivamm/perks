@@ -150,11 +150,11 @@ export default function HeroBento() {
 
   return (
     <>
-      <section id="inicio" className="relative overflow-hidden px-4 pb-16 pt-12 sm:px-8 sm:pt-16 lg:px-12 lg:pb-20 lg:pt-20">
+      <section id="inicio" className="relative overflow-hidden px-4 pb-16 pt-6 sm:px-8 sm:pt-8 lg:px-12 lg:pb-20 lg:pt-10">
         <div className="wt-bg-blob" style={{ width: 520, height: 520, background: '#bff3ea', top: '-20%', right: '-10%' }} />
         <div className="wt-bg-blob" style={{ width: 420, height: 420, background: '#ffe3c2', bottom: '-25%', left: '-10%' }} />
 
-        <div className="relative -mx-4 mb-8 sm:-mx-8 lg:-mx-12">
+        <div className="relative -mx-4 mb-6 sm:-mx-8 sm:mb-8 lg:-mx-12 lg:mb-10">
           <TrialAnnouncementBar />
         </div>
 
