@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect } from 'react';
-import { Check, CircleCheck, Copy, QrCode, Sparkles, Ticket, Zap } from 'lucide-react';
+import { Check, CircleCheck, Copy, Gift, QrCode, Sparkles, Ticket, Trophy, Zap } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import QRCode from 'qrcode';
 import { api } from '../api.js';
@@ -241,62 +241,195 @@ export default function Home() {
     </div>
   );
 
+  const couponsOnlyMode = !menuEnabled;
+
   return (
     <div className="page-aurora min-h-screen">
       <Navbar search={menuEnabled ? { value: query, onChange: setQuery, placeholder: 'Buscar plato, bebida, postre…' } : undefined} />
 
       <main className={`mx-auto w-full min-w-0 max-w-[1600px] overflow-x-clip px-4 pt-4 sm:px-6 sm:pt-6 lg:px-8 ${isAuthed && activeCoupon ? 'pb-28 lg:pb-16' : 'pb-16'}`}>
-        {/* Franja de fidelización: estado real del cliente en lugar del hero + 3 bloques explicativos */}
-        <section className="grid grid-cols-[minmax(0,1fr)] items-start gap-4 xl:grid-cols-[minmax(0,1fr)_440px]">
-          {isAuthed && activeCoupon ? (
-            <ActiveStrip
-              coupon={activeCoupon}
-              currency={currency}
-              onQr={() => setQrOpen(true)}
-              onHow={() => setHowOpen(true)}
-            />
-          ) : (
-            <IntroStrip isAuthed={isAuthed} loginTo={t('/login')} />
-          )}
-
-          <div className="card flex min-w-0 flex-col gap-2.5 p-4 sm:p-5">
-            <div className="flex items-baseline justify-between gap-3">
-              <h2 className="font-heading text-base font-bold text-ink">
-                {isAuthed && activeCoupon ? 'Tus próximos cupones' : 'Cupones disponibles'}
-              </h2>
-              {isAuthed && (
-                <Link to={t('/cupones')} className="text-xs font-semibold text-primary-strong hover:underline">
-                  Ver todos
-                </Link>
+        {couponsOnlyMode ? (
+          // MODO SOLO CUPONES - Diseño especial
+          <>
+            {/* Hero solo cupones */}
+            <section className="mb-8">
+              {isAuthed && activeCoupon ? (
+                <ActiveStrip
+                  coupon={activeCoupon}
+                  currency={currency}
+                  onQr={() => setQrOpen(true)}
+                  onHow={() => setHowOpen(true)}
+                />
+              ) : (
+                <div className="relative min-w-0 overflow-hidden rounded-3xl bg-gradient-to-br from-primary to-primary-strong p-6 text-primary-contrast shadow-glow sm:p-10">
+                  <div className="orb -right-16 -top-16 h-56 w-56 bg-primary-contrast/10" />
+                  <div className="relative max-w-2xl">
+                    <Eyebrow>Programa de fidelización</Eyebrow>
+                    <h1 className="mt-4 font-heading text-3xl font-bold leading-tight [overflow-wrap:anywhere] sm:text-4xl lg:text-5xl">
+                      {isAuthed ? 'Tus cupones especiales' : 'Gana cupones cada compra'}
+                    </h1>
+                    <p className="mt-4 text-base leading-relaxed opacity-90 sm:text-lg">
+                      {isAuthed
+                        ? 'Activa un cupón, suma puntos y canjea tus premios. Todo en un solo lugar.'
+                        : 'Ingresa con Google, elige tu primer cupón y comienza a ganar puntos con cada compra.'}
+                    </p>
+                    {!isAuthed && (
+                      <Link
+                        to={t('/login')}
+                        className="relative mt-6 inline-flex items-center justify-center gap-2 rounded-full bg-white px-6 py-3.5 text-base font-bold text-primary-strong transition hover:-translate-y-0.5"
+                      >
+                        Inicia sesión y comienza ahora
+                      </Link>
+                    )}
+                  </div>
+                </div>
               )}
-            </div>
-            {loading ? (
-              <>
-                <div className="h-12 animate-pulse rounded-2xl bg-surface-alt" />
-                <div className="h-12 animate-pulse rounded-2xl bg-surface-alt" />
-              </>
-            ) : others.length === 0 ? (
-              <p className="py-3 text-sm text-ink-muted">No hay otros cupones por ahora.</p>
-            ) : (
-              others.slice(0, 3).map((c) => <CouponRow key={c.id} c={c} />)
-            )}
-            <p className="text-[11px] text-ink-muted">
-              {!isAuthed
-                ? 'Iniciá sesión para activar uno.'
-                : activeCoupon
-                ? 'Se activan cuando completás el cupón actual.'
-                : 'Podés tener un cupón activo a la vez.'}
-            </p>
-            {readyCount > 0 && (
-              <Link to={t('/perfil')} className="text-xs font-bold text-emerald-600 hover:underline dark:text-emerald-400">
-                Tenés {readyCount} cupón{readyCount > 1 ? 'es' : ''} listo{readyCount > 1 ? 's' : ''} para canjear →
-              </Link>
-            )}
+            </section>
 
-          </div>
-        </section>
+            {/* Grid de cupones grande */}
+            <section className="mb-8">
+              <div className="flex items-baseline justify-between gap-3 mb-6">
+                <div>
+                  <h2 className="font-heading text-2xl font-bold text-ink sm:text-3xl">
+                    {isAuthed && activeCoupon ? 'Tus próximos premios' : 'Cupones disponibles'}
+                  </h2>
+                  <p className="mt-1 text-sm text-ink-muted">
+                    {isAuthed && activeCoupon
+                      ? 'Se activan cuando completás el cupón actual'
+                      : 'Elige el que más te guste'}
+                  </p>
+                </div>
+                {isAuthed && (
+                  <Link to={t('/cupones')} className="text-sm font-bold text-primary-strong hover:underline">
+                    Ver más
+                  </Link>
+                )}
+              </div>
 
-        {menuEnabled && <PublicMenu query={query} onQueryChange={setQuery} />}
+              {loading ? (
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <div key={i} className="h-80 animate-pulse rounded-3xl bg-surface-alt" />
+                  ))}
+                </div>
+              ) : others.length === 0 ? (
+                <div className="rounded-3xl border-2 border-dashed border-line bg-surface-alt/50 py-16 text-center">
+                  <Gift size={40} className="mx-auto mb-4 text-ink-muted opacity-40" />
+                  <p className="text-lg font-semibold text-ink-muted">No hay otros cupones por ahora</p>
+                  <p className="text-sm text-ink-muted mt-1">Vuelve pronto para descubrir más premios</p>
+                </div>
+              ) : (
+                <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                  {others.map((c) => (
+                    <div
+                      key={c.id}
+                      className={`group flex flex-col items-center gap-4 rounded-3xl border-2 p-6 text-center transition ${TYPE_TONE[c.type] || TYPE_TONE.monto} ${
+                        isAuthed && !activeCoupon ? 'cursor-pointer hover:shadow-lg hover:border-current' : ''
+                      }`}
+                      onClick={() => isAuthed && !activeCoupon && setConfirmCoupon(c)}
+                    >
+                      <div className="text-5xl font-black leading-none sm:text-6xl">
+                        {couponValue(c, currency)}
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-bold text-lg leading-tight">{c.title}</p>
+                        {c.description && (
+                          <p className="text-sm mt-2 leading-relaxed opacity-75">{c.description}</p>
+                        )}
+                      </div>
+                      <div className="w-full flex items-center justify-center gap-2 rounded-2xl bg-white/20 px-4 py-2.5 text-sm font-bold">
+                        <Ticket size={16} />
+                        {Number(c.target_points)} compras
+                      </div>
+                      {isAuthed && !activeCoupon && (
+                        <button className="w-full rounded-2xl bg-primary text-primary-contrast font-bold py-3 transition hover:bg-primary-strong active:scale-95">
+                          Activar ahora
+                        </button>
+                      )}
+                      {isAuthed && activeCoupon && (
+                        <span className="text-xs font-semibold opacity-70">Disponible después</span>
+                      )}
+                      {!isAuthed && (
+                        <span className="text-xs font-semibold opacity-70">Inicia sesión para activar</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {readyCount > 0 && (
+                <div className="mt-8 rounded-3xl border-2 border-dashed border-emerald-400/60 bg-emerald-50 p-6 text-center dark:border-emerald-400/40 dark:bg-emerald-400/10">
+                  <Trophy size={28} className="mx-auto mb-3 text-emerald-600 dark:text-emerald-400" />
+                  <p className="font-bold text-lg text-emerald-900 dark:text-emerald-200">
+                    ¡Tenés premios listos! 🎉
+                  </p>
+                  <p className="text-sm mt-2 text-emerald-800 dark:text-emerald-300">
+                    {readyCount} cupón{readyCount > 1 ? 'es' : ''} completad{readyCount > 1 ? 'os' : 'o'} para canjear
+                  </p>
+                  <Link
+                    to={t('/perfil')}
+                    className="inline-block mt-4 rounded-full bg-emerald-600 text-white px-5 py-2.5 font-bold text-sm transition hover:bg-emerald-700"
+                  >
+                    Ver mis premios
+                  </Link>
+                </div>
+              )}
+            </section>
+          </>
+        ) : (
+          // MODO NORMAL - Layout original
+          <>
+            <section className="grid grid-cols-[minmax(0,1fr)] items-start gap-4 xl:grid-cols-[minmax(0,1fr)_440px]">
+              {isAuthed && activeCoupon ? (
+                <ActiveStrip
+                  coupon={activeCoupon}
+                  currency={currency}
+                  onQr={() => setQrOpen(true)}
+                  onHow={() => setHowOpen(true)}
+                />
+              ) : (
+                <IntroStrip isAuthed={isAuthed} loginTo={t('/login')} />
+              )}
+
+              <div className="card flex min-w-0 flex-col gap-2.5 p-4 sm:p-5">
+                <div className="flex items-baseline justify-between gap-3">
+                  <h2 className="font-heading text-base font-bold text-ink">
+                    {isAuthed && activeCoupon ? 'Tus próximos cupones' : 'Cupones disponibles'}
+                  </h2>
+                  {isAuthed && (
+                    <Link to={t('/cupones')} className="text-xs font-semibold text-primary-strong hover:underline">
+                      Ver todos
+                    </Link>
+                  )}
+                </div>
+                {loading ? (
+                  <>
+                    <div className="h-12 animate-pulse rounded-2xl bg-surface-alt" />
+                    <div className="h-12 animate-pulse rounded-2xl bg-surface-alt" />
+                  </>
+                ) : others.length === 0 ? (
+                  <p className="py-3 text-sm text-ink-muted">No hay otros cupones por ahora.</p>
+                ) : (
+                  others.slice(0, 3).map((c) => <CouponRow key={c.id} c={c} />)
+                )}
+                <p className="text-[11px] text-ink-muted">
+                  {!isAuthed
+                    ? 'Iniciá sesión para activar uno.'
+                    : activeCoupon
+                    ? 'Se activan cuando completás el cupón actual.'
+                    : 'Podés tener un cupón activo a la vez.'}
+                </p>
+                {readyCount > 0 && (
+                  <Link to={t('/perfil')} className="text-xs font-bold text-emerald-600 hover:underline dark:text-emerald-400">
+                    Tenés {readyCount} cupón{readyCount > 1 ? 'es' : ''} listo{readyCount > 1 ? 's' : ''} para canjear →
+                  </Link>
+                )}
+              </div>
+            </section>
+
+            {menuEnabled && <PublicMenu query={query} onQueryChange={setQuery} />}
+          </>
+        )}
       </main>
 
       <SiteFooter />
