@@ -29,6 +29,10 @@ export default function LandingFooter() {
             <a href="#inicio" className="wt-nav-link text-[13px]">Volver arriba ↑</a>
           </div>
         </div>
+        <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-[12.5px] text-[var(--wt-muted)] sm:justify-start">
+          <Link to="/privacidad" className="wt-nav-link text-[12.5px]">Política de Privacidad</Link>
+          <Link to="/terminos" className="wt-nav-link text-[12.5px]">Condiciones del Servicio</Link>
+        </div>
       </div>
     </footer>
   );

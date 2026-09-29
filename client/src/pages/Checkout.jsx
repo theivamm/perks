@@ -16,6 +16,7 @@ export default function Checkout() {
   const [selected, setSelected] = useState(params.get('plan') === 'vitalicia' ? 'vitalicia' : 'mensual');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [accepted, setAccepted] = useState(false);
 
   useEffect(() => {
     api('/api/plans')
@@ -107,7 +108,27 @@ export default function Checkout() {
         </div>
       </div>
 
-      <div className="mt-6 flex flex-col gap-4 rounded-[26px] border border-[var(--wt-border)] bg-[var(--wt-surface)] p-5 sm:flex-row sm:items-center">
+      <label className="mt-6 flex cursor-pointer items-start gap-3 rounded-2xl border border-[var(--wt-border)] bg-[var(--wt-surface)] p-4">
+        <input
+          type="checkbox"
+          checked={accepted}
+          onChange={(e) => setAccepted(e.target.checked)}
+          className="mt-0.5 h-[18px] w-[18px] shrink-0 accent-[var(--wt-mint-dark)]"
+        />
+        <span className="text-[13.5px] leading-relaxed text-[var(--wt-text)]">
+          Leí y acepto los{' '}
+          <Link to="/terminos" target="_blank" rel="noopener noreferrer" className="font-bold text-[var(--wt-mint-dark)] underline underline-offset-4">
+            Términos del Servicio
+          </Link>{' '}
+          y la{' '}
+          <Link to="/privacidad" target="_blank" rel="noopener noreferrer" className="font-bold text-[var(--wt-mint-dark)] underline underline-offset-4">
+            Política de Privacidad
+          </Link>{' '}
+          de Wintuu. Entiendo que como administrador de mi app soy responsable del contenido que cargue (productos, precios, fotos) y de la relación con mis propios clientes.
+        </span>
+      </label>
+
+      <div className="mt-4 flex flex-col gap-4 rounded-[26px] border border-[var(--wt-border)] bg-[var(--wt-surface)] p-5 sm:flex-row sm:items-center">
         <div className="min-w-0 flex-1">
           <p className="text-[13px] text-[var(--wt-muted)]">{selected === 'mensual' ? 'Después de la prueba' : 'Total'}</p>
           <p className="wt-heading text-[26px] font-bold leading-tight text-[var(--wt-ink)]">
@@ -117,14 +138,19 @@ export default function Checkout() {
         </div>
         <Link
           to={`/comenzar?plan=${selected}`}
-          aria-disabled={!plan}
-          onClick={(e) => !plan && e.preventDefault()}
-          className={`${mintBtn} sm:!w-auto`}
+          aria-disabled={!plan || !accepted}
+          onClick={(e) => (!plan || !accepted) && e.preventDefault()}
+          className={`${mintBtn} sm:!w-auto ${!accepted ? 'cursor-not-allowed opacity-50' : ''}`}
         >
           {loading ? <Loader2 className="animate-spin" size={17} /> : null}
           Continuar <ArrowRight size={17} className="wt2-arrow" />
         </Link>
       </div>
+      {!accepted && (
+        <p className="mt-2 text-center text-[12.5px] font-semibold text-[#9b1c4b] sm:text-right">
+          Tenés que aceptar los Términos y la Política de Privacidad para continuar.
+        </p>
+      )}
 
       <p className="mt-4 flex items-start gap-2 text-[12.5px] leading-relaxed text-[var(--wt-muted)]">
         <ShieldCheck size={16} className="mt-0.5 shrink-0 text-[var(--wt-mint-dark)]" />

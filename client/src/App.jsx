@@ -25,6 +25,8 @@ import Onboarding from './pages/Onboarding.jsx';
 import Landing from './pages/Landing.jsx';
 import Checkout from './pages/Checkout.jsx';
 import AccessPortal from './pages/AccessPortal.jsx';
+import PrivacyPolicy from './pages/legal/PrivacyPolicy.jsx';
+import TermsOfService from './pages/legal/TermsOfService.jsx';
 
 function RequireAdmin({ children }) {
   const { isAuthed, user } = useAuth();
@@ -166,6 +168,8 @@ export default function App() {
       <Route path="/comenzar" element={<Onboarding />} />
       <Route path="/onboarding" element={<Onboarding />} />
       <Route path="/demo" element={<DefaultRedirect />} />
+      <Route path="/privacidad" element={<PrivacyPolicy />} />
+      <Route path="/terminos" element={<TermsOfService />} />
       <Route
         path="/:slug/*"
         element={<TenantApp />}
