@@ -4,7 +4,7 @@ import { ArrowLeft, LogIn } from 'lucide-react';
 import '../../styles/wintuu-landing.css';
 import '../../styles/wintuu-landing-v2.css';
 import WintuuLogo from '../../components/landing/WintuuLogo.jsx';
-import LandingFooter from '../../components/landing/LandingFooter.jsx';
+import AnimatedWordmark from '../../components/landing/AnimatedWordmark.jsx';
 
 // Header propio para las páginas legales: la navbar de la landing tiene
 // anclas (#producto, #planes...) que solo existen en el home, así que acá
@@ -71,7 +71,10 @@ export default function LegalLayout({ title, description, updated, children }) {
           </div>
         </article>
       </main>
-      <LandingFooter />
+      <footer className="flex flex-col items-center gap-3 border-t border-[var(--wt-border)] px-4 py-14">
+        <AnimatedWordmark height={40} />
+        <p className="text-[12.5px] text-[var(--wt-muted)]">© {new Date().getFullYear()} Wintuu</p>
+      </footer>
     </div>
   );
 }

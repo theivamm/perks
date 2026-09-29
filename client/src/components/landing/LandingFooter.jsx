@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import logoUrl from '../../assets/logo.svg';
+import AnimatedWordmark from './AnimatedWordmark.jsx';
 
 const LINKS = [
   ['#producto', 'Producto'],
@@ -13,8 +13,8 @@ export default function LandingFooter() {
   return (
     <footer className="border-t border-[var(--wt-border)] px-4 pb-8 pt-12 sm:px-8 sm:pt-16 lg:px-12">
       <div className="mx-auto flex max-w-[1280px] flex-col gap-10">
-        <div className="wt-reveal flex justify-center">
-          <img src={logoUrl} alt="Wintuu" className="wt2-wordmark h-auto w-full max-w-[760px]" />
+        <div className="flex justify-center">
+          <AnimatedWordmark className="h-auto w-full max-w-[760px]" />
         </div>
         <div className="flex flex-col items-center gap-5 border-t border-[var(--wt-border)] pt-6 text-center sm:flex-row sm:justify-between sm:text-left">
           <p className="text-[14px] font-semibold text-[var(--wt-mint-dark)]">Con Wintuu ganamos todos.</p>

@@ -69,6 +69,22 @@
 .wintuu-landing .wt2-wordmark { clip-path: inset(0 100% 0 0); transition: clip-path 1.4s cubic-bezier(.6,0,.2,1) .15s; }
 .wintuu-landing .is-visible .wt2-wordmark, .wintuu-landing .wt2-wordmark.is-visible { clip-path: inset(0 0 0 0); }
 
+/* Logo "pieza por pieza" (una animación por trazo del isotipo, como si cada
+   letra entrara saltando en un orden y ángulo al azar). Usado en el footer
+   de las páginas legales. */
+@keyframes wt2-piece-pop {
+  0% { opacity: 0; transform: translateY(var(--ty, 22px)) rotate(var(--rot, 0deg)) scale(.35); }
+  55% { opacity: 1; transform: translateY(calc(var(--ty, 22px) * -0.22)) rotate(calc(var(--rot, 0deg) * -0.35)) scale(1.12); }
+  75% { transform: translateY(calc(var(--ty, 22px) * 0.06)) rotate(calc(var(--rot, 0deg) * 0.12)) scale(.97); }
+  100% { opacity: 1; transform: translateY(0) rotate(0deg) scale(1); }
+}
+.wintuu-landing .wt2-logo-piece {
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: wt2-piece-pop .85s cubic-bezier(.22,1,.36,1) var(--d, 0ms) both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .wintuu-landing .wt2-float-a, .wintuu-landing .wt2-float-b, .wintuu-landing .wt2-phone, .wintuu-landing .wt2-backdrop,
   .wintuu-landing .wt2-marquee, .wintuu-landing .wt2-ping, .wintuu-landing .wt2-blink, .wintuu-landing .wt2-shine::after,
@@ -76,4 +92,5 @@
   .wintuu-landing .wt2-stamp { opacity: 1; animation: none !important; }
   .wintuu-landing .wt2-bar { width: var(--w); transition: none; }
   .wintuu-landing .wt2-wordmark { clip-path: none; transition: none; }
+  .wintuu-landing .wt2-logo-piece { opacity: 1; animation: none !important; transform: none !important; }
 }
