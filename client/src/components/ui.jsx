@@ -146,14 +146,14 @@ export function Modal({ open, onClose, title, subtitle, icon: Icon, footer, chil
 
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-6">
+    <div className="fixed inset-0 z-[60] flex items-end justify-center sm:items-center sm:p-6">
       <div className="animate-fade-in absolute inset-0 bg-ink/40 backdrop-blur-[3px] dark:bg-black/60" onClick={onClose} />
       <div
         ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="modal-title"
-        className={`animate-fade-up relative flex max-h-[92vh] w-full flex-col overflow-hidden rounded-t-[28px] border border-line bg-surface shadow-2xl sm:max-h-[88vh] sm:rounded-[28px] ${maxW}`}
+        className={`animate-fade-up relative flex max-h-[92vh] max-h-[92dvh] w-full flex-col overflow-hidden rounded-t-[28px] border border-line bg-surface shadow-2xl sm:max-h-[88vh] sm:max-h-[88dvh] sm:rounded-[28px] ${maxW}`}
       >
         <div className="mx-auto mt-2.5 h-1.5 w-10 shrink-0 rounded-full bg-line sm:hidden" />
         <div className="flex shrink-0 items-start gap-3 px-5 pb-4 pt-4 sm:px-6 sm:pt-6">
@@ -172,7 +172,12 @@ export function Modal({ open, onClose, title, subtitle, icon: Icon, footer, chil
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-5 sm:px-6 sm:pb-6">{children}</div>
         {footer && (
-          <div className="flex shrink-0 flex-wrap items-center justify-end gap-2 border-t border-line bg-surface-page/60 px-5 py-3.5 sm:px-6">{footer}</div>
+          <div
+            className="flex shrink-0 flex-wrap items-center justify-end gap-2 border-t border-line bg-surface-page/60 px-5 py-3.5 sm:px-6"
+            style={{ paddingBottom: 'max(0.875rem, env(safe-area-inset-bottom))' }}
+          >
+            {footer}
+          </div>
         )}
       </div>
     </div>
