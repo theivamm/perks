@@ -3,7 +3,6 @@ import '../styles/wintuu-landing.css';
 import '../styles/wintuu-landing-v2.css';
 import { useReveal } from '../components/landing/useReveal.js';
 import LandingNavbar from '../components/landing/LandingNavbar.jsx';
-import TrialAnnouncementBar from '../components/landing/TrialAnnouncementBar.jsx';
 import HeroBento from '../components/landing/HeroBento.jsx';
 import ProductBento from '../components/landing/ProductBento.jsx';
 import HowItWorks from '../components/landing/HowItWorks.jsx';
@@ -30,7 +29,6 @@ export default function Landing() {
 
   return (
     <div ref={rootRef} className="wintuu-landing min-h-screen">
-      <TrialAnnouncementBar />
       <LandingNavbar />
       <HeroBento />
       <ProductBento />

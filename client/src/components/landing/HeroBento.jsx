@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Check } from 'lucide-react';
+import TrialAnnouncementBar from './TrialAnnouncementBar.jsx';
 
 const TRUST = ['Listo en una tarde', 'Menú digital incluido', 'Pago con Mercado Pago'];
 const RUBROS = ['Cafeterías', 'Panaderías', 'Heladerías', 'Barberías', 'Estética', 'Tiendas de barrio', 'Pastelerías', 'Veterinarias'];
@@ -152,6 +153,10 @@ export default function HeroBento() {
       <section id="inicio" className="relative overflow-hidden px-4 pb-16 pt-12 sm:px-8 sm:pt-16 lg:px-12 lg:pb-20 lg:pt-20">
         <div className="wt-bg-blob" style={{ width: 520, height: 520, background: '#bff3ea', top: '-20%', right: '-10%' }} />
         <div className="wt-bg-blob" style={{ width: 420, height: 420, background: '#ffe3c2', bottom: '-25%', left: '-10%' }} />
+
+        <div className="relative -mx-4 mb-8 sm:-mx-8 lg:-mx-12">
+          <TrialAnnouncementBar />
+        </div>
 
         <div className="relative mx-auto grid max-w-[1280px] items-center gap-12 lg:grid-cols-2 lg:gap-16">
           <div className="flex max-w-[560px] flex-col gap-6">
