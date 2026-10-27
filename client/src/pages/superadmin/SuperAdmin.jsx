@@ -4,6 +4,7 @@ import { api } from '../../api.js';
 import { useAuth } from '../../context/AuthContext.jsx';
 import TenantUsers from './TenantUsers.jsx';
 import BrandKitTab from './BrandKitTab.jsx';
+import InstagramTab from './InstagramTab.jsx';
 import '../../styles/wintuu-landing.css';
 import '../../styles/wintuu-landing-v2.css';
 import WintuuLogo from '../../components/landing/WintuuLogo.jsx';
@@ -45,6 +46,7 @@ const NAV = [
   ['pay', 'Pagos', '#c9bbff'],
   ['sup', 'Soporte', '#ffc4e1'],
   ['brand', 'Marca', '#bff3ea'],
+  ['ig', 'Instagram', '#ffc4e1'],
 ];
 const HEADS = {
   home: ['PANEL DE WINTUU', 'Buen día, equipo.'],
@@ -52,6 +54,7 @@ const HEADS = {
   pay: ['PAGOS', 'Cobros de planes'],
   sup: ['SOPORTE', 'Conversaciones'],
   brand: ['MARCA', 'Identidad visual'],
+  ig: ['INSTAGRAM', 'Publicar en @wintuu.app'],
 };
 
 export function slugify(value) {
@@ -419,6 +422,7 @@ function Panel({ email, onLogout }) {
         {tab === 'pay' && <PaymentsTab payments={payments} loading={loading} />}
         {tab === 'sup' && <SupportTab tickets={tickets} selected={ticketId} onSelect={setTicketId} reload={loadTickets} />}
         {tab === 'brand' && <BrandKitTab />}
+        {tab === 'ig' && <InstagramTab />}
       </main>
 
       {selected && (

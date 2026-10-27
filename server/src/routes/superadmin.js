@@ -7,10 +7,12 @@ import { isValidPlan, DEFAULT_PLAN } from '../plans.js';
 import { slugify, slugError, slugTaken, CENTRAL_TENANT_SLUG } from '../slug.js';
 import { ensureMembership } from '../memberships.js';
 import { notifyAdmins } from '../notify.js';
+import instagramRouter from './instagram.js';
 
 const router = Router();
 
 router.use(requireSuperAdmin);
+router.use('/instagram', instagramRouter);
 
 function defaultSettings(name, businessType = 'cafeteria') {
   return {
